@@ -30,6 +30,13 @@
     "note": "research/23A355/DriverKit-Function-Surface.md"
   },
   {
+    "id": "standalone-macho-coverage",
+    "build": "23A355",
+    "title": "Which Mach-O files exist outside the dyld caches?",
+    "summary": "Three official system images contain 3,363 physical Mach-O files with exact file hashes, types, architectures, and UUIDs. Two mixed Metal containers remain explicit exclusions.",
+    "note": "research/23A355/Standalone-MachO-Coverage.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",

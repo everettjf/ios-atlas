@@ -1,0 +1,15 @@
+# Which Mach-O files exist outside the dyld caches?
+
+Target: three mounted system images in the official iPhone 11 iOS 26.0.1 (`23A355`) restore IPSW, SHA-256 `2773217713e94b81fbbaa6ecb6b7e87fb176f58f5edefdb868d8d71ec6547bd2`. This inventory was produced on 2026-11-05 from the exact images already recorded in the [acquisition log](../../docs/acquisition-23A355.md).
+
+The [Standalone Mach-O explorer](https://xnu.app/ios-atlas/#macho) contains **3,363 regular files**: 3,323 from FileSystem, 25 from SystemOS, and 15 from AppOS. These are physical files, distinct from the 4,170 logical iOS dyld-cache images and 51 logical DriverKit cache images. The three source catalogs contain 452,096 total filesystem entries; this scan checked the 227,711 regular files at least four bytes long for a Mach-O or fat-file magic. The indexed files total 1,838,506,192 bytes. Every record carries its exact source volume, path, file size, complete-file SHA-256, architecture, Mach-O file type, and `LC_UUID` value.
+
+The file-type distribution is 2,168 executables, 1,070 bundles, 72 dylibs, 35 GPU executables, 17 kext bundles, and one dynamic linker. These are file identities and header classifications, not a count of libraries loaded by a process. Most slices report arm64e; two report arm64. The 35 GPU slices retain their raw CPU type and subtype because the parser does not assign them a conventional CPU architecture name. All 3,363 files contain one UUID load command. A spot check of two files against Xcode's `dwarfdump --uuid` agreed with the catalog.
+
+Two source-volume records have a fat-file header and a mix of `MTLB` and Mach-O slice magics: `/System/Library/Frameworks/QuartzCore.framework/default.metallib` in FileSystem and SystemOS. Both are explicitly retained as **excluded candidates**, because treating either mixed container as one ordinary standalone Mach-O would hide its Metal payload. They are not counted in the 3,363 files; their underlying filesystem records remain in the broader path catalog.
+
+The collector verifies the complete IPSW SHA-256, catalog build and product identity, mounted-file sizes, bounded Mach-O header and load-command ranges, and each complete-file SHA-256. The site build checks every output path and size against the three independently cataloged filesystem images and checks the scan totals. Raw IPSW bytes and binaries remain outside Git. The hashes here describe files in the mounted **official firmware**, not live-device bytes. No runtime loading, execution, library purpose, Objective-C method list, or complete function list is inferred from a header. Those are separate tasks in the [research TODO](../../docs/research-todo.md).
+
+To regenerate with the same mounted images:
+
+`python3 tools/catalog_standalone_macho.py --ipsw .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw --filesystem-catalog catalog/ios/23A355/filesystem.json.gz --systemos-catalog catalog/ios/23A355/systemos.json --appos-catalog catalog/ios/23A355/appos.json --filesystem-root .local/mount-fs --systemos-root .local/mount-sys --appos-root .local/mount-app --output catalog/ios/23A355/standalone-macho.json.gz`

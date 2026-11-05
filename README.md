@@ -2,7 +2,7 @@
 
 An independent, build-specific map of iOS system files, dyld shared-cache images, and their relationships.
 
-The first dataset covers **iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`)**. The [static explorer](https://xnu.app/ios-atlas/) searches 452,096 filesystem entries from three official IPSW images, 4,170 iOS shared-cache images, 51 separate DriverKit cache images, 83 physical cache files, and 430,719 paths in a filtered live device system view.
+The first dataset covers **iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`)**. The [static explorer](https://xnu.app/ios-atlas/) searches 452,096 filesystem entries from three official IPSW images, 4,170 iOS shared-cache images, 51 separate DriverKit cache images, 3,363 standalone Mach-O files, 83 physical cache files, and 430,719 paths in a filtered live device system view.
 
 The **Filesystem**, **Restore RAM disks**, and **Device system paths** views also browse paths folder by folder. A folder link can be shared directly, such as [Foundation.framework in the stock filesystem](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework). The stock folder view lists any logical dyld images under that directory in a separate section; these are not counted as files. Typing in the search field searches the full selected catalog.
 
@@ -29,6 +29,8 @@ The **Research** view renders the source-bound component notes on the site, with
 Library pages now support cited functional introductions where an exact image can be matched to a primary source. Foundation and the base DriverKit framework are the first two; all other pages retain source-derived metadata overviews while the [research TODO](docs/research-todo.md) tracks further descriptions.
 
 The [**DriverKit images** view](https://xnu.app/ios-atlas/#driverkit) now lists 65,668 unique named `__text` function-symbol records across all 51 images in the separate DriverKit cache, with per-image search. None of those images yielded ObjC class or method declarations in the exact-cache class dump. The [DriverKit coverage note](research/23A355/DriverKit-Function-Surface.md) explains why symbol-table names are a partial view of functions.
+
+The [**Standalone Mach-O** view](https://xnu.app/ios-atlas/#macho) indexes 3,363 physical binaries in FileSystem, SystemOS, and AppOS. Each record has its IPSW volume, path, complete-file SHA-256, Mach-O file type, architecture, and UUID. Two mixed Metal containers with Mach-O and non-Mach-O slices are recorded as exclusions. This is a file identity inventory; method and symbol coverage remains on the [research TODO](docs/research-todo.md). See the [coverage note](research/23A355/Standalone-MachO-Coverage.md).
 
 The [**Objective-C methods** view](https://xnu.app/ios-atlas/#methods) indexes 3,065,801 static method entries across all 4,170 exact iOS cache images. Each image page provides a brief source-derived overview and a direct link to its compressed method list. An empty method list means the class dump yielded no method entries, not that the library has no code. Ten entries have no decoded selector and remain explicitly unknown. The [coverage note](research/23A355/Method-Catalog-Coverage.md) explains the checks and limits; the [research TODO](docs/research-todo.md) tracks later functional descriptions and deeper implementation studies.
 

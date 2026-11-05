@@ -645,6 +645,65 @@ def build() -> None:
             if driverkit_dependency_path.exists():
                 driverkit_info.update(publish_dependencies(driverkit_dependency_path,
                                                            driverkit, build, "driverkit"))
+        standalone_info = {}
+        standalone_path = directory / "standalone-macho.json.gz"
+        if standalone_path.exists():
+            standalone = load(standalone_path)
+            rows = standalone["records"]
+            excluded = standalone["excluded_candidates"]
+            volume_names = {volume["volume"] for volume in volumes}
+            wanted = {(item["volume"], item["path"]) for item in rows + excluded}
+            observed = {(volume["volume"], item["path"]): item
+                        for volume in volumes for item in volume["entries"]
+                        if (volume["volume"], item["path"]) in wanted}
+            if (standalone["schema_version"] != 1 or
+                    standalone["kind"] != "standalone_macho_file_inventory" or
+                    standalone["source"] != "official_ipsw_mounted_images" or
+                    standalone["build"] != build or
+                    standalone["product_type"] != dyld["product_type"] or
+                    standalone["firmware_sha256"] != dyld["firmware_sha256"] or
+                    standalone["volume_images"] != {
+                        volume["volume"]: volume["image_name"] for volume in volumes} or
+                    standalone["macho_file_count"] != len(rows) or
+                    len(wanted) != len(rows) + len(excluded) or
+                    len(observed) != len(wanted)):
+                raise ValueError("standalone Mach-O catalog source or count mismatch")
+            for volume in volumes:
+                name = volume["volume"]
+                files_checked = sum(item["type"] == "file" and
+                                    (item.get("size") or 0) >= 4 for item in volume["entries"])
+                macho_count = sum(item["volume"] == name for item in rows)
+                excluded_count = sum(item["volume"] == name for item in excluded)
+                if (standalone["scan_counts"].get(f"{name}_files_checked") != files_checked or
+                        standalone["scan_counts"].get(f"{name}_header_candidates") !=
+                        macho_count + excluded_count or
+                        standalone["scan_counts"].get(f"{name}_macho_files") != macho_count):
+                    raise ValueError(f"standalone Mach-O scan counts differ for {name}")
+            for item in rows:
+                disk = observed[(item["volume"], item["path"])]
+                if (disk["type"] != "file" or disk["size"] != item["size"] or
+                        item["volume"] not in volume_names or
+                        not re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) or
+                        not re.fullmatch(r"[0-9a-f]{8}", item["header_magic"]) or
+                        not item["slices"] or
+                        any(not isinstance(part["cpu_type"], int) or
+                            not isinstance(part["cpu_subtype"], int) or
+                            not part["architecture"] or not part["file_type"] or
+                            (part["uuid"] is not None and
+                             not re.fullmatch(r"[0-9A-F-]{36}", part["uuid"]))
+                            for part in item["slices"])):
+                    raise ValueError(f"invalid standalone Mach-O record: {item['path']}")
+            for item in excluded:
+                disk = observed[(item["volume"], item["path"])]
+                if (disk["type"] != "file" or disk["size"] != item["size"] or
+                        not item["slice_magics"] or
+                        item["reason"] not in ("fat_header_without_macho_slices",
+                                               "fat_header_with_mixed_non_macho_slices")):
+                    raise ValueError(f"invalid excluded Mach-O candidate: {item['path']}")
+            standalone_url = f"data/{build}-standalone-macho.json.gz"
+            dump(DIST / standalone_url, standalone, compressed=True)
+            standalone_info = {"standalone_macho_file_count": len(rows),
+                               "standalone_macho_url": standalone_url}
         device_info = {}
         device_path = directory / "device-rootfs.json.gz"
         if device_path.exists():
@@ -844,7 +903,7 @@ def build() -> None:
                        **method_info,
                        **protocol_info, **swift_info,
                        **device_info,
-                       **driverkit_info, **archive_info, **restore_info, **kernel_info,
+                       **driverkit_info, **standalone_info, **archive_info, **restore_info, **kernel_info,
                        **service_info})
 
     if not builds:

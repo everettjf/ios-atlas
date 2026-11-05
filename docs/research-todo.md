@@ -10,7 +10,8 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 - [x] Give every iOS cache image a brief source-derived overview and direct link to its method list.
 - [x] Index the cache's ObjC class and protocol tables and Swift type conformances separately.
 - [x] Index named `__text` function symbols for all 51 images in the separate DriverKit cache; verify its ObjC class dumps.
-- [ ] Add comparable method and symbol coverage for non-cache Mach-O files.
+- [x] Identify and hash standalone Mach-O files across the three official mounted system images; record architecture, file type, and UUID.
+- [ ] Add comparable method and symbol coverage for the 3,363 indexed standalone Mach-O files.
 - [ ] Add source-backed functional descriptions to library pages. Foundation and the base DriverKit framework have cited introductions; other pages currently describe location and metadata without claiming behavior.
 - [ ] Hash and compare selected live device files outside the cache to the official firmware, with exact namespace and path mapping.
 
