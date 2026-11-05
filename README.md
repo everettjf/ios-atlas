@@ -14,6 +14,8 @@ The **Shared-cache images** view also indexes all 4,170 iOS cache images and the
 
 The **Objective-C classes** view searches 216,890 class entries from the iOS cache optimization table. It links each entry to an exact in-cache image and lets visitors browse the classes associated with an image. Classes in images with duplicate basenames are resolved using their metadata addresses and Mach-O segment ranges.
 
+The **ObjC protocols** view searches 67,351 protocol table entries. A unique image basename maps to one cached image for 49,497 entries; 17,854 entries retain their ambiguous image labels and show the candidate paths. An image-label association is not proof that the image defines or loads that protocol.
+
 The [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact inputs and coverage, including a read-only device check: all 83 cache files match the live device by SHA-256, and the published device paths and types occur in the official IPSW indexes. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
 
 ## Build locally

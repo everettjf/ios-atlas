@@ -58,9 +58,9 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** each displayed difference says what was compared and whether its origin is established or merely suspected.
 
-### 3. Add relationships and research notes — direct library graph and Objective-C class index completed; deeper traces pending
+### 3. Add relationships and research notes — direct library graph and Objective-C table indexes completed; deeper traces pending
 
-- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists have source-bound service records; 600 distinct service executables have 14,843 direct Mach-O load declarations. All 4,170 iOS cache images now have 90,837 direct library loads in a navigable, two-way graph; the separate 51-image DriverKit cache has 209. The iOS cache Objective-C optimization table contributes 216,890 class entries linked to exact images. The SpringBoard note follows one plist through its disk entry point into a cached framework. Objective-C methods, protocols, Swift metadata, transitive links, and runtime process ownership remain future research.
+- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists have source-bound service records; 600 distinct service executables have 14,843 direct Mach-O load declarations. All 4,170 iOS cache images now have 90,837 direct library loads in a navigable, two-way graph; the separate 51-image DriverKit cache has 209. The iOS cache Objective-C optimization table contributes 216,890 class entries linked to exact images and 67,351 protocol entries, with ambiguous protocol image labels left explicit. The SpringBoard note follows one plist through its disk entry point into a cached framework. Objective-C methods, Swift metadata, transitive links, and runtime process ownership remain future research.
 - Follow one user-visible behavior from entry point through framework and service, confirming static hypotheses with bounded runtime observation where needed.
 - Keep analysis evidence and uncertainty attached to each claim. Use REA for focused binary questions after selecting an exact artifact; do not infer execution from decompilation alone.
 

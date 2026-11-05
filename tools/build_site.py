@@ -146,6 +146,48 @@ def build() -> None:
                          "objc_image_count": len(image_counts),
                          "objc_unresolved_count": resolution_counts["unresolved"],
                          "objc_url": f"data/{build}-objc.json.gz"}
+        protocol_info = {}
+        protocol_path = directory / "objc-protocols.json"
+        if protocol_path.exists():
+            protocols = load(protocol_path)
+            protocol_records = protocols["records"]
+            known = {image["install_name"] for image in dyld["images"]}
+            by_label = defaultdict(set)
+            for name in known:
+                by_label[name.rsplit("/", 1)[-1]].add(name)
+            resolution_counts = Counter(row[4] for row in protocol_records)
+            image_counts = Counter(row[3] for row in protocol_records if row[3])
+            observed_labels = {row[2] for row in protocol_records}
+            ambiguous = {label: sorted(names) for label, names in by_label.items()
+                         if len(names) > 1 and label in observed_labels}
+            if (not protocols["complete"] or
+                    protocols["kind"] != "dyld_objc_optimization_protocols" or
+                    protocols["source"] != "official_ipsw_intact_cache_family" or
+                    protocols["build"] != build or
+                    protocols["product_type"] != dyld["product_type"] or
+                    protocols["firmware_sha256"] != dyld["firmware_sha256"] or
+                    protocols["cache_uuid"] != dyld["cache_uuid"] or
+                    protocols["record_count"] != len(protocol_records) or
+                    protocols["image_count_with_unique_labels"] != len(image_counts) or
+                    protocols["resolution_counts"] != dict(resolution_counts) or
+                    protocols["ambiguous_labels"] != ambiguous or
+                    any(len(row) != 5 or not row[0] or
+                        not re.fullmatch(r"0x[0-9a-f]+", row[1]) or
+                        row[2] not in by_label or
+                        (row[4] == "unique_label") != (len(by_label[row[2]]) == 1) or
+                        (row[4] == "unique_label") != (row[3] in by_label[row[2]]) or
+                        row[4] not in ("unique_label", "ambiguous_label")
+                        for row in protocol_records)):
+                raise ValueError(f"incomplete or mismatched ObjC protocol catalog in {directory}")
+            for image in images:
+                image["objc_protocol_entry_count"] = image_counts[image["install_name"]]
+            dump(DIST / "data" / f"{build}-objc-protocols.json.gz",
+                 {"schema_version": 1, "build": build, "records": protocol_records,
+                  "ambiguous_labels": protocols["ambiguous_labels"]}, compressed=True)
+            protocol_info = {"objc_protocol_entry_count": len(protocol_records),
+                             "objc_protocol_unique_label_count": resolution_counts["unique_label"],
+                             "objc_protocol_ambiguous_label_count": resolution_counts["ambiguous_label"],
+                             "objc_protocol_url": f"data/{build}-objc-protocols.json.gz"}
         dump(DIST / "data" / f"{build}-files.json.gz",
              {"schema_version": 1, "build": build, "volumes": volume_metadata,
               "entries": compact_entries}, compressed=True)
@@ -369,6 +411,7 @@ def build() -> None:
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
                        "dyld_url": f"data/{build}-dyld.json", **dependency_info, **objc_info,
+                       **protocol_info,
                        **device_info,
                        **driverkit_info, **archive_info, **restore_info, **kernel_info,
                        **service_info})
