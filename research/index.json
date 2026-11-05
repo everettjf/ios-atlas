@@ -37,6 +37,13 @@
     "note": "research/23A355/Standalone-MachO-Coverage.md"
   },
   {
+    "id": "standalone-objc-method-coverage",
+    "build": "23A355",
+    "title": "What Objective-C methods are visible in standalone Mach-O files?",
+    "summary": "An exact-file pass over all 3,363 standalone Mach-O files yields 847,771 static Objective-C method entries. Explicit zero results remain distinct from a complete function inventory.",
+    "note": "research/23A355/Standalone-ObjC-Method-Coverage.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",

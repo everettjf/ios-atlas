@@ -449,7 +449,7 @@ def build() -> None:
                 if any(len(row) != 4 or not isinstance(row[0], int) or
                        not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
                        (row[2] is not None and
-                        not re.fullmatch(r"(?:[^\W\d]\w*:|:)+|\.?[^\W\d]\w*", row[2])) or
+                        not re.fullmatch(r"(?:[^\W\d][\w$]*:|:)+|\.?[^\W\d][\w$]*", row[2])) or
                        not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
                        not start <= int(row[3], 16) < end for row in rows):
                     raise ValueError(f"invalid method selector or address: {path}")
@@ -704,6 +704,109 @@ def build() -> None:
             dump(DIST / standalone_url, standalone, compressed=True)
             standalone_info = {"standalone_macho_file_count": len(rows),
                                "standalone_macho_url": standalone_url}
+            objc_path = directory / "standalone-objc-methods.json.gz"
+            if objc_path.exists():
+                objc_methods = load(objc_path)
+                files = objc_methods["files"]
+                by_file = {(item["volume"], item["path"]): item for item in rows}
+                if (objc_methods["schema_version"] != 1 or
+                        objc_methods["kind"] != "standalone_macho_objc_methods" or
+                        objc_methods["source"] != "official_ipsw_mounted_images" or
+                        objc_methods["product_type"] != dyld["product_type"] or
+                        objc_methods["build"] != build or
+                        objc_methods["firmware_sha256"] != dyld["firmware_sha256"] or
+                        objc_methods["macho_file_count"] != len(files) or
+                        len(files) != len(rows)):
+                    raise ValueError("standalone Objective-C method source mismatch")
+                status_counts = Counter()
+                totals = Counter()
+                summaries = []
+                buckets = defaultdict(list)
+                seen = set()
+                selector_pattern = r"(?:[^\W\d][\w$]*:|:)+|\.?[^\W\d][\w$]*"
+                for item in files:
+                    key = (item["volume"], item["path"])
+                    original = by_file.get(key)
+                    groups = item["groups"]
+                    methods = item["records"]
+                    if (original is None or key in seen or
+                            item["sha256"] != original["sha256"] or
+                            item["uuid"] != original["slices"][0]["uuid"] or
+                            item["status"] not in ("parsed", "no_objc_info") or
+                            item["class_count"] != sum(group["category_name"] is None
+                                                       for group in groups) or
+                            item["category_count"] != sum(group["category_name"] is not None
+                                                          for group in groups) or
+                            item["method_count"] != len(methods) or
+                            item["unknown_selector_count"] != sum(row[2] is None
+                                                                   for row in methods) or
+                            not 0 <= item["rendered_protocol_count"] <= item["toc_protocol_count"] or
+                            not 0 <= item["unlisted_swift_class_count"] <= item["class_count"] or
+                            not re.fullmatch(r"[0-9a-f]{64}", item["class_dump_sha256"]) or
+                            item["class_dump_replacement_char_count"] < 0 or
+                            len({group["display_name"] for group in groups}) != len(groups)):
+                        raise ValueError(f"invalid standalone Objective-C catalog: {key}")
+                    if item["status"] == "no_objc_info":
+                        if (groups or methods or item["class_dump_sha256"] !=
+                                hashlib.sha256(b"").hexdigest() or
+                                item["class_count"] or item["category_count"] or
+                                item["rendered_protocol_count"] or item["toc_protocol_count"]):
+                            raise ValueError(f"invalid no-ObjC result: {key}")
+                    else:
+                        if (not re.fullmatch(r"[0-9a-f]{64}", item["macho_loads_sha256"]) or
+                                item["text_size"] < 0 or
+                                not re.fullmatch(r"0x[0-9a-f]+", item["text_address"])):
+                            raise ValueError(f"invalid standalone Mach-O source metadata: {key}")
+                        start = int(item["text_address"], 16)
+                        end = start + item["text_size"]
+                        group_counts = Counter(row[0] for row in methods)
+                        if (any(len(row) != 4 or not isinstance(row[0], int) or
+                                not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
+                                (row[2] is not None and not re.fullmatch(selector_pattern, row[2])) or
+                                not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
+                                not start <= int(row[3], 16) < end for row in methods) or
+                                any(group["method_count"] != group_counts[index] or
+                                    group["display_name"] != (group["class_name"] if
+                                        group["category_name"] is None else
+                                        f"{group['class_name'] or '<unknown class>'} ({group['category_name']})")
+                                    for index, group in enumerate(groups))):
+                            raise ValueError(f"standalone method or group mismatch: {key}")
+                    seen.add(key)
+                    status_counts[item["status"]] += 1
+                    totals["classes"] += item["class_count"]
+                    totals["categories"] += item["category_count"]
+                    totals["methods"] += item["method_count"]
+                    totals["unknown_selectors"] += item["unknown_selector_count"]
+                    bucket_id = hashlib.sha256(f'{key[0]}\0{key[1]}'.encode()).digest()[0] % 64
+                    bucket_url = (f"data/{build}-standalone-objc/{bucket_id:02x}.json.gz"
+                                  if groups else None)
+                    summaries.append({"volume": key[0], "path": key[1],
+                                      "sha256": item["sha256"], "uuid": item["uuid"],
+                                      "status": item["status"],
+                                      "class_count": item["class_count"],
+                                      "category_count": item["category_count"],
+                                      "method_count": item["method_count"],
+                                      "bucket_url": bucket_url})
+                    if groups:
+                        buckets[bucket_id].append({"volume": key[0], "path": key[1],
+                                                   "sha256": item["sha256"],
+                                                   "groups": groups, "records": methods})
+                if (len(seen) != len(rows) or
+                        any(objc_methods["totals"].get(name) != value for name, value in
+                            {**totals, **status_counts}.items())):
+                    raise ValueError("standalone Objective-C method totals disagree")
+                for bucket_id, entries in buckets.items():
+                    dump(DIST / f"data/{build}-standalone-objc/{bucket_id:02x}.json.gz",
+                         {"schema_version": 1, "build": build, "files": entries},
+                         compressed=True)
+                index_url = f"data/{build}-standalone-objc-index.json.gz"
+                dump(DIST / index_url,
+                     {"schema_version": 1, "build": build, "files": summaries,
+                      "totals": objc_methods["totals"]}, compressed=True)
+                standalone_info.update({"standalone_objc_method_count": totals["methods"],
+                                        "standalone_objc_file_count": len(files),
+                                        "standalone_objc_no_info_count": status_counts["no_objc_info"],
+                                        "standalone_objc_index_url": index_url})
         device_info = {}
         device_path = directory / "device-rootfs.json.gz"
         if device_path.exists():

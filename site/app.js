@@ -7,7 +7,7 @@ const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
+const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
 let searchTimer;
 
 async function json(url) {
@@ -29,8 +29,9 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
+  if (kind === 'macho_methods_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
   if (kind === 'dependencies' || kind === 'driverkit_dependencies') {
     result.byName = new Map(result.images.map((item) => [item.install_name, item]));
     result.importers = new Map();
@@ -58,6 +59,9 @@ function setTab(tab, query = '') {
   state.methodImage = null;
   state.driverkitFunctionQuery = '';
   state.driverkitFunctionLimit = 80;
+  state.machoMethodQuery = '';
+  state.machoMethodLimit = 80;
+  state.machoMethodData = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
   history.replaceState(null, '', (tab === 'research' || tab === 'methods') && query ? `#${tab}/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
@@ -80,13 +84,13 @@ function updateSource() {
   const research = state.tab === 'research';
   const observation = state.tab === 'observation';
   const reach = state.tab === 'reach';
-  $('#source-method').href = methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-MachO-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
+  $('#source-method').href = methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
   $('#source-title').textContent = observation ? 'Sources: official IPSW and filtered live /rootfs' : device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : macho ? 'Source: mounted official IPSW Mach-O files' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
     : observation ? 'Exact path/type pairs within seven scanned roots only. IPSW image paths and the live RootHide namespace can differ; this is not a jailbreak before/after comparison.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. Named __text symbols are searchable per image; they are not a complete function inventory.'
-    : macho ? 'Regular Mach-O files in three official firmware images, with complete file hashes, header types, architectures, and UUIDs. These are distinct from dyld cache images.'
+    : macho ? 'Regular Mach-O files in three official firmware images, with file hashes, architecture, UUID, and indexed Objective-C methods. These are distinct from dyld cache images; ObjC metadata is not a complete function list.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
     : methods ? 'Method entries and IMP addresses cover all classes and categories in each indexed cache image. Select an image to search its methods; some selectors are unavailable in the class dump. These are static metadata, not observed calls.'
     : protocols ? 'Protocol entries come from the intact iOS cache optimization table. Repeated image basenames are kept as ambiguous associations.'
@@ -170,6 +174,37 @@ function driverkitFunctionResults(item) {
   return `<p class="explain">${fmt(matches.length)} matching named functions · ${fmt(image.named_function_count)} in this image. Symbol-table coverage is not a complete function inventory.</p><ul>${visible.map((row) => `<li><code>${escapeHTML(row[0])}</code> ${escapeHTML(row[1])}<small>${escapeHTML(row[2])}</small></li>`).join('') || '<li>No matching named functions</li>'}</ul>${matches.length > visible.length ? '<button id="driverkit-function-more" class="more-button">Show more ↓</button>' : ''}`;
 }
 
+function machoMethodResults(item, data) {
+  const query = state.machoMethodQuery.trim().toLocaleLowerCase();
+  const matches = data.records.filter((row) => {
+    const group = data.groups[row[0]];
+    return !query || `${group.display_name} ${row[1]} ${row[2] ?? ''} ${row[3]}`.toLocaleLowerCase().includes(query);
+  });
+  const visible = matches.slice(0, state.machoMethodLimit);
+  return `<p class="explain">${fmt(matches.length)} matching Objective-C method entries in this physical file. These are static declarations, not observed calls or a complete function inventory.</p><ul>${visible.map((row) => `<li><code>${escapeHTML(`${row[1]}[${data.groups[row[0]].display_name} ${row[2] ?? 'selector unavailable'}]`)}</code><small>IMP ${escapeHTML(row[3])}</small></li>`).join('') || '<li>No matching methods</li>'}</ul>${matches.length > visible.length ? '<button id="macho-method-more" class="more-button">Show more ↓</button>' : ''}`;
+}
+
+async function openMachoMethods() {
+  const item = state.selected;
+  const summary = state.datasets.get(`macho_methods_index:${state.build}`)?.byKey.get(`${item.volume}\0${item.path}`);
+  if (!summary?.bucket_url) return;
+  const key = `macho_bucket:${state.build}:${summary.bucket_url}`;
+  let bucket = state.datasets.get(key);
+  if (!bucket) {
+    bucket = await compressedJSON(summary.bucket_url);
+    if (bucket.build !== state.build) throw new Error('Standalone method bucket build differs');
+    state.datasets.set(key, bucket);
+  }
+  if (state.tab !== 'macho' || state.selected !== item) return;
+  const data = bucket.files.find((entry) => entry.volume === item.volume && entry.path === item.path);
+  if (!data || data.sha256 !== item.sha256 || data.records.length !== summary.method_count) {
+    throw new Error('Standalone method bucket identity or count differs');
+  }
+  const target = $('#macho-methods');
+  target.innerHTML = `<h4>Objective-C methods (${fmt(summary.method_count)})</h4><label class="searchbox"><span class="sr-only">Search Objective-C methods</span><input id="macho-method-search" type="search" placeholder="Search class, category, selector, or IMP…" value="${escapeHTML(state.machoMethodQuery)}"></label><div id="macho-method-results">${machoMethodResults(item, data)}</div>`;
+  state.machoMethodData = data;
+}
+
 function detailHTML(item, mode, data) {
   if (!item) return `<div class="empty-detail">Select a row to inspect its source and metadata.</div>`;
   if (mode === 'objc') {
@@ -211,7 +246,10 @@ function detailHTML(item, mode, data) {
   }
   if (mode === 'macho') {
     const slices = item.slices.map((part) => `<li>${escapeHTML(part.architecture)} · ${escapeHTML(part.file_type)} · UUID ${escapeHTML(part.uuid || 'Not present')}</li>`).join('');
-    return `<span class="detail-label">STANDALONE MACH-O FILE</span><h3>${escapeHTML(item.path.split('/').pop())}</h3><dl><dt>PATH</dt><dd>${escapeHTML(item.path)}</dd><dt>IPSW VOLUME</dt><dd>${escapeHTML(item.volume)}</dd><dt>FILE SIZE</dt><dd>${size(item.size)}</dd><dt>FILE SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>ARCHITECTURES AND FILE TYPES</dt><dd><ul>${slices}</ul></dd><dt>FILESYSTEM RECORD</dt><dd><button class="inline-link" data-linked-tab="files" data-linked-query="${escapeHTML(item.path)}">Inspect path ↗</button></dd></dl><p class="explain">This is a regular file observed in a mounted official IPSW image, with its complete file SHA-256. It is separate from logical images inside a dyld shared cache. The hash does not establish the bytes on a running device, and a Mach-O header does not prove execution.</p>`;
+    const methods = state.datasets.get(`macho_methods_index:${state.build}`)?.byKey.get(`${item.volume}\0${item.path}`);
+    const methodRow = methods ? `<dt>OBJECTIVE-C METHODS</dt><dd>${fmt(methods.method_count)} indexed entries${methods.status === 'no_objc_info' ? ' · no ObjC metadata reported' : ''}</dd><dt>OBJECTIVE-C CLASSES</dt><dd>${fmt(methods.class_count)} classes · ${fmt(methods.category_count)} categories</dd>` : '';
+    const methodSection = methods?.bucket_url ? `<div class="direct-imports" id="macho-methods"><button class="inline-link" id="macho-method-open">Browse Objective-C methods ↗</button></div>` : '';
+    return `<span class="detail-label">STANDALONE MACH-O FILE</span><h3>${escapeHTML(item.path.split('/').pop())}</h3><dl><dt>PATH</dt><dd>${escapeHTML(item.path)}</dd><dt>IPSW VOLUME</dt><dd>${escapeHTML(item.volume)}</dd><dt>FILE SIZE</dt><dd>${size(item.size)}</dd><dt>FILE SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>ARCHITECTURES AND FILE TYPES</dt><dd><ul>${slices}</ul></dd>${methodRow}<dt>FILESYSTEM RECORD</dt><dd><button class="inline-link" data-linked-tab="files" data-linked-query="${escapeHTML(item.path)}">Inspect path ↗</button></dd></dl>${methodSection}<p class="explain">This file was observed in a mounted official IPSW image. Its hash does not establish the bytes on a running device. A zero ObjC result does not mean there are no callable functions, and static method metadata does not prove execution.</p>`;
   }
   if (filesystemMode(mode)) {
     const [volumeIndex, path, type, bytes, target] = item;
@@ -261,11 +299,11 @@ function renderRows(items, mode, data) {
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
   $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
-  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'services' ? 'SERVICE LABEL' : mode === 'methods' ? 'METHOD' : mode === 'objc' ? 'CLASS NAME' : mode === 'protocols' ? 'PROTOCOL NAME' : 'PATH / INSTALL NAME';
+  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'macho' ? 'FILE PATH' : mode === 'services' ? 'SERVICE LABEL' : mode === 'methods' ? 'METHOD' : mode === 'objc' ? 'CLASS NAME' : mode === 'protocols' ? 'PROTOCOL NAME' : 'PATH / INSTALL NAME';
   const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : mode === 'methods' ? 'IMP ADDRESS' : mode === 'objc' || mode === 'protocols' ? 'IMAGE LABEL' : 'SOURCE';
   $('#results').innerHTML = `<div class="result-head"><span>${heading}</span><span>${sourceHeading}</span></div>${rows || '<p class="empty-state">No matching entries in the selected source.</p>'}${items.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
   $('#detail').innerHTML = detailHTML(state.selected, mode, data);
-  for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; state.driverkitFunctionQuery = ''; state.driverkitFunctionLimit = 80; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
+  for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; state.driverkitFunctionQuery = ''; state.driverkitFunctionLimit = 80; state.machoMethodQuery = ''; state.machoMethodLimit = 80; state.machoMethodData = null; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
   $('#show-more')?.addEventListener('click', () => { state.limit += 80; renderRows(items, mode, data); });
 }
 
@@ -602,7 +640,8 @@ async function renderExplorer() {
     ...(mode === 'objc' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
     ...(mode === 'files' ? [dataset('dyld')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : []),
-    ...(mode === 'driverkit' && activeBuild().driverkit_function_url ? [dataset('driverkit_functions')] : [])
+    ...(mode === 'driverkit' && activeBuild().driverkit_function_url ? [dataset('driverkit_functions')] : []),
+    ...(mode === 'macho' && activeBuild().standalone_objc_index_url ? [dataset('macho_methods_index')] : [])
   ]);
   if (state.tab !== mode) return;
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
@@ -612,7 +651,7 @@ async function renderExplorer() {
   const prefix = mode === 'driverkit' ? 'driverkit' : 'dyld';
   const dependencySummary = (mode === 'images' || mode === 'driverkit') && activeBuild()[`${prefix}_dependency_url`] ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild()[`${prefix}_direct_import_count`])} DIRECT LIBRARY LOADS</strong><span>From ${fmt(activeBuild()[`${prefix}_dependency_image_count`])} cached images</span></div><div><strong>${fmt(activeBuild()[`${prefix}_exact_cache_match_count`])} EXACT CACHE MATCHES</strong><span>Static install-name matches within this cache family</span></div></div>` : '';
   const driverkitSummary = mode === 'driverkit' && activeBuild().driverkit_named_function_count != null ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().driverkit_named_function_count)} NAMED FUNCTIONS</strong><span>Symbols in __text across all ${fmt(activeBuild().driverkit_image_count)} DriverKit cache images</span></div></div>` : '';
-  const machoSummary = mode === 'macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} PHYSICAL MACH-O FILES</strong><span>Across FileSystem, SystemOS, and AppOS in the official IPSW</span></div><div><strong>${fmt(data.excluded_candidates.length)} MIXED CONTAINERS</strong><span>Metal libraries with non-Mach-O slices are listed in the coverage note</span></div></div>` : '';
+  const machoSummary = mode === 'macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} PHYSICAL MACH-O FILES</strong><span>Across FileSystem, SystemOS, and AppOS in the official IPSW</span></div><div><strong>${fmt(data.excluded_candidates.length)} MIXED CONTAINERS</strong><span>Metal libraries with non-Mach-O slices are listed in the coverage note</span></div></div>${activeBuild().standalone_objc_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_objc_method_count)} OBJECTIVE-C METHODS</strong><span>Static entries from inspected standalone files</span></div><div><strong>${fmt(activeBuild().standalone_objc_no_info_count)} FILES WITHOUT OBJC INFO</strong><span>A zero ObjC result is not a complete function inventory</span></div></div>` : ''}` : '';
   explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#detail').addEventListener('click', (event) => {
@@ -622,12 +661,22 @@ async function renderExplorer() {
       state.driverkitFunctionLimit += 80;
       $('#driverkit-function-results').innerHTML = driverkitFunctionResults(state.selected);
     }
+    if (event.target.id === 'macho-method-open' && state.selected) openMachoMethods().catch(showError);
+    if (event.target.id === 'macho-method-more' && state.selected && state.machoMethodData) {
+      state.machoMethodLimit += 80;
+      $('#macho-method-results').innerHTML = machoMethodResults(state.selected, state.machoMethodData);
+    }
   });
   $('#detail').addEventListener('input', (event) => {
     if (event.target.id === 'driverkit-function-search' && state.selected) {
       state.driverkitFunctionQuery = event.target.value;
       state.driverkitFunctionLimit = 80;
       $('#driverkit-function-results').innerHTML = driverkitFunctionResults(state.selected);
+    }
+    if (event.target.id === 'macho-method-search' && state.selected && state.machoMethodData) {
+      state.machoMethodQuery = event.target.value;
+      state.machoMethodLimit = 80;
+      $('#macho-method-results').innerHTML = machoMethodResults(state.selected, state.machoMethodData);
     }
   });
   renderResults();

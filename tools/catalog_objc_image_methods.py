@@ -12,7 +12,7 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
-SELECTOR_PATTERN = r"(?:[^\W\d]\w*:|:)+|\.?[^\W\d]\w*"
+SELECTOR_PATTERN = r"(?:[^\W\d][\w$]*:|:)+|\.?[^\W\d][\w$]*"
 
 
 def sha256(path: Path) -> str:
@@ -45,7 +45,7 @@ def selector_from_declaration(line: str) -> tuple[str, str | None]:
     if re.fullmatch(SELECTOR_PATTERN, body):
         # Some dumps print only a raw selector, including empty components.
         return line[0], body
-    pieces = re.findall(r"\b([^\W\d]\w*:)\s*\(", body)
+    pieces = re.findall(r"\b([^\W\d][\w$]*:)\s*\(", body)
     selector = "".join(pieces) if pieces else body
     if not re.fullmatch(SELECTOR_PATTERN, selector):
         raise ValueError(f"could not recover selector: {line[:160]}")
@@ -53,7 +53,7 @@ def selector_from_declaration(line: str) -> tuple[str, str | None]:
     return line[0], selector
 
 
-def parse_dump(text: str, class_table: set[tuple[str, str]],
+def parse_dump(text: str, class_table: set[tuple[str, str]] | None,
                ranges: list[tuple[int, int]], code_range: tuple[int, int]) -> tuple[list[dict], list[list], int, int, int]:
     lines = text.splitlines()
     toc = {}
@@ -121,14 +121,26 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
     class_groups = [group for group in groups if group["category_name"] is None]
     category_groups = [group for group in groups if group["category_name"] is not None]
     actual_class_table = {(group["class_name"], group["metadata_address"]) for group in class_groups}
-    extra_classes = actual_class_table - class_table
-    if (len(class_table) != toc["__objc_classlist"] or
-            len(class_groups) != toc["__objc_classlist"] + len(extra_classes) or
+    if class_table is None:
+        # Standalone Mach-O files have no independent dyld optimization table.
+        # Their TOC can already include Swift-marked classes, so validate
+        # counts and ranges without inventing an external class association.
+        extra_class_count = len(class_groups) - toc["__objc_classlist"]
+        table_invalid = (extra_class_count < 0 or
+                         extra_class_count > sum(group["is_swift"] for group in class_groups))
+        missing_classes = 0
+    else:
+        extra_classes = actual_class_table - class_table
+        extra_class_count = len(extra_classes)
+        table_invalid = (len(class_table) != toc["__objc_classlist"] or
+                         len(class_groups) != toc["__objc_classlist"] + extra_class_count or
+                         not class_table <= actual_class_table or
+                         any(not group["is_swift"] for group in class_groups
+                             if (group["class_name"], group["metadata_address"]) in extra_classes))
+        missing_classes = len(class_table - actual_class_table)
+    if (table_invalid or
             len(category_groups) != toc["__objc_catlist"] or
             protocol_count > toc["__objc_protolist"] or
-            not class_table <= actual_class_table or
-            any(not group["is_swift"] for group in class_groups
-                if (group["class_name"], group["metadata_address"]) in extra_classes) or
             len({group["display_name"] for group in groups}) != len(groups) or
             len({tuple(row) for row in records}) != len(records) or
             sum(group["method_count"] for group in groups) != len(records)):
@@ -137,12 +149,12 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
             f"classes {len(class_groups)}/{toc['__objc_classlist']}, "
             f"categories {len(category_groups)}/{toc['__objc_catlist']}, "
             f"protocols {protocol_count}/{toc['__objc_protolist']}, "
-            f"class table missing {len(class_table - actual_class_table)}, "
-            f"extra Swift classes {len(extra_classes)}, "
+            f"class table missing {missing_classes}, "
+            f"extra Swift classes {extra_class_count}, "
             f"unique groups {len({group['display_name'] for group in groups})}/{len(groups)}, "
             f"unique method rows {len({tuple(row) for row in records})}/{len(records)}"
         )
-    return groups, records, protocol_count, toc["__objc_protolist"], len(extra_classes)
+    return groups, records, protocol_count, toc["__objc_protolist"], extra_class_count
 
 
 def main() -> None:

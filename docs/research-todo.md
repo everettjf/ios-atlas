@@ -11,7 +11,8 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 - [x] Index the cache's ObjC class and protocol tables and Swift type conformances separately.
 - [x] Index named `__text` function symbols for all 51 images in the separate DriverKit cache; verify its ObjC class dumps.
 - [x] Identify and hash standalone Mach-O files across the three official mounted system images; record architecture, file type, and UUID.
-- [ ] Add comparable method and symbol coverage for the 3,363 indexed standalone Mach-O files.
+- [x] Run an exact-file Objective-C class and method pass over all 3,363 standalone Mach-O files; retain inspected zero results.
+- [ ] Add named function-symbol and Swift metadata coverage for standalone files. An Objective-C method list is not a complete callable surface.
 - [ ] Add source-backed functional descriptions to library pages. Foundation and the base DriverKit framework have cited introductions; other pages currently describe location and metadata without claiming behavior.
 - [ ] Hash and compare selected live device files outside the cache to the official firmware, with exact namespace and path mapping.
 
