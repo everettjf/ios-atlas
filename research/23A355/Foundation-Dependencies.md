@@ -11,7 +11,7 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`). The source is the offic
 
 ## Interpretation
 
-The large difference between 123 and 1,353 illustrates how optional edges can expand a transitive static graph. A shortest path answers *which declared chain connects these cached install names* under the selected edge rule. It does not establish that dyld followed the chain, that a weak target resolved, that Foundation called the target's code, or that all reachable images were loaded in one process. Other paths to the same image can exist; the website displays one shortest chain.
+The large difference between 123 and 1,353 illustrates how optional edges can expand a transitive static graph. A shortest path answers which declared chain connects these cached install names under the selected edge rule. It does not establish that dyld followed the chain, that a weak target resolved, that Foundation called the target's code, or that all reachable images were loaded in one process. Other paths to the same image can exist; the website displays one shortest chain.
 
 ## Reproduce
 
