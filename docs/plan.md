@@ -41,12 +41,12 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** the source artifact, target build, tool versions, and expected outputs are recorded before collecting data.
 
-### 1. Index the stock firmware — first-build coverage completed
+### 1. Index the stock firmware — archive, system, restore and kernel metadata completed
 
 - Acquire the exact `iPhone12,1` / `23A355` restore image and verify its download hash against the distributor's metadata when available.
 - Inventory the relevant filesystem images and their mount or extraction boundaries. Preserve symlinks and file types; do not follow links in a way that double-counts entries.
 - Extract the complete arm64e dyld cache family. Record every cache/subcache file, then enumerate in-cache images directly from the intact cache.
-- Capture the kernelcache and other firmware components as separately typed artifacts; these remain future coverage and are not ordinary root filesystem files.
+- Index all 127 IPSW archive members and their BuildManifest roles. The five disk images have separate mounted-content catalogs. The two kernelcache variants have Mach-O and kext metadata catalogs. Other firmware payloads have artifact metadata but have not been decompiled; none is counted as an ordinary root filesystem file.
 
 **Done when:** a user can search both physical files and logical in-cache images for the exact build, and the coverage report names every image or volume that was processed or skipped.
 

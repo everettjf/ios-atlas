@@ -6,5 +6,12 @@
     "summary": "The framework bundle exists in the FileSystem image, while its executable image is indexed inside the SystemOS dyld shared cache.",
     "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
     "note": "research/23A355/Foundation.md"
+  },
+  {
+    "id": "kernelcache-variants",
+    "build": "23A355",
+    "title": "What is inside the two kernelcaches?",
+    "summary": "The release and research artifacts share a build but have distinct Mach-O UUIDs. Fileset entries and kext metadata count different structures.",
+    "note": "research/23A355/Kernelcache.md"
   }
 ]

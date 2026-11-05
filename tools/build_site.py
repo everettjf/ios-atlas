@@ -110,6 +110,79 @@ def build() -> None:
             device_info = {"device_count": device["entry_count"],
                            "device_url": f"data/{build}-device.json.gz",
                            "device_observed_at_utc": device["observed_at_utc"]}
+        archive_info = {}
+        archive_path = directory / "firmware-archive.json"
+        kernel_path = directory / "kernel.json"
+        kernel = load(kernel_path) if kernel_path.exists() else None
+        restore_info = {}
+        restore_paths = [directory / "rdisk-erase.json.gz", directory / "rdisk-upgrade.json.gz"]
+        restore_volumes = []
+        restore_entries = []
+        if all(path.exists() for path in restore_paths):
+            for volume_index, path in enumerate(restore_paths):
+                volume = load(path)
+                if (not volume["complete"] or volume["build"] != build or
+                        volume["product_type"] != dyld["product_type"] or
+                        volume["firmware_sha256"] != dyld["firmware_sha256"] or
+                        volume["entry_count"] != len(volume["entries"])):
+                    raise ValueError(f"incomplete or mismatched restore catalog in {directory}")
+                restore_volumes.append({"name": volume["volume"],
+                                        "image_name": volume["image_name"],
+                                        "count": volume["entry_count"]})
+                for item in volume["entries"]:
+                    restore_entries.append([volume_index, item["path"], item["type"],
+                                            item.get("size"), item.get("target")])
+            dump(DIST / "data" / f"{build}-restore.json.gz",
+                 {"schema_version": 1, "build": build, "volumes": restore_volumes,
+                  "entries": restore_entries}, compressed=True)
+            restore_info = {"restore_entry_count": len(restore_entries),
+                            "restore_url": f"data/{build}-restore.json.gz",
+                            "restore_volumes": restore_volumes}
+        elif any(path.exists() for path in restore_paths):
+            raise ValueError("only one restore ramdisk catalog exists")
+        if archive_path.exists():
+            archive = load(archive_path)
+            if (archive["kind"] != "ipsw_archive" or archive["build"] != build or
+                    archive["product_type"] != dyld["product_type"] or
+                    archive["firmware_sha256"] != dyld["firmware_sha256"] or
+                    archive["entry_count"] != len(archive["entries"]) or
+                    archive["file_count"] != sum(item["kind"] != "directory" for item in archive["entries"])):
+                raise ValueError(f"incomplete or mismatched IPSW archive catalog in {directory}")
+            indexed_views = {volume["image_name"]: "Filesystem" for volume in volumes}
+            indexed_views.update({volume["image_name"]: "Restore RAM disks" for volume in restore_volumes})
+            if kernel:
+                indexed_views.update({image["archive_path"]: "Kernel" for image in kernel["images"]})
+            archive_entries = [{**item, "indexed_view": indexed_views.get(item["path"])}
+                               for item in archive["entries"]]
+            dump(DIST / "data" / f"{build}-archive.json",
+                 {"schema_version": 1, "build": build, "entries": archive_entries,
+                  "variants": archive["variants"]})
+            archive_info = {"archive_entry_count": len(archive_entries),
+                            "archive_file_count": archive["file_count"],
+                            "archive_url": f"data/{build}-archive.json"}
+        kernel_info = {}
+        if kernel:
+            if not archive_path.exists():
+                raise ValueError("kernel catalog requires archive catalog")
+            archive_by_path = {item["path"]: item for item in archive["entries"]}
+            if (kernel["kind"] != "kernelcache_metadata" or kernel["build"] != build or
+                    kernel["product_type"] != dyld["product_type"] or
+                    kernel["firmware_sha256"] != dyld["firmware_sha256"] or
+                    len(kernel["images"]) != 2 or
+                    any(image["archive_path"] not in archive_by_path or
+                        image["archive_sha256"] != archive_by_path[image["archive_path"]]["sha256"] or
+                        image["kext_count"] != len(image["kexts"])
+                        for image in kernel["images"])):
+                raise ValueError(f"incomplete or mismatched kernel catalog in {directory}")
+            kernel_images = [{key: value for key, value in image.items() if key != "kexts"}
+                             for image in kernel["images"]]
+            kexts = [{**kext, "variant": image["variant"], "kernel_uuid": image["macho_uuid"]}
+                     for image in kernel["images"] for kext in image["kexts"]]
+            dump(DIST / "data" / f"{build}-kernel.json",
+                 {"schema_version": 1, "build": build, "images": kernel_images, "kexts": kexts})
+            kernel_info = {"kernel_image_count": len(kernel_images),
+                           "kext_record_count": len(kexts),
+                           "kernel_url": f"data/{build}-kernel.json"}
         builds.append({"build": build, "version": "26.0.1",
                        "product_type": dyld["product_type"],
                        "firmware_sha256": dyld["firmware_sha256"],
@@ -119,7 +192,8 @@ def build() -> None:
                        "file_count": len(compact_entries),
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
-                       "dyld_url": f"data/{build}-dyld.json", **device_info, **driverkit_info})
+                       "dyld_url": f"data/{build}-dyld.json", **device_info,
+                       **driverkit_info, **archive_info, **restore_info, **kernel_info})
 
     if not builds:
         raise ValueError("no complete catalogs found")

@@ -9,8 +9,12 @@ Collected 2026-11-04 from the Apple restore IPSW for iPhone 11, iOS 26.0.1. `ips
 | AppOS (`043-93709-010.dmg`) | [`appos.json`](../catalog/ios/23A355/appos.json) | 1,249 | 0 |
 | SystemOS arm64e cache family | [`dyld.json`](../catalog/ios/23A355/dyld.json) | 80 physical files; 4,170 images | 0 |
 | SystemOS DriverKit cache | [`driverkit-dyld.json`](../catalog/ios/23A355/driverkit-dyld.json) | 3 physical files; 51 images | 0 |
+| Erase RestoreRamDisk (`043-93777-010.dmg`) | [`rdisk-erase.json.gz`](../catalog/ios/23A355/rdisk-erase.json.gz) | 1,911 | 0 |
+| Upgrade RestoreRamDisk (`043-92637-010.dmg`) | [`rdisk-upgrade.json.gz`](../catalog/ios/23A355/rdisk-upgrade.json.gz) | 2,221 | 0 |
+| IPSW ZIP archive | [`firmware-archive.json`](../catalog/ios/23A355/firmware-archive.json) | 127 entries, 110 files | 0 |
+| Release and research kernelcaches | [`kernel.json`](../catalog/ios/23A355/kernel.json) | 2 Mach-O filesets, 256 kext records each | 0 |
 
-Main iOS cache UUID: `C0A7E671-35E1-3E6C-842D-FCE4E0A08C7E`. DriverKit cache UUID: `5CC15334-F5B0-3971-93BB-4FDDCE6F4BE7`. Cache files have size and SHA-256 metadata. Filesystem records include path, type, mode, regular-file size and symlink target. They do not include per-file content hashes. Mount-generated `/.fseventsd` paths were excluded. The scan neither follows symlinks nor descends into nested volumes. Each catalog's `complete` and `errors` fields describe its own scan, not all firmware partitions or runtime paths.
+Main iOS cache UUID: `C0A7E671-35E1-3E6C-842D-FCE4E0A08C7E`. DriverKit cache UUID: `5CC15334-F5B0-3971-93BB-4FDDCE6F4BE7`. Cache files and all 110 archive files have size and SHA-256 metadata. Filesystem records include path, type, mode, regular-file size and symlink target. They do not include per-file content hashes. Mount-generated `/.fseventsd` paths were excluded. The scan neither follows symlinks nor descends into nested volumes. Each catalog's `complete` and `errors` fields describe its own scan, not all firmware partitions or runtime paths.
 
 ## Reproduce
 
@@ -24,13 +28,24 @@ ipsw mount app .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw --mount-poi
 ipsw extract .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw --dyld --dyld-arch arm64e --device iPhone12,1 --output .local/cache --json --json-format artifacts
 ipsw dyld info --dylibs --json .local/cache/23A355__iPhone12,1/dyld_shared_cache_arm64e > .local/cache/dyld-info.json
 ipsw dyld info --dylibs --json .local/mount-sys/System/DriverKit/System/Library/dyld/dyld_shared_cache_arm64e > .local/cache/driverkit-info.json
+python3 tools/catalog_ipsw.py --ipsw .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw --product iPhone12,1 --build 23A355 --firmware-sha256 2773217713e94b81fbbaa6ecb6b7e87fb176f58f5edefdb868d8d71ec6547bd2 --output catalog/ios/23A355/firmware-archive.json
+ipsw mount rdisk .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw --ident Erase --mount-point .local/mount-rdisk-erase --detach
+ipsw mount rdisk .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw --ident Upgrade --mount-point .local/mount-rdisk-upgrade --detach
+python3 tools/build_catalog.py fs --product iPhone12,1 --build 23A355 --firmware-sha256 2773217713e94b81fbbaa6ecb6b7e87fb176f58f5edefdb868d8d71ec6547bd2 --root .local/mount-rdisk-erase --volume RestoreRamDiskErase --image-name 043-93777-010.dmg --exclude /.fseventsd --output catalog/ios/23A355/rdisk-erase.json.gz
+python3 tools/build_catalog.py fs --product iPhone12,1 --build 23A355 --firmware-sha256 2773217713e94b81fbbaa6ecb6b7e87fb176f58f5edefdb868d8d71ec6547bd2 --root .local/mount-rdisk-upgrade --volume RestoreRamDiskUpgrade --image-name 043-92637-010.dmg --exclude /.fseventsd --output catalog/ios/23A355/rdisk-upgrade.json.gz
+mkdir -p .local/kernel/release.decompressed .local/kernel/research.decompressed
+unzip -p .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw kernelcache.release.iphone12b > .local/kernel/kernelcache.release.iphone12b
+unzip -p .local/firmware/iPhone12,1_26.0.1_23A355_Restore.ipsw kernelcache.research.iphone12b > .local/kernel/kernelcache.research.iphone12b
+ipsw kernel dec .local/kernel/kernelcache.release.iphone12b --output .local/kernel/release.decompressed/kernelcache.release.iphone12b.decompressed
+ipsw kernel dec .local/kernel/kernelcache.research.iphone12b --output .local/kernel/research.decompressed/kernelcache.research.iphone12b.decompressed
+python3 tools/catalog_kernel.py --archive-catalog catalog/ios/23A355/firmware-archive.json --release .local/kernel/release.decompressed/kernelcache.release.iphone12b.decompressed --research .local/kernel/research.decompressed/kernelcache.research.iphone12b.decompressed --output catalog/ios/23A355/kernel.json
 ```
 
 Run `python3 tools/build_catalog.py fs --help` and `python3 tools/build_catalog.py dyld --help` for catalog arguments. Pass the exact firmware hash, mounted root, volume/image name, and the complete extracted cache directory as appropriate. Use `--platform Driverkit` and the mounted DriverKit dyld directory for its separate catalog. Then run `python3 tools/build_site.py`.
 
 ## Interpretation and limits
 
-A dyld image's install name is a logical path; its executable may be inside the cache without a separate regular file at that path. The [Foundation example](../research/23A355/Foundation.md) shows this directly. This dataset covers three mounted images, the iOS SystemOS arm64e cache family and the separate DriverKit cache. Kernelcache, other firmware components and runtime-generated data remain outside this first catalog.
+A dyld image's install name is a logical path; its executable may be inside the cache without a separate regular file at that path. The [Foundation example](../research/23A355/Foundation.md) shows this directly. This dataset covers all 127 IPSW archive members, mounted contents of all five disk images, the iOS and DriverKit cache families, and both kernelcache variants. Other firmware payloads have hashes and BuildManifest roles but have not been decompiled. Runtime-generated data remains outside this official-distribution catalog.
 
 A trusted device with matching product and build was observed over read-only root SSH through USB. Its RootHide view uses `/rootfs` for the base system while `/` is a jailbreak-specific namespace. The main live cache is under `/private/preboot/Cryptexes/OS/System/Library/Caches/com.apple.dyld/`. All **80** files in that live arm64e cache family matched the corresponding extracted IPSW files by SHA-256; there were no extra or missing files in that family. The live `/rootfs` volume walk counted 430,745 paths including its root, but that namespace is not directly comparable to the three IPSW image catalogs. The separate DriverKit cache also matched the device for all three files by SHA-256; it is outside the 80-file iOS cache count. This live observation is not a clean pre-jailbreak snapshot; IPSW-versus-device differences alone cannot establish jailbreak causation. No private device identifiers are published.
 
