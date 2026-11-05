@@ -434,7 +434,7 @@ def build() -> None:
                 if any(len(row) != 4 or not isinstance(row[0], int) or
                        not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
                        (row[2] is not None and
-                        not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2])) or
+                        not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:|:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2])) or
                        not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
                        not start <= int(row[3], 16) < end for row in rows):
                     raise ValueError(f"invalid method selector or address: {path}")

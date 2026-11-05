@@ -12,6 +12,8 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
+SELECTOR_PATTERN = r"(?:[A-Za-z_][A-Za-z_0-9]*:|:)+|\.?[A-Za-z_][A-Za-z_0-9]*"
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -40,9 +42,12 @@ def selector_from_declaration(line: str) -> tuple[str, str | None]:
     if not body:
         # Preserve an IMP whose selector the dump did not decode.
         return line[0], None
+    if re.fullmatch(SELECTOR_PATTERN, body):
+        # Some dumps print only a raw selector, including empty components.
+        return line[0], body
     pieces = re.findall(r"\b([A-Za-z_][A-Za-z_0-9]*:)\s*\(", body)
     selector = "".join(pieces) if pieces else body
-    if not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", selector):
+    if not re.fullmatch(SELECTOR_PATTERN, selector):
         raise ValueError(f"could not recover selector: {line[:160]}")
     # Bitfield types contain colons, so counting ':' in the whole declaration is incorrect.
     return line[0], selector
