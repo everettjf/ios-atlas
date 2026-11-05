@@ -8,6 +8,7 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`). Static evidence comes f
 2. That executable has SHA-256 `188cef45c06b69dba1f4cbcfb30be85faa6d1c703638ae3ec3c3371f9a03c3f3`. REA/Ghidra identifies its local `entry` at `0x100000568` as a thunk to `_SBSystemAppMain`, and that thunk points to an external `_SBSystemAppMain` imported from `/System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard`. REA Evidence: `ev_2f476096cb74b7b891103bbaa5ecc26416371499ed5fccd47bcf85c60fb82dd9`.
 3. The executable has `LC_LOAD_DYLIB` commands for SpringBoard.framework, Foundation, `libobjc.A.dylib`, and `libSystem.B.dylib`. REA Evidence: `ev_4de480e295d07e8f769ab0d716989293f887c3253834445749a5db28e915ad38`.
 4. The intact SystemOS arm64e dyld shared cache lists the SpringBoard.framework image at that logical install name, with UUID `8676BE2A-9484-3492-888E-7DE10333250F`. None of the three mounted installed-system images has a standalone regular file at that path. `ipsw dyld macho <MAIN_DSC> /System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard --symbols` lists external `_SBSystemAppMain` at `0x21d604c60`.
+5. The [service Mach-O index](../../catalog/ios/23A355/service-macho.json) records all four direct imports of the SpringBoard executable and matches each install name to an image in the same build's iOS shared cache. This is an exact static catalog match, not an observed runtime load.
 
 ## Interpretation
 

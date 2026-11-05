@@ -60,7 +60,7 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 ### 3. Add relationships and research notes — launchd catalog and two component examples completed; deeper traces pending
 
-- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists now have source-bound service records; the SpringBoard note follows one plist through its disk entry point into a cached framework. ObjC/Swift and runtime process ownership remain future research.
+- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists now have source-bound service records, and 600 distinct service executables have 14,843 direct Mach-O load declarations linked to cache or disk catalogs. The SpringBoard note follows one plist through its disk entry point into a cached framework. ObjC/Swift, transitive links, and runtime process ownership remain future research.
 - Follow one user-visible behavior from entry point through framework and service, confirming static hypotheses with bounded runtime observation where needed.
 - Keep analysis evidence and uncertainty attached to each claim. Use REA for focused binary questions after selecting an exact artifact; do not infer execution from decompilation alone.
 

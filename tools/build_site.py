@@ -202,12 +202,80 @@ def build() -> None:
                     len({item["plist_path"] for item in records}) != len(records) or
                     service["mach_service_name_count"] != sum(len(item["mach_services"]) for item in records)):
                 raise ValueError(f"incomplete or mismatched launchd catalog in {directory}")
+            macho_path = directory / "service-macho.json"
+            binaries = []
+            import_info = {}
+            if macho_path.exists():
+                if not driverkit_path.exists():
+                    raise ValueError("service Mach-O catalog requires the DriverKit cache catalog")
+                macho = load(macho_path)
+                binaries = macho["images"]
+                service_keys = {(item["executable"]["matches"][0]["volume"],
+                                 item["executable"]["source_path"])
+                                for item in records if item["executable"]["status"]
+                                in ("direct", "cryptex")}
+                binary_keys = {(item["volume"], item["path"]) for item in binaries}
+                expected_jobs = {}
+                for item in records:
+                    exe = item["executable"]
+                    if exe["status"] in ("direct", "cryptex"):
+                        key = (exe["matches"][0]["volume"], exe["source_path"])
+                        expected_jobs.setdefault(key, set()).add(item["plist_path"])
+                imports = [imp for item in binaries for imp in item["imports"]]
+                file_locations = {}
+                for volume in volumes:
+                    for entry in volume["entries"]:
+                        if entry["type"] == "file":
+                            file_locations.setdefault(entry["path"], set()).add(volume["volume"])
+                cache_identities = {(platform, item["install_name"], item["uuid"])
+                                    for platform, catalog in (("iOS", dyld), ("DriverKit", driverkit))
+                                    for item in catalog["images"]}
+                if (not macho["complete"] or macho["kind"] != "service_executable_macho" or
+                        macho["build"] != build or macho["product_type"] != dyld["product_type"] or
+                        macho["firmware_sha256"] != dyld["firmware_sha256"] or
+                        macho["image_count"] != len(binaries) or
+                        binary_keys != service_keys or len(binary_keys) != len(binaries) or
+                        any(item["kind"] != "macho" or item["file_type"] != "EXECUTE" or
+                            item["volume"] not in file_locations.get(item["path"], ()) or
+                            len(item["sha256"]) != 64 or
+                            set(item["job_plists"]) != expected_jobs[(item["volume"], item["path"])]
+                            for item in binaries) or
+                        macho["direct_import_count"] != len(imports) or
+                        macho["cache_matched_import_count"] != sum(bool(imp["cache_matches"]) for imp in imports) or
+                        macho["file_matched_import_count"] != sum(bool(imp["file_matches"]) for imp in imports) or
+                        macho["unmatched_import_count"] != sum(not imp["cache_matches"] and
+                            not imp["file_matches"] for imp in imports) or
+                        any(any((match["platform"], imp["install_name"], match["uuid"])
+                                not in cache_identities for match in imp["cache_matches"]) or
+                            set(imp["file_matches"]) != file_locations.get(imp["install_name"], set())
+                            for imp in imports)):
+                    raise ValueError(f"incomplete or mismatched service Mach-O catalog in {directory}")
+                consumers = {}
+                for binary in binaries:
+                    key = (binary["volume"], binary["path"])
+                    for imp in binary["imports"]:
+                        for match in imp["cache_matches"]:
+                            consumers.setdefault((match["platform"], imp["install_name"]), set()).add(key)
+                for image in images:
+                    image["service_consumer_count"] = len(consumers.get(("iOS", image["install_name"]), ()))
+                dump(DIST / "data" / f"{build}-dyld.json",
+                     {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
+                      "files": dyld["files"], "images": images})
+                if driverkit_path.exists():
+                    for image in driverkit_images:
+                        image["service_consumer_count"] = len(consumers.get(("DriverKit", image["install_name"]), ()))
+                    dump(DIST / "data" / f"{build}-driverkit.json",
+                         {"schema_version": 1, "build": build, "cache_uuid": driverkit["cache_uuid"],
+                          "files": driverkit["files"], "images": driverkit_images})
+                import_info = {"service_executable_count": len(binaries),
+                               "service_direct_import_count": len(imports),
+                               "service_cache_matched_import_count": macho["cache_matched_import_count"]}
             dump(DIST / "data" / f"{build}-services.json", {"schema_version": 1,
-                 "build": build, "records": records})
+                 "build": build, "records": records, "binaries": binaries})
             service_info = {"launchd_plist_count": len(records),
                             "launchd_job_count": service["job_count"],
                             "mach_service_name_count": service["mach_service_name_count"],
-                            "service_url": f"data/{build}-services.json"}
+                            "service_url": f"data/{build}-services.json", **import_info}
         builds.append({"build": build, "version": "26.0.1",
                        "product_type": dyld["product_type"],
                        "firmware_sha256": dyld["firmware_sha256"],

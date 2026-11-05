@@ -28,13 +28,14 @@ async function dataset(kind, build = state.build) {
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
   const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : await json(kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
   state.datasets.set(key, result);
   return result;
 }
 
-function setTab(tab) {
+function setTab(tab, query = '') {
   state.tab = tab;
-  state.query = '';
+  state.query = query;
   state.volume = 'all';
   state.limit = 80;
   state.selected = null;
@@ -74,11 +75,17 @@ function bindToolbar() {
   if (filter) filter.addEventListener('change', () => { state.volume = filter.value; state.limit = 80; renderResults(); });
 }
 
+function serviceBinary(item, data) {
+  const source = item.executable;
+  return source.matches.length ? data.binaryByKey.get(`${source.matches[0].volume}:${source.source_path}`) : null;
+}
+
 function detailHTML(item, mode, data) {
   if (!item) return `<div class="empty-detail">Select a row to inspect its source and metadata.</div>`;
   if (mode === 'images' || mode === 'driverkit') {
     const present = item.physical_volumes.length > 0;
-    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd></dl><p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'}</p>`;
+    const consumers = item.service_consumer_count;
+    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}</dl><p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Direct imports are static Mach-O load commands, not runtime calls.</p>`;
   }
   if (filesystemMode(mode)) {
     const [volumeIndex, path, type, bytes, target] = item;
@@ -105,7 +112,16 @@ function detailHTML(item, mode, data) {
     const services = item.mach_services.length ? item.mach_services.join(', ') : 'None declared';
     const events = item.launch_events.length ? item.launch_events.join(', ') : 'None declared';
     const keepAlive = item.keep_alive == null ? 'Not declared' : JSON.stringify(item.keep_alive);
-    return `<span class="detail-label">LAUNCHD ${item.kind.toUpperCase()}</span><h3>${escapeHTML(item.label || item.plist_path.split('/').pop())}</h3><dl><dt>PLIST PATH</dt><dd>${escapeHTML(item.plist_path)}</dd><dt>PLIST SHA-256</dt><dd>${escapeHTML(item.plist_sha256)}</dd><dt>PROGRAM</dt><dd>${escapeHTML(item.program || 'Not declared')}</dd><dt>PROGRAM ARGUMENTS</dt><dd>${escapeHTML(args)}</dd><dt>EXECUTABLE RESOLUTION</dt><dd>${escapeHTML(source.status)} · ${escapeHTML(location)}</dd>${source.source_path && source.source_path !== item.program ? `<dt>PATH INSIDE CRYPTEX IMAGE</dt><dd>${escapeHTML(source.source_path)}</dd>` : ''}<dt>MACH SERVICES (${fmt(item.mach_services.length)})</dt><dd>${escapeHTML(services)}</dd><dt>LAUNCH EVENTS (${fmt(item.launch_events.length)})</dt><dd>${escapeHTML(events)}</dd><dt>USER</dt><dd>${escapeHTML(item.user || 'Not declared')}</dd><dt>RUN AT LOAD</dt><dd>${escapeHTML(item.run_at_load == null ? 'Not declared' : String(item.run_at_load))}</dd><dt>KEEP ALIVE</dt><dd>${escapeHTML(keepAlive)}</dd></dl><p class="explain">Parsed from an official FileSystem launchd plist. A declared executable or Mach service is not proof of a running process. “Unresolved” means no matching path in the three scanned IPSW images.</p>`;
+    const binary = serviceBinary(item, data);
+    const imports = binary?.imports || [];
+    const importRows = imports.map((imp) => {
+      const cache = imp.cache_matches[0];
+      const target = cache ? cache.platform === 'DriverKit' ? 'driverkit' : 'images' : imp.file_matches.length ? 'files' : null;
+      const status = cache ? `${cache.platform} CACHE` : imp.file_matches.length ? `${imp.file_matches.join(', ')} FILE` : 'NO CATALOG MATCH';
+      const name = target ? `<button class="inline-link" data-linked-tab="${target}" data-linked-query="${escapeHTML(imp.install_name)}">${escapeHTML(imp.install_name)} ↗</button>` : escapeHTML(imp.install_name);
+      return `<li><span>${name}</span><small>${imp.load_command === 'LC_LOAD_WEAK_DYLIB' ? 'WEAK · ' : ''}${escapeHTML(status)}</small></li>`;
+    }).join('');
+    return `<span class="detail-label">LAUNCHD ${item.kind.toUpperCase()}</span><h3>${escapeHTML(item.label || item.plist_path.split('/').pop())}</h3><dl><dt>PLIST PATH</dt><dd>${escapeHTML(item.plist_path)}</dd><dt>PLIST SHA-256</dt><dd>${escapeHTML(item.plist_sha256)}</dd><dt>PROGRAM</dt><dd>${escapeHTML(item.program || 'Not declared')}</dd><dt>PROGRAM ARGUMENTS</dt><dd>${escapeHTML(args)}</dd><dt>EXECUTABLE RESOLUTION</dt><dd>${escapeHTML(source.status)} · ${escapeHTML(location)}</dd>${source.source_path && source.source_path !== item.program ? `<dt>PATH INSIDE CRYPTEX IMAGE</dt><dd>${escapeHTML(source.source_path)}</dd>` : ''}${binary ? `<dt>EXECUTABLE SHA-256</dt><dd>${escapeHTML(binary.sha256)}</dd><dt>MACH-O UUID</dt><dd>${escapeHTML(binary.macho_uuid)}</dd>` : ''}<dt>MACH SERVICES (${fmt(item.mach_services.length)})</dt><dd>${escapeHTML(services)}</dd><dt>LAUNCH EVENTS (${fmt(item.launch_events.length)})</dt><dd>${escapeHTML(events)}</dd><dt>USER</dt><dd>${escapeHTML(item.user || 'Not declared')}</dd><dt>RUN AT LOAD</dt><dd>${escapeHTML(item.run_at_load == null ? 'Not declared' : String(item.run_at_load))}</dd><dt>KEEP ALIVE</dt><dd>${escapeHTML(keepAlive)}</dd></dl>${binary ? `<div class="direct-imports"><h4>Direct Mach-O loads (${fmt(imports.length)})</h4><ul>${importRows}</ul></div>` : ''}<p class="explain">Parsed from official firmware. Launchd and Mach-O declarations do not prove that a job ran or that dyld loaded every library. “No catalog match” is limited to the scanned IPSW images and cache families.</p>`;
   }
   return `<span class="detail-label">CACHE FILE</span><h3>${escapeHTML(item.name)}</h3><dl><dt>FILE SIZE</dt><dd>${escapeHTML(size(item.size))}</dd><dt>SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>CACHE FAMILY UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd></dl><p class="explain">A physical member of the extracted SystemOS dyld cache family. Its contents are not hosted by this site.</p>`;
 }
@@ -138,7 +154,7 @@ function renderResults() {
   else if (mode === 'images' || mode === 'driverkit') items = data.images.filter((item) => !query || item.install_name.toLocaleLowerCase().includes(query));
   else if (mode === 'archive') items = data.entries.filter((item) => !query || item.path.toLocaleLowerCase().includes(query));
   else if (mode === 'kernel') items = data.kexts.filter((item) => (state.volume === 'all' || item.variant === state.volume) && (!query || `${item.id} ${item.name} ${item.bundle_path}`.toLocaleLowerCase().includes(query)));
-  else if (mode === 'services') items = data.records.filter((item) => (state.volume === 'all' || item.executable.status === state.volume) && (!query || `${item.label} ${item.plist_path} ${item.program} ${item.mach_services.join(' ')} ${item.launch_events.join(' ')}`.toLocaleLowerCase().includes(query)));
+  else if (mode === 'services') items = data.records.filter((item) => (state.volume === 'all' || item.executable.status === state.volume) && (!query || `${item.label} ${item.plist_path} ${item.program} ${item.mach_services.join(' ')} ${item.launch_events.join(' ')} ${serviceBinary(item, data)?.imports.map((imp) => imp.install_name).join(' ') || ''}`.toLocaleLowerCase().includes(query)));
   else items = data.files.filter((item) => !query || item.name.toLocaleLowerCase().includes(query));
   state.selected = items.includes(state.selected) ? state.selected : null;
   renderRows(items, mode, data);
@@ -164,9 +180,13 @@ async function renderExplorer() {
   const data = await dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld');
   if (state.tab !== mode) return;
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
-  const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div></div>` : '';
+  const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div>${activeBuild().service_direct_import_count == null ? '' : `<div><strong>${fmt(activeBuild().service_direct_import_count)} DIRECT LOADS</strong><span>From ${fmt(activeBuild().service_executable_count)} service executables; ${fmt(activeBuild().service_cache_matched_import_count)} match cache images</span></div>`}</div>` : '';
   explorer.innerHTML = kernelSummary + serviceSummary + toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'restore' ? 'Search restore environment paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
+  $('#detail').addEventListener('click', (event) => {
+    const link = event.target.closest('[data-linked-tab]');
+    if (link) setTab(link.dataset.linkedTab, link.dataset.linkedQuery);
+  });
   renderResults();
 }
 

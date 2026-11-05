@@ -8,6 +8,8 @@ The same build also indexes every member of the restore IPSW (127 archive entrie
 
 The **System services** view adds 621 stock launchd plists, their declared executable paths, 2,186 Mach service name declarations, and cryptex-aware path mapping. The [SpringBoard case study](research/23A355/SpringBoard.md) follows one declaration through its disk entry point to an in-cache framework image.
 
+The service dependency index now connects 600 distinct launchd executables to 14,843 direct Mach-O dylib load declarations. The website links each declaration to matching shared-cache images or separate files and shows direct service-consumer counts on cache images.
+
 The [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact inputs and coverage, including a read-only device check: all 83 cache files match the live device by SHA-256, and the published device paths and types occur in the official IPSW indexes. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
 
 ## Build locally
