@@ -571,6 +571,29 @@ def build() -> None:
                 raise ValueError(f"incomplete or mismatched DriverKit cache catalog in {directory}")
             driverkit_images = [{**image, "physical_volumes": physical.get(image["install_name"], [])}
                                 for image in driverkit["images"]]
+            intros_path = directory / "library-intros.json"
+            if intros_path.exists():
+                intros = load(intros_path)
+                by_install_name = {image["install_name"]: image for image in images + driverkit_images}
+                seen_intros = set()
+                if intros["schema_version"] != 1 or intros["build"] != build:
+                    raise ValueError("library introduction catalog identity differs")
+                for entry in intros["entries"]:
+                    name = entry["install_name"]
+                    if (name in seen_intros or name not in by_install_name or
+                            not isinstance(entry["summary"], str) or
+                            not 10 <= len(entry["summary"].strip()) <= 500 or
+                            not isinstance(entry["source_label"], str) or
+                            not entry["source_label"].strip() or
+                            not isinstance(entry["source_url"], str) or
+                            not entry["source_url"].startswith("https://")):
+                        raise ValueError(f"invalid library introduction: {name}")
+                    seen_intros.add(name)
+                    by_install_name[name]["functional_intro"] = {
+                        "summary": entry["summary"],
+                        "source_label": entry["source_label"],
+                        "source_url": entry["source_url"],
+                    }
             dump(DIST / "data" / f"{build}-driverkit.json",
                  {"schema_version": 1, "build": build, "cache_uuid": driverkit["cache_uuid"],
                   "files": driverkit["files"], "images": driverkit_images})

@@ -15,3 +15,4 @@
 #driverkit-function-search{width:100%;margin:12px 0;padding:10px 12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
 #driverkit-function-results li{overflow-wrap:anywhere}
 #driverkit-function-results code{display:block;font:11px var(--mono);color:var(--muted)}
+.detail .explain a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}

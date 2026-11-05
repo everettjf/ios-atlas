@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "build": "23A355",
+  "entries": [
+    {
+      "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
+      "summary": "Foundation supplies core data types and services for strings, collections, dates, persistence, and networking.",
+      "source_url": "https://developer.apple.com/documentation/foundation",
+      "source_label": "Apple Developer: Foundation"
+    },
+    {
+      "install_name": "/System/DriverKit/System/Library/Frameworks/DriverKit.framework/DriverKit",
+      "summary": "DriverKit defines C++ foundations for user-space device drivers, including service structure, event handling, and memory support. This cache record does not establish public iPhone DriverKit availability.",
+      "source_url": "https://developer.apple.com/documentation/driverkit",
+      "source_label": "Apple Developer: DriverKit"
+    }
+  ]
+}
