@@ -5,17 +5,86 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import html
 import json
 import re
 import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "catalog" / "ios"
 SITE = ROOT / "site"
 DIST = ROOT / "dist"
+
+
+def render_note(markdown: str, note_path: str) -> str:
+    """Render the small, explicit Markdown subset used by authored research notes."""
+    base = f"https://github.com/everettjf/ios-atlas/blob/main/{note_path}"
+    tokens = re.compile(r"`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*")
+
+    def inline(value: str) -> str:
+        output = []
+        offset = 0
+        for match in tokens.finditer(value):
+            output.append(html.escape(value[offset:match.start()]))
+            if match[1] is not None:
+                output.append(f"<code>{html.escape(match[1])}</code>")
+            elif match[2] is not None:
+                url = urljoin(base, match[3])
+                if urlparse(url).scheme != "https":
+                    raise ValueError(f"unsupported research link: {match[3]}")
+                output.append(f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">{html.escape(match[2])} ↗</a>')
+            else:
+                output.append(f"<strong>{html.escape(match[4])}</strong>")
+            offset = match.end()
+        output.append(html.escape(value[offset:]))
+        return "".join(output)
+
+    blocks = []
+    paragraph = []
+    list_kind = None
+
+    def close_paragraph() -> None:
+        if paragraph:
+            blocks.append(f"<p>{inline(' '.join(paragraph))}</p>")
+            paragraph.clear()
+
+    def close_list() -> None:
+        nonlocal list_kind
+        if list_kind:
+            blocks.append(f"</{list_kind}>")
+            list_kind = None
+
+    for line in markdown.splitlines():
+        line = line.strip()
+        if not line:
+            close_paragraph()
+            close_list()
+            continue
+        heading = re.match(r"^(#{1,3})\s+(.+)$", line)
+        bullet = re.match(r"^(-|\d+\.)\s+(.+)$", line)
+        if heading:
+            close_paragraph()
+            close_list()
+            level = len(heading[1]) + 1
+            blocks.append(f"<h{level}>{inline(heading[2])}</h{level}>")
+        elif bullet:
+            close_paragraph()
+            kind = "ul" if bullet[1] == "-" else "ol"
+            if list_kind != kind:
+                close_list()
+                blocks.append(f"<{kind}>")
+                list_kind = kind
+            blocks.append(f"<li>{inline(bullet[2])}</li>")
+        else:
+            close_list()
+            paragraph.append(line)
+    close_paragraph()
+    close_list()
+    return "\n".join(blocks)
 
 
 def load(path: Path) -> dict:
@@ -502,6 +571,15 @@ def build() -> None:
     if not builds:
         raise ValueError("no complete catalogs found")
     research = json.loads((ROOT / "research" / "index.json").read_text(encoding="utf-8"))
+    known_builds = {item["build"] for item in builds}
+    if len({note["id"] for note in research}) != len(research):
+        raise ValueError("duplicate research note id")
+    for note in research:
+        source = (ROOT / note["note"]).resolve()
+        if (note["build"] not in known_builds or ROOT / "research" not in source.parents or
+                not source.is_file()):
+            raise ValueError(f"invalid research note source: {note['note']}")
+        note["rendered_html"] = render_note(source.read_text(encoding="utf-8"), note["note"])
     dump(DIST / "data" / "manifest.json",
          {"schema_version": 1, "builds": builds, "research": research})
     digest = hashlib.sha256()

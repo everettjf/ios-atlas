@@ -18,6 +18,8 @@ The **ObjC protocols** view searches 67,351 protocol table entries. A unique ima
 
 The **Swift conformances** view browses 590,036 static type-to-protocol records across 1,553 cached images. Type, protocol, and conformance descriptor addresses are checked against exact Mach-O image segments, including images with duplicate basenames. The site loads one of 64 compressed buckets when a visitor opens an image; raw symbols appear where the inspection tool provided names. This metadata does not establish runtime use.
 
+The **Research** view renders the source-bound component notes on the site, with links to the exact catalog records and source Markdown. Notes can be opened directly by fragment, such as [the SpringBoard launch chain](https://xnu.app/ios-atlas/#research/springboard-launch-chain).
+
 The [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact inputs and coverage, including a read-only device check: all 83 cache files match the live device by SHA-256, and the published device paths and types occur in the official IPSW indexes. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
 
 ## Build locally

@@ -66,7 +66,7 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** one complete, reviewable component page has source build, evidence, dependencies, and known gaps.
 
-### 4. Publish the website — first build completed through GitHub Pages
+### 4. Publish the website — first build and on-site research notes completed through GitHub Pages
 
 - Build a static site with separate **Files**, **Shared-cache images**, **Components**, and **Build comparison** views.
 - A library page shows its logical install name and cache membership, not a fictitious standalone file.

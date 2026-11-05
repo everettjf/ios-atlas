@@ -50,7 +50,7 @@ function setTab(tab, query = '') {
   state.selected = null;
   state.swiftImage = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
-  history.replaceState(null, '', `#${tab}`);
+  history.replaceState(null, '', tab === 'research' && query ? `#research/${encodeURIComponent(query)}` : `#${tab}`);
   render().catch(showError);
   document.querySelector('.workspace').scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -65,13 +65,15 @@ function updateSource() {
   const objc = state.tab === 'objc';
   const protocols = state.tab === 'protocols';
   const swift = state.tab === 'swift';
-  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
+  const research = state.tab === 'research';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. All 3 files matched the connected device by SHA-256.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
     : protocols ? 'Protocol entries come from the intact iOS cache optimization table. Repeated image basenames are kept as ambiguous associations.'
     : swift ? 'Static type-to-protocol conformance records from the intact cache. Addresses resolve to exact Mach-O images; names are raw symbols when available.'
+    : research ? 'Author-written analyses connect exact firmware artifacts and explain the boundary between observed bytes, interpretation and unknowns.'
     : archive ? 'All 127 ZIP entries are indexed by path and role. Artifact presence is distinct from mounted filesystem content.'
     : restore ? 'Erase and Upgrade recovery environments are cataloged separately from the installed iOS filesystem.'
     : kernel ? 'Release and research kernelcaches have distinct UUIDs. Kext metadata and fileset entry counts are separate measurements.'
@@ -296,11 +298,21 @@ async function renderSwiftExplorer() {
 async function renderExplorer() {
   const mode = state.tab;
   const explorer = $('#explorer');
+  explorer.onclick = null;
   explorer.classList.toggle('swift-mode', mode === 'swift');
   updateSource();
   if (mode === 'research') {
     const entries = state.manifest.research.filter((note) => note.build === state.build);
-    explorer.innerHTML = `<div class="research-list">${entries.map((note) => `<article class="research-card"><span class="tag">BUILD ${escapeHTML(note.build)} / COMPONENT NOTE</span><h3>${escapeHTML(note.title)}</h3><p>${escapeHTML(note.summary)}</p><a href="https://github.com/everettjf/ios-atlas/blob/main/${encodeURI(note.note)}" target="_blank" rel="noopener">Read evidence note ↗</a></article>`).join('') || '<p class="empty-state">No published research notes for this build yet.</p>'}</div>`;
+    const selected = entries.find((note) => note.id === state.query);
+    explorer.innerHTML = selected
+      ? `<article class="research-detail"><div class="research-detail-top"><button id="research-back" class="inline-link">← All research</button><span>iPhone 11 · iOS 26.0.1 · ${escapeHTML(selected.build)}</span></div><div class="research-prose">${selected.rendered_html}</div><div class="research-detail-links">${selected.install_name ? `<button class="inline-link" data-linked-tab="images" data-linked-query="${escapeHTML(selected.install_name)}">Inspect cached image ↗</button>` : ''}<a href="https://github.com/everettjf/ios-atlas/blob/main/${encodeURI(selected.note)}" target="_blank" rel="noopener">View source Markdown ↗</a></div></article>`
+      : `<div class="research-list">${entries.map((note) => `<article class="research-card"><span class="tag">BUILD ${escapeHTML(note.build)} / COMPONENT NOTE</span><h3>${escapeHTML(note.title)}</h3><p>${escapeHTML(note.summary)}</p><button class="inline-link" data-research-id="${escapeHTML(note.id)}">Read analysis →</button></article>`).join('') || '<p class="empty-state">No published research notes for this build yet.</p>'}</div>`;
+    $('#research-back')?.addEventListener('click', () => setTab('research'));
+    for (const button of explorer.querySelectorAll('[data-research-id]')) button.addEventListener('click', () => setTab('research', button.dataset.researchId));
+    explorer.onclick = (event) => {
+      const link = event.target.closest('[data-linked-tab]');
+      if (link) setTab(link.dataset.linkedTab, link.dataset.linkedQuery);
+    };
     return;
   }
   if (mode === 'compare') { await renderCompare(); return; }
@@ -379,8 +391,9 @@ async function start() {
   $('#build-select').innerHTML = state.manifest.builds.map((item) => `<option value="${escapeHTML(item.build)}">${escapeHTML(item.version)} · ${escapeHTML(item.build)}</option>`).join('');
   $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.swiftImage = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
-  const initial = location.hash.slice(1);
+  const [initial, noteId] = location.hash.slice(1).split('/', 2);
   if (['files','restore','device','images','objc','protocols','swift','driverkit','caches','archive','kernel','services','research','compare'].includes(initial)) state.tab = initial;
+  if (initial === 'research' && noteId) state.query = decodeURIComponent(noteId);
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
   await render();
 }
