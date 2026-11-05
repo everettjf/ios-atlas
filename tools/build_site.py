@@ -64,6 +64,88 @@ def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dic
             f"{label}_dependency_url": url}
 
 
+def publish_swift(directory: Path, cache: dict, images: list, build: str) -> dict:
+    source = directory / "swift-conformances"
+    if not (source / "index.json").exists():
+        return {}
+    index = load(source / "index.json")
+    segments = load(directory / "dyld-segments.json")
+    keys = ("build", "product_type", "firmware_sha256", "cache_uuid", "platform")
+    expected = [(image["install_name"], image["uuid"]) for image in cache["images"]]
+    segment_images = segments["images"]
+    listed = [(image["install_name"], image["uuid"]) for image in index["images"]]
+    if (not index["complete"] or index["kind"] != "dyld_swift_type_conformances" or
+            index["source"] != "official_ipsw_intact_cache_family" or
+            any(index[key] != cache[key] or segments[key] != cache[key] for key in keys) or
+            not segments["complete"] or segments["kind"] != "dyld_image_macho_segments" or
+            listed != expected or
+            [(image["install_name"], image["uuid"]) for image in segment_images] != expected or
+            len(index["image_counts"]) != len(expected) or
+            len(index["buckets"]) != index["bucket_count"] or
+            index["bucket_count"] != 64 or
+            sum(index["image_counts"]) != index["record_count"] or
+            sum(bucket["record_count"] for bucket in index["buckets"]) != index["record_count"]):
+        raise ValueError(f"incomplete or mismatched Swift catalog in {directory}")
+    ranges = [[(part["addr"], part["addr"] + part["memsz"])
+               for part in image["segments"] if part["name"] != "__LINKEDIT" and part["memsz"]]
+              for image in segment_images]
+    counts = Counter()
+    owner_counts = Counter()
+    objc_owner = {}
+    target = DIST / "data" / f"{build}-swift"
+    target.mkdir(parents=True, exist_ok=True)
+    for number, bucket in enumerate(index["buckets"]):
+        filename = f"b{number:02d}.json.gz"
+        path = source / filename
+        blob = path.read_bytes()
+        if (bucket["file"] != filename or bucket["size"] != len(blob) or
+                bucket["sha256"] != hashlib.sha256(blob).hexdigest()):
+            raise ValueError(f"Swift bucket integrity mismatch: {filename}")
+        data = json.loads(gzip.decompress(blob))
+        rows = data["records"]
+        if (data["build"] != build or data["bucket"] != number or
+                data["schema_version"] != 1 or len(rows) != bucket["record_count"]):
+            raise ValueError(f"Swift bucket identity mismatch: {filename}")
+        for row in rows:
+            if (len(row) != 12 or not isinstance(row[0], int) or
+                    not isinstance(row[1], int) or not isinstance(row[11], bool) or
+                    not all(isinstance(row[pos], int) and 0 <= row[pos] < len(expected)
+                            for pos in (4, 7, 10)) or row[10] % 64 != number):
+                raise ValueError(f"invalid Swift row in {filename}")
+            for address_pos, symbol_pos, image_pos, count_key in (
+                    (2, 3, 4, "named_type"), (5, 6, 7, "named_protocol"),
+                    (8, 9, 10, "named_conformance")):
+                address = row[address_pos]
+                if (not isinstance(address, int) or
+                        not any(start <= address < end for start, end in ranges[row[image_pos]]) or
+                        not (row[symbol_pos] is None or isinstance(row[symbol_pos], str))):
+                    raise ValueError(f"Swift address outside matching image in {filename}")
+                counts[count_key] += row[symbol_pos] is not None
+            owner = objc_owner.setdefault(row[1], row[10])
+            if owner != row[10]:
+                raise ValueError("Swift Objective-C image index maps to multiple images")
+            owner_counts[row[10]] += 1
+            counts["duplicate"] += row[11]
+            counts["record"] += 1
+        shutil.copy2(path, target / filename)
+    if (counts["record"] != index["record_count"] or
+            counts["duplicate"] != index["duplicate_marker_count"] or
+            counts["named_type"] != index["named_type_count"] or
+            counts["named_protocol"] != index["named_protocol_count"] or
+            counts["named_conformance"] != index["named_conformance_count"] or
+            [owner_counts[i] for i in range(len(expected))] != index["image_counts"] or
+            len(owner_counts) != index["image_count_with_conformances"]):
+        raise ValueError(f"Swift catalog count mismatch in {directory}")
+    counts_by_name = {name: owner_counts[index] for index, (name, _) in enumerate(expected)}
+    for image in images:
+        image["swift_conformance_count"] = counts_by_name[image["install_name"]]
+    dump(DIST / "data" / f"{build}-swift-index.json", index)
+    return {"swift_conformance_count": counts["record"],
+            "swift_image_count": len(owner_counts),
+            "swift_url": f"data/{build}-swift-index.json",
+            "swift_bucket_base": f"data/{build}-swift/"}
+
+
 def build() -> None:
     if DIST.exists():
         shutil.rmtree(DIST)
@@ -188,6 +270,7 @@ def build() -> None:
                              "objc_protocol_unique_label_count": resolution_counts["unique_label"],
                              "objc_protocol_ambiguous_label_count": resolution_counts["ambiguous_label"],
                              "objc_protocol_url": f"data/{build}-objc-protocols.json.gz"}
+        swift_info = publish_swift(directory, dyld, images, build)
         dump(DIST / "data" / f"{build}-files.json.gz",
              {"schema_version": 1, "build": build, "volumes": volume_metadata,
               "entries": compact_entries}, compressed=True)
@@ -411,7 +494,7 @@ def build() -> None:
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
                        "dyld_url": f"data/{build}-dyld.json", **dependency_info, **objc_info,
-                       **protocol_info,
+                       **protocol_info, **swift_info,
                        **device_info,
                        **driverkit_info, **archive_info, **restore_info, **kernel_info,
                        **service_info})

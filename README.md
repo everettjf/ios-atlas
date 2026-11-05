@@ -16,6 +16,8 @@ The **Objective-C classes** view searches 216,890 class entries from the iOS cac
 
 The **ObjC protocols** view searches 67,351 protocol table entries. A unique image basename maps to one cached image for 49,497 entries; 17,854 entries retain their ambiguous image labels and show the candidate paths. An image-label association is not proof that the image defines or loads that protocol.
 
+The **Swift conformances** view browses 590,036 static type-to-protocol records across 1,553 cached images. Type, protocol, and conformance descriptor addresses are checked against exact Mach-O image segments, including images with duplicate basenames. The site loads one of 64 compressed buckets when a visitor opens an image; raw symbols appear where the inspection tool provided names. This metadata does not establish runtime use.
+
 The [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact inputs and coverage, including a read-only device check: all 83 cache files match the live device by SHA-256, and the published device paths and types occur in the official IPSW indexes. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
 
 ## Build locally
