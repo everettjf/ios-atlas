@@ -561,6 +561,7 @@ def build() -> None:
         if dependency_path.exists():
             dependency_info = publish_dependencies(dependency_path, dyld, build, "dyld")
         driverkit_info = {}
+        intro_info = {}
         if driverkit_path.exists():
             driverkit = load(driverkit_path)
             if (driverkit["build"] != build or driverkit["product_type"] != dyld["product_type"] or
@@ -586,14 +587,28 @@ def build() -> None:
                             not isinstance(entry["source_label"], str) or
                             not entry["source_label"].strip() or
                             not isinstance(entry["source_url"], str) or
-                            not entry["source_url"].startswith("https://")):
+                            not entry["source_url"].startswith("https://") or
+                            not re.fullmatch(r"[0-9a-f]{64}", entry.get("source_document_sha256", "")) or
+                            not re.fullmatch(r"\d{4}-\d{2}-\d{2}", entry.get("source_checked_at", "")) or
+                            not isinstance(entry.get("verbatim", False), bool) or
+                            (entry.get("verbatim", False) and
+                             len(entry["summary"].split()) > 25)):
                         raise ValueError(f"invalid library introduction: {name}")
                     seen_intros.add(name)
                     by_install_name[name]["functional_intro"] = {
                         "summary": entry["summary"],
                         "source_label": entry["source_label"],
                         "source_url": entry["source_url"],
+                        "verbatim": entry.get("verbatim", False),
                     }
+                intro_info = {"library_functional_intro_count": len(seen_intros),
+                              "ios_functional_intro_count": sum(
+                                  "functional_intro" in image for image in images),
+                              "driverkit_functional_intro_count": sum(
+                                  "functional_intro" in image for image in driverkit_images)}
+                dump(DIST / "data" / f"{build}-dyld.json",
+                     {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
+                      "files": dyld["files"], "images": images})
             dump(DIST / "data" / f"{build}-driverkit.json",
                  {"schema_version": 1, "build": build, "cache_uuid": driverkit["cache_uuid"],
                   "files": driverkit["files"], "images": driverkit_images})
@@ -1181,7 +1196,7 @@ def build() -> None:
                        **method_info,
                        **protocol_info, **swift_info,
                        **device_info,
-                       **driverkit_info, **standalone_info, **archive_info, **restore_info, **kernel_info,
+                       **driverkit_info, **intro_info, **standalone_info, **archive_info, **restore_info, **kernel_info,
                        **service_info})
 
     if not builds:

@@ -3,16 +3,1930 @@
   "build": "23A355",
   "entries": [
     {
-      "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
-      "summary": "Foundation supplies core data types and services for strings, collections, dates, persistence, and networking.",
-      "source_url": "https://developer.apple.com/documentation/foundation",
-      "source_label": "Apple Developer: Foundation"
-    },
-    {
       "install_name": "/System/DriverKit/System/Library/Frameworks/DriverKit.framework/DriverKit",
       "summary": "DriverKit defines C++ foundations for user-space device drivers, including service structure, event handling, and memory support. This cache record does not establish public iPhone DriverKit availability.",
       "source_url": "https://developer.apple.com/documentation/driverkit",
-      "source_label": "Apple Developer: DriverKit"
+      "source_label": "Apple Developer: DriverKit",
+      "source_document_sha256": "2d14a372a0ab1111db71fe385f4bac6e6d253b5018845a0a34296f70e7a07ea6",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ARKit.framework/ARKit",
+      "summary": "ARKit combines device tracking and scene understanding to place virtual content in augmented reality experiences.",
+      "source_url": "https://developer.apple.com/documentation/arkit",
+      "source_label": "Apple Developer: ARKit",
+      "source_document_sha256": "c678f1983df37813e3f48f7c2e704eb594586efeeff47b225d3adffcee1de259",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AVFAudio.framework/AVFAudio",
+      "summary": "Play, record, and process audio; configure your app’s system audio behavior.",
+      "source_url": "https://developer.apple.com/documentation/avfaudio",
+      "source_label": "Apple Developer: AVFAudio",
+      "verbatim": true,
+      "source_document_sha256": "dc2e3366d640e934580f9ca54863fafbe1f1226feaca7be4df2d7977fa79e048",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AVFoundation.framework/AVFoundation",
+      "summary": "AVFoundation provides media capture, playback, asset processing, camera control, and system audio interaction.",
+      "source_url": "https://developer.apple.com/documentation/avfoundation",
+      "source_label": "Apple Developer: AVFoundation",
+      "source_document_sha256": "281131697a2e70282d2e11744b133a9eb35ebbdfbe9363518b59dd7f36d087ef",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AVKit.framework/AVKit",
+      "summary": "Adopt the system’s video playback interfaces, and integrate your camera app with capture hardware.",
+      "source_url": "https://developer.apple.com/documentation/avkit",
+      "source_label": "Apple Developer: AVKit",
+      "verbatim": true,
+      "source_document_sha256": "2b2daeb062204e02e24e225124254df54a023b3a1af6318842da38be6352427a",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AVRouting.framework/AVRouting",
+      "summary": "Display custom destinations to stream media in the system route picker.",
+      "source_url": "https://developer.apple.com/documentation/avrouting",
+      "source_label": "Apple Developer: AVRouting",
+      "verbatim": true,
+      "source_document_sha256": "485f9f1fe8f2460b7db3dcc9b9c6a214edd542e0de1e6a1b058789a12b13f442",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Accelerate.framework/Accelerate",
+      "summary": "Make large-scale mathematical computations and image calculations, optimized for high performance and low energy consumption.",
+      "source_url": "https://developer.apple.com/documentation/accelerate",
+      "source_label": "Apple Developer: Accelerate",
+      "verbatim": true,
+      "source_document_sha256": "47c98979cda3066cb34017c5842980e1116e23eb5d7778618c475138f3475771",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Accessibility.framework/Accessibility",
+      "summary": "Make your apps accessible to everyone who uses Apple devices.",
+      "source_url": "https://developer.apple.com/documentation/accessibility",
+      "source_label": "Apple Developer: Accessibility",
+      "verbatim": true,
+      "source_document_sha256": "8d89cc199c9b71417cefced3be2f7cd14867a488304f23da139ff8ecd0f3e46e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AccessorySetupKit.framework/AccessorySetupKit",
+      "summary": "Enable privacy-preserving discovery and configuration of accessories.",
+      "source_url": "https://developer.apple.com/documentation/accessorysetupkit",
+      "source_label": "Apple Developer: AccessorySetupKit",
+      "verbatim": true,
+      "source_document_sha256": "70b5bcf4f5025194b28c64c434a0a90fc344df5a927a2a944628545a57b4439c",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Accounts.framework/Accounts",
+      "summary": "Help users access and manage their external accounts from within your app, without requiring them to enter login credentials.",
+      "source_url": "https://developer.apple.com/documentation/accounts",
+      "source_label": "Apple Developer: Accounts",
+      "verbatim": true,
+      "source_document_sha256": "6bed0b1bec1e7f47663488fa7ecf550b51320acf7acaca07c34dff66be87cc5a",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ActivityKit.framework/ActivityKit",
+      "summary": "Share live updates from your app as Live Activities that appear in the Dynamic Island and other highly visible locations.",
+      "source_url": "https://developer.apple.com/documentation/activitykit",
+      "source_label": "Apple Developer: ActivityKit",
+      "verbatim": true,
+      "source_document_sha256": "cfb5b8d9b0d2d079cc7e109353b23843596edd36375c44fb8f75e2408ff8a2e9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AdAttributionKit.framework/AdAttributionKit",
+      "summary": "Present, process, and register postbacks for in-app ads in the App Store and alternative app marketplaces.",
+      "source_url": "https://developer.apple.com/documentation/adattributionkit",
+      "source_label": "Apple Developer: AdAttributionKit",
+      "verbatim": true,
+      "source_document_sha256": "078b464e2cd4cbfa2a04f5c8bfc19a31358866d7f40ac215931f2adc0b54eb6e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AdServices.framework/AdServices",
+      "summary": "Attribute app-download campaigns that originate from the App Store on iOS devices.",
+      "source_url": "https://developer.apple.com/documentation/adservices",
+      "source_label": "Apple Developer: AdServices",
+      "verbatim": true,
+      "source_document_sha256": "a928e7712e5ea0dd2210bf3f04d6ea76da8447829d60fb42bf5e084ec573598b",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AdSupport.framework/AdSupport",
+      "summary": "Provide apps with access to an advertising identifier.",
+      "source_url": "https://developer.apple.com/documentation/adsupport",
+      "source_label": "Apple Developer: AdSupport",
+      "verbatim": true,
+      "source_document_sha256": "aba5f67efd8e45f67fed3d63e283c5ed702e10659e2d5a624a699f62356afab2",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AddressBook.framework/AddressBook",
+      "summary": "Access the centralized database for storing users’ contacts.",
+      "source_url": "https://developer.apple.com/documentation/addressbook",
+      "source_label": "Apple Developer: Address Book",
+      "verbatim": true,
+      "source_document_sha256": "a28600c0f3b7d09093d334df4862a7b8a2e303b3287d3d661286d80a1207fc3e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AddressBookUI.framework/AddressBookUI",
+      "summary": "Access users’ contacts and display them in a graphical interface.",
+      "source_url": "https://developer.apple.com/documentation/addressbookui",
+      "source_label": "Apple Developer: Address Book UI",
+      "verbatim": true,
+      "source_document_sha256": "893604ed3f3a7d32e5f3011125d92154b726bbb017858a78ecf50af884ba2906",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AlarmKit.framework/AlarmKit",
+      "summary": "Schedule prominent alarms and countdowns to help people manage their time.",
+      "source_url": "https://developer.apple.com/documentation/alarmkit",
+      "source_label": "Apple Developer: AlarmKit",
+      "verbatim": true,
+      "source_document_sha256": "de0c04517af20f297ca671738f046272723b70549498e1d46c4661b5232ea756",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AppClip.framework/AppClip",
+      "summary": "Create a lightweight, in-the-moment experience or demo version for your app that’s instantly available.",
+      "source_url": "https://developer.apple.com/documentation/appclip",
+      "source_label": "Apple Developer: App Clips",
+      "verbatim": true,
+      "source_document_sha256": "6be9d1bfe2def9c73b707e4224dcb7b7c838e01ed0e91cac0284403165b3c988",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AppIntents.framework/AppIntents",
+      "summary": "Make content and actions discoverable by Apple Intelligence and support system experiences like Siri, Spotlight, Shortcuts, and widgets.",
+      "source_url": "https://developer.apple.com/documentation/appintents",
+      "source_label": "Apple Developer: App Intents",
+      "verbatim": true,
+      "source_document_sha256": "a63237090d2c1db1a98a7c93cb07348f4d545773342e8670ccfc81c730c9dda7",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AppTrackingTransparency.framework/AppTrackingTransparency",
+      "summary": "Request authorization to access app-related data that your app can use to track the person or the device.",
+      "source_url": "https://developer.apple.com/documentation/apptrackingtransparency",
+      "source_label": "Apple Developer: App Tracking Transparency",
+      "verbatim": true,
+      "source_document_sha256": "96dda6d58198960de669d5f9bfec1021208ae7d010055a1585954b64c2b38c6f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AssetsLibrary.framework/AssetsLibrary",
+      "summary": "Access the assets in a user’s media library.",
+      "source_url": "https://developer.apple.com/documentation/assetslibrary",
+      "source_label": "Apple Developer: Assets Library",
+      "verbatim": true,
+      "source_document_sha256": "93d33826513cd797b17516cdff77c6fc0b191316a95ff12de47235c5a15e4299",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Assignables.framework/Assignables",
+      "summary": "A framework that contains wrappers for a PDF to allow creation of an assessment and student work on that assessment.",
+      "source_url": "https://developer.apple.com/documentation/assignables",
+      "source_label": "Apple Developer: Assignables",
+      "verbatim": true,
+      "source_document_sha256": "59ea08ee0a0fb90cf5c826d4d9b743c2560a7cf0c67ddec837f242d1775f41c6",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox",
+      "summary": "Record or play audio, convert formats, parse audio streams, and configure your audio session.",
+      "source_url": "https://developer.apple.com/documentation/audiotoolbox",
+      "source_label": "Apple Developer: Audio Toolbox",
+      "verbatim": true,
+      "source_document_sha256": "97493b947ba1bee84579c2939e58ff8026d72941473816531cd036b7b127d82d",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AuthenticationServices.framework/AuthenticationServices",
+      "summary": "Make it easy for users to log into apps and services.",
+      "source_url": "https://developer.apple.com/documentation/authenticationservices",
+      "source_label": "Apple Developer: Authentication Services",
+      "verbatim": true,
+      "source_document_sha256": "227b9fda6f34c4b72a0e3ff990e51f8ca37b321114e4cebe0acc050849e5da5b",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AutomatedDeviceEnrollment.framework/AutomatedDeviceEnrollment",
+      "summary": "Allow users of third-party MDM apps to add macOS and iOS devices to their organization.",
+      "source_url": "https://developer.apple.com/documentation/automateddeviceenrollment",
+      "source_label": "Apple Developer: Automated Device Enrollment",
+      "verbatim": true,
+      "source_document_sha256": "d6ae16505a31a581a0f103255e8d28743a4ae752295f9754e4a18d5e6ca0ddb9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/AutomaticAssessmentConfiguration.framework/AutomaticAssessmentConfiguration",
+      "summary": "Enter single-app mode and prevent students from accessing specific system features while taking an exam.",
+      "source_url": "https://developer.apple.com/documentation/automaticassessmentconfiguration",
+      "source_label": "Apple Developer: Automatic Assessment Configuration",
+      "verbatim": true,
+      "source_document_sha256": "6f57c19a3c3c13e107d0fd363c4b9b591f1ef4956bfec62309c83719b4d82afd",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/BackgroundAssets.framework/BackgroundAssets",
+      "summary": "Improve or eliminate the time people wait while your app downloads assets.",
+      "source_url": "https://developer.apple.com/documentation/backgroundassets",
+      "source_label": "Apple Developer: Background Assets",
+      "verbatim": true,
+      "source_document_sha256": "da1a20a4a989194974919dac3e9716cd8f1382053b8f0d61795d9cf465900340",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/BackgroundTasks.framework/BackgroundTasks",
+      "summary": "Support background processing in your app by wrapping your app’s most critical work in framework-provided tasks.",
+      "source_url": "https://developer.apple.com/documentation/backgroundtasks",
+      "source_label": "Apple Developer: Background Tasks",
+      "verbatim": true,
+      "source_document_sha256": "dba8bf79e08543e2d38d5516277e45501ec1a011a301f66049657842880bc0ce",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/BrowserEngineCore.framework/BrowserEngineCore",
+      "summary": "Integrate an alternative browser engine into your web browser app.",
+      "source_url": "https://developer.apple.com/documentation/browserenginecore",
+      "source_label": "Apple Developer: BrowserEngineCore",
+      "verbatim": true,
+      "source_document_sha256": "07c55c85ba727115c2dd8ab44bbafa3c4529bab21e30896ce9ef388a8d6fcea9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/BrowserEngineKit.framework/BrowserEngineKit",
+      "summary": "Create a browser that renders content using an alternative browser engine.",
+      "source_url": "https://developer.apple.com/documentation/browserenginekit",
+      "source_label": "Apple Developer: BrowserEngineKit",
+      "verbatim": true,
+      "source_document_sha256": "b91c9ab027a894601d20b098816e76a1c0f3e3f5bdc59b6de64c9f0b238041ea",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/BrowserKit.framework/BrowserKit",
+      "summary": "Transfer browser data to another browser or check a device’s eligibility to use an alternative browser engine.",
+      "source_url": "https://developer.apple.com/documentation/browserkit",
+      "source_label": "Apple Developer: BrowserKit",
+      "verbatim": true,
+      "source_document_sha256": "4a69a58ef62e56f63973ee22ef4066f61174ca5b3049ca2d9a4374f9d03ff00e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CFNetwork.framework/CFNetwork",
+      "summary": "CFNetwork provides network protocol abstractions and services for sockets, HTTP, and changes in network configuration.",
+      "source_url": "https://developer.apple.com/documentation/cfnetwork",
+      "source_label": "Apple Developer: CFNetwork",
+      "verbatim": false,
+      "source_document_sha256": "f5c6fe0ec9db199b3778bb39dbc15d5319cf94bdc21d05bd8d6872b6490acccd",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CallKit.framework/CallKit",
+      "summary": "CallKit integrates VoIP calls with the system calling interface and coordinates calling activity with other apps.",
+      "source_url": "https://developer.apple.com/documentation/callkit",
+      "source_label": "Apple Developer: CallKit",
+      "source_document_sha256": "0a4f39830fc105ea40df2d71d6aaa9588c6be44b5ae60b39c9234da8a6a232b7",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CarKey.framework/CarKey",
+      "summary": "Access the remote keyless features of configured vehicles in the Wallet app.",
+      "source_url": "https://developer.apple.com/documentation/carkey",
+      "source_label": "Apple Developer: CarKey",
+      "verbatim": true,
+      "source_document_sha256": "1f9690fde1858923294f12282fd420a28e054d1c6ef336652db227575cf8eb18",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CarPlay.framework/CarPlay",
+      "summary": "Integrate CarPlay in apps related to audio, communication, navigation, parking, EV charging, food ordering, and more.",
+      "source_url": "https://developer.apple.com/documentation/carplay",
+      "source_label": "Apple Developer: CarPlay",
+      "verbatim": true,
+      "source_document_sha256": "1b11a520c2dfcded67ed976e169c1de4a2ef177bfe46092df1b80c6619c68d0d",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Charts.framework/Charts",
+      "summary": "Construct and customize charts on every Apple platform.",
+      "source_url": "https://developer.apple.com/documentation/charts",
+      "source_label": "Apple Developer: Swift Charts",
+      "verbatim": true,
+      "source_document_sha256": "daa22f25d06929df96695e890c83afdc3e935cfbefd00249cbcd8c966ac0e510",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Cinematic.framework/Cinematic",
+      "summary": "Integrate playback and editing of assets captured in Cinematic mode into your app.",
+      "source_url": "https://developer.apple.com/documentation/cinematic",
+      "source_label": "Apple Developer: Cinematic",
+      "verbatim": true,
+      "source_document_sha256": "1ca82d8f29219c0b3502c5a1ad88290e396fb64459211d5671213f3efff7e823",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ClassKit.framework/ClassKit",
+      "summary": "Enable teachers to assign activities from your app’s content and to view student progress.",
+      "source_url": "https://developer.apple.com/documentation/classkit",
+      "source_label": "Apple Developer: ClassKit",
+      "verbatim": true,
+      "source_document_sha256": "b94bb0d418e5aaa8ebba4c2fdab8d03b1b4e53ee218c8559fe077138afcd2eb1",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ClockKit.framework/ClockKit",
+      "summary": "Display app-specific data on the clock face.",
+      "source_url": "https://developer.apple.com/documentation/clockkit",
+      "source_label": "Apple Developer: ClockKit",
+      "verbatim": true,
+      "source_document_sha256": "0890102af7a6bf730a734f0787495872270587c68cfc5c711a5b6d06c41ed808",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CloudKit.framework/CloudKit",
+      "summary": "CloudKit moves structured app and user data between apps and iCloud containers for sharing and synchronization.",
+      "source_url": "https://developer.apple.com/documentation/cloudkit",
+      "source_label": "Apple Developer: CloudKit",
+      "source_document_sha256": "0ce088230b6c28aa0c8717332429c3eaeea60c8da37cce160bf95b9a44837bb8",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ColorSync.framework/ColorSync",
+      "summary": "Reproduce colors accurately across a range of input, output, and display devices.",
+      "source_url": "https://developer.apple.com/documentation/colorsync",
+      "source_label": "Apple Developer: ColorSync",
+      "verbatim": true,
+      "source_document_sha256": "e3fbb630299125e7a0c2101fbab7f1d2e22527bf6914e7eb090cabc9a5622289",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Combine.framework/Combine",
+      "summary": "Customize handling of asynchronous events by combining event-processing operators.",
+      "source_url": "https://developer.apple.com/documentation/combine",
+      "source_label": "Apple Developer: Combine",
+      "verbatim": true,
+      "source_document_sha256": "b581579aeec1dc9658d5f9ceb70fb35ad89ac640f2a43e95d4bd32c911779b18",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ContactProvider.framework/ContactProvider",
+      "summary": "Provide contacts managed by your app to the system-wide Contacts ecosystem.",
+      "source_url": "https://developer.apple.com/documentation/contactprovider",
+      "source_label": "Apple Developer: ContactProvider",
+      "verbatim": true,
+      "source_document_sha256": "fb0ed0ac818608592aaa0ad5c078e22897f4f276364beaaa93cb99a722ec6927",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Contacts.framework/Contacts",
+      "summary": "Contacts provides access to contact records and tools to format and localize contact information.",
+      "source_url": "https://developer.apple.com/documentation/contacts",
+      "source_label": "Apple Developer: Contacts",
+      "source_document_sha256": "2070952801ca9e9b8864abebb157dd23ebf7897513bbb670072956a984044947",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ContactsUI.framework/ContactsUI",
+      "summary": "Provide an interface that allows people to display information about their contacts.",
+      "source_url": "https://developer.apple.com/documentation/contactsui",
+      "source_label": "Apple Developer: Contacts UI",
+      "verbatim": true,
+      "source_document_sha256": "f42a9b76e9ff3f162fbd9f8112a04406a42d504329761993cce97475f1e5c199",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreAudio.framework/CoreAudio",
+      "summary": "Use the Core Audio framework to interact with device’s audio hardware.",
+      "source_url": "https://developer.apple.com/documentation/coreaudio",
+      "source_label": "Apple Developer: Core Audio",
+      "verbatim": true,
+      "source_document_sha256": "3fbaa118554de16501060fe755c8c818c012afa731a7f0f79fe1802b96451ba4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreAudioKit.framework/CoreAudioKit",
+      "summary": "Add user interfaces to audio units.",
+      "source_url": "https://developer.apple.com/documentation/coreaudiokit",
+      "source_label": "Apple Developer: CoreAudioKit",
+      "verbatim": true,
+      "source_document_sha256": "385a5b1759fe3684fdd904f4e07abc14f02292cad6d745506d358550fa85b764",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreBluetooth.framework/CoreBluetooth",
+      "summary": "Core Bluetooth provides APIs for communicating with Bluetooth Low Energy and BR/EDR devices.",
+      "source_url": "https://developer.apple.com/documentation/corebluetooth",
+      "source_label": "Apple Developer: Core Bluetooth",
+      "source_document_sha256": "dfe0140ea2ba859cad2df2e2b5f77af5e5aa54257e4dc1f8fef195741d76e12f",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreData.framework/CoreData",
+      "summary": "Core Data persists and caches app data, supports undo, and can synchronize stored data through CloudKit.",
+      "source_url": "https://developer.apple.com/documentation/coredata",
+      "source_label": "Apple Developer: Core Data",
+      "source_document_sha256": "45418b6956bff8db9c57516a502e2a38319033901f3e239f355af43d27b54cb0",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
+      "summary": "Access low-level functions, primitive data types, and various collection types that are bridged seamlessly with the Foundation framework.",
+      "source_url": "https://developer.apple.com/documentation/corefoundation",
+      "source_label": "Apple Developer: Core Foundation",
+      "verbatim": true,
+      "source_document_sha256": "1f8675389dbd29d1933da1fbc0ee95c0fd6d0ad0fa15079905d2d7a7f3fee06d",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+      "summary": "Core Graphics provides low-level 2D drawing for paths, images, color, and PDF content.",
+      "source_url": "https://developer.apple.com/documentation/coregraphics",
+      "source_label": "Apple Developer: Core Graphics",
+      "source_document_sha256": "cf86f3723cf68dba8533b4e7c7452ea0043b6b5233705600f04818cffa73c8d3",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreHaptics.framework/CoreHaptics",
+      "summary": "Compose and play haptic patterns to customize your iOS app’s haptic feedback.",
+      "source_url": "https://developer.apple.com/documentation/corehaptics",
+      "source_label": "Apple Developer: Core Haptics",
+      "verbatim": true,
+      "source_document_sha256": "287d80fa55b8a69c4c2588aa1b409376c95139031bc11871dcf18442baefac04",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreImage.framework/CoreImage",
+      "summary": "Core Image processes still and video images with built-in or custom image filters.",
+      "source_url": "https://developer.apple.com/documentation/coreimage",
+      "source_label": "Apple Developer: Core Image",
+      "source_document_sha256": "c978f77498eb17282852adc7d430e4d055f60feef7ea1e73d82072d8f46d9934",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreLocation.framework/CoreLocation",
+      "summary": "Core Location supplies device location, altitude, orientation, and proximity information from available sensors.",
+      "source_url": "https://developer.apple.com/documentation/corelocation",
+      "source_label": "Apple Developer: Core Location",
+      "source_document_sha256": "11e88ebb6e2294260c9a747a78e91bd87bf40f14d529e937510652fb3f181f76",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreLocationUI.framework/CoreLocationUI",
+      "summary": "Streamline access to users’ location data through a standard, secure UI.",
+      "source_url": "https://developer.apple.com/documentation/corelocationui",
+      "source_label": "Apple Developer: CoreLocationUI",
+      "verbatim": true,
+      "source_document_sha256": "c9afec7e58674b73cc23169545f4b7808c02a37b31def6de07201af37aee2e29",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreMIDI.framework/CoreMIDI",
+      "summary": "Communicate with MIDI devices such as hardware keyboards and synthesizers.",
+      "source_url": "https://developer.apple.com/documentation/coremidi",
+      "source_label": "Apple Developer: Core MIDI",
+      "verbatim": true,
+      "source_document_sha256": "e5fc4c04b00a8c19ffef650f1c952c85e16734eebb7d29419a0f7a3a2e574499",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreML.framework/CoreML",
+      "summary": "Core ML integrates machine learning models for prediction and supported on-device model updates.",
+      "source_url": "https://developer.apple.com/documentation/coreml",
+      "source_label": "Apple Developer: Core ML",
+      "source_document_sha256": "faf6f5a3418634937fc1d7d25b6caf759fb34200d623488912b255d52ee762af",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreMedia.framework/CoreMedia",
+      "summary": "Represent time-based audio-visual assets with essential data types.",
+      "source_url": "https://developer.apple.com/documentation/coremedia",
+      "source_label": "Apple Developer: Core Media",
+      "verbatim": true,
+      "source_document_sha256": "c59760aefd10051c235c827e6d1ca27815b200c171c9dea0f71361ff81afdefc",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreMediaIO.framework/CoreMediaIO",
+      "summary": "Securely support custom camera devices in macOS.",
+      "source_url": "https://developer.apple.com/documentation/coremediaio",
+      "source_label": "Apple Developer: Core Media I/O",
+      "verbatim": true,
+      "source_document_sha256": "e4436013488fc156705e6fcb84622dc136b8293938f16ad011116a6eab0c2000",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreMotion.framework/CoreMotion",
+      "summary": "Core Motion reports motion and environmental sensor data such as accelerometer, gyroscope, pedometer, and barometer readings.",
+      "source_url": "https://developer.apple.com/documentation/coremotion",
+      "source_label": "Apple Developer: Core Motion",
+      "source_document_sha256": "6b8ab50a238b6319c81da78030dfe99413cc908a8f50a18ca2c9fa0e2a7a1b65",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreNFC.framework/CoreNFC",
+      "summary": "Detect NFC tags, read messages that contain NDEF data, and save data to writable tags.",
+      "source_url": "https://developer.apple.com/documentation/corenfc",
+      "source_label": "Apple Developer: Core NFC",
+      "verbatim": true,
+      "source_document_sha256": "7ebac49cea15ba8ccc15e59c44f20fd6f67a8762ae9c70cbdf38c299a6f3b1e9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreSpotlight.framework/CoreSpotlight",
+      "summary": "Add search capabilities to your app, and index your content so people can find it from Spotlight and Safari.",
+      "source_url": "https://developer.apple.com/documentation/corespotlight",
+      "source_label": "Apple Developer: Core Spotlight",
+      "verbatim": true,
+      "source_document_sha256": "02a8ff6dff8b626d16715157edb17032247de134f78b005526e74343be1c9d88",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreTelephony.framework/CoreTelephony",
+      "summary": "Access information about a user’s cellular service provider, such as its unique identifier and whether the carrier allows VoIP.",
+      "source_url": "https://developer.apple.com/documentation/coretelephony",
+      "source_label": "Apple Developer: Core Telephony",
+      "verbatim": true,
+      "source_document_sha256": "5246e0f33dcb9b088b1f13cd44e445c03da4f9be3603b7f9b8544b578b1d7a56",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreText.framework/CoreText",
+      "summary": "Core Text supplies low-level text layout, font handling, glyph access, and text metrics.",
+      "source_url": "https://developer.apple.com/documentation/coretext",
+      "source_label": "Apple Developer: Core Text",
+      "source_document_sha256": "f61683822df77383e8935c86ff69bf7248e44f0332056cf0f3c6700b4c8cc3cd",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreTransferable.framework/CoreTransferable",
+      "summary": "Declare a transfer representation for your model types to participate in system sharing and data transfer operations.",
+      "source_url": "https://developer.apple.com/documentation/coretransferable",
+      "source_label": "Apple Developer: Core Transferable",
+      "verbatim": true,
+      "source_document_sha256": "678d18508bba4f495affa7d56bc1a58bc9786f6f7e36b71a5630c448fe51c118",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CoreVideo.framework/CoreVideo",
+      "summary": "Process digital video, including manipulation of individual frames, using a pipeline-based API and support for both Metal and OpenGL.",
+      "source_url": "https://developer.apple.com/documentation/corevideo",
+      "source_label": "Apple Developer: Core Video",
+      "verbatim": true,
+      "source_document_sha256": "65c086ef9d161fe54425e4d7424117702f7ad14abdcd28cfbae25d5371fbc3a4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CreateML.framework/CreateML",
+      "summary": "Create machine learning models for use in your app.",
+      "source_url": "https://developer.apple.com/documentation/createml",
+      "source_label": "Apple Developer: Create ML",
+      "verbatim": true,
+      "source_document_sha256": "659fcd56daae097976c35243fbeec4e9487208e06453715b0ed2bf698e4c5df6",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CreateMLComponents.framework/CreateMLComponents",
+      "summary": "Create more customizable machine learning models in your app.",
+      "source_url": "https://developer.apple.com/documentation/createmlcomponents",
+      "source_label": "Apple Developer: Create ML Components",
+      "verbatim": true,
+      "source_document_sha256": "1ffd42464adc35b445cfc592e3bb343095e30f5bb3331e62bbde9d043eef48c8",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CryptoKit.framework/CryptoKit",
+      "summary": "Perform cryptographic operations securely and efficiently.",
+      "source_url": "https://developer.apple.com/documentation/cryptokit",
+      "source_label": "Apple Developer: Apple CryptoKit",
+      "verbatim": true,
+      "source_document_sha256": "fb5a5244a2185e0c5cb8e27a1a7989a78839406a712563db40f15b7f735a9790",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/CryptoTokenKit.framework/CryptoTokenKit",
+      "summary": "Access security tokens and the cryptographic assets they store.",
+      "source_url": "https://developer.apple.com/documentation/cryptotokenkit",
+      "source_label": "Apple Developer: CryptoTokenKit",
+      "verbatim": true,
+      "source_document_sha256": "33e36880e920b2366c2e87f5e84c03f2025d243726d0e92f8308d3044ef4b239",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DataDetection.framework/DataDetection",
+      "summary": "Access and utilize common types of data that the data detection system matches.",
+      "source_url": "https://developer.apple.com/documentation/datadetection",
+      "source_label": "Apple Developer: DataDetection",
+      "verbatim": true,
+      "source_document_sha256": "4fb8abac60c72d40ed9ed8d0d34749b303e159d00bec7456597f894e15ae53e8",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DeclaredAgeRange.framework/DeclaredAgeRange",
+      "summary": "Create age-appropriate experiences in your app by asking people to share their age range.",
+      "source_url": "https://developer.apple.com/documentation/declaredagerange",
+      "source_label": "Apple Developer: Declared Age Range",
+      "verbatim": true,
+      "source_document_sha256": "60ac882b0a81e17a7e4694bb3c14198c0278d862c9316421e8f031a626e684a4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DeveloperToolsSupport.framework/DeveloperToolsSupport",
+      "summary": "Expose custom views and modifiers in the Xcode library.",
+      "source_url": "https://developer.apple.com/documentation/developertoolssupport",
+      "source_label": "Apple Developer: DeveloperToolsSupport",
+      "verbatim": true,
+      "source_document_sha256": "08cbcbe9289c50405463735488698f1c527e88ba9703a634eed3e399335e577b",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DeviceActivity.framework/DeviceActivity",
+      "summary": "Monitor device activity with your app extension while maintaining privacy.",
+      "source_url": "https://developer.apple.com/documentation/deviceactivity",
+      "source_label": "Apple Developer: Device Activity",
+      "verbatim": true,
+      "source_document_sha256": "4257f5c221d9702f10b3bbc4db34412cc711e10bc0e099533b78fc100b127789",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DeviceCheck.framework/DeviceCheck",
+      "summary": "Reduce fraudulent use of your services by managing device state and asserting app integrity.",
+      "source_url": "https://developer.apple.com/documentation/devicecheck",
+      "source_label": "Apple Developer: DeviceCheck",
+      "verbatim": true,
+      "source_document_sha256": "250adbea1081059df2af2546cdb7a49cf328bc63fa454da5ab366445a6da5786",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DeviceDiscoveryExtension.framework/DeviceDiscoveryExtension",
+      "summary": "Stream media to a third-party device that a user selects in a system menu.",
+      "source_url": "https://developer.apple.com/documentation/devicediscoveryextension",
+      "source_label": "Apple Developer: DeviceDiscoveryExtension",
+      "verbatim": true,
+      "source_document_sha256": "8af5ce126b5caa4b55b5414cb5a47832de497843f4fd6bd4c8296d9a1bdd3390",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DeviceDiscoveryUI.framework/DeviceDiscoveryUI",
+      "summary": "Display an interface that lets people connect iOS, iPadOS, tvOS, watchOS, and Mac Catalyst apps over peer-to-peer networks.",
+      "source_url": "https://developer.apple.com/documentation/devicediscoveryui",
+      "source_label": "Apple Developer: DeviceDiscoveryUI",
+      "verbatim": true,
+      "source_document_sha256": "e0e82035e3affff139fb7d21fe76c388634df658658b1835b9da1cfdb7496734",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DockKit.framework/DockKit",
+      "summary": "Interact with accessories that track subjects on camera as they move around.",
+      "source_url": "https://developer.apple.com/documentation/dockkit",
+      "source_label": "Apple Developer: DockKit",
+      "verbatim": true,
+      "source_document_sha256": "a3278bf4f42df514c9c3dba2cd123660c73e7bd9f8c25a201060f5d89507f899",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/DriverKit.framework/DriverKit",
+      "summary": "Develop device drivers that run in user space.",
+      "source_url": "https://developer.apple.com/documentation/driverkit",
+      "source_label": "Apple Developer: DriverKit",
+      "verbatim": true,
+      "source_document_sha256": "2d14a372a0ab1111db71fe385f4bac6e6d253b5018845a0a34296f70e7a07ea6",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/EnergyKit.framework/EnergyKit",
+      "summary": "Provide grid forecasts and energy insights to help people optimize their electricity usage.",
+      "source_url": "https://developer.apple.com/documentation/energykit",
+      "source_label": "Apple Developer: EnergyKit",
+      "verbatim": true,
+      "source_document_sha256": "05fe79090bf3bd3308259f81fb775db086888507daaeafa4ea2fae3d55d0684c",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/EventKit.framework/EventKit",
+      "summary": "EventKit lets apps create, read, and edit calendar events and reminders with the appropriate access.",
+      "source_url": "https://developer.apple.com/documentation/eventkit",
+      "source_label": "Apple Developer: EventKit",
+      "source_document_sha256": "fd07913aad268fe1930de4822c4e8384ccc3d91d2b1489eab3283bec0dc123d2",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/EventKitUI.framework/EventKitUI",
+      "summary": "Display an interface for viewing, selecting, and editing calendar events and reminders.",
+      "source_url": "https://developer.apple.com/documentation/eventkitui",
+      "source_label": "Apple Developer: EventKit UI",
+      "verbatim": true,
+      "source_document_sha256": "5ced10acd017d5dcf3dbc460beaed98b7bcc8b0d256c640005f51a247375823d",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ExposureNotification.framework/ExposureNotification",
+      "summary": "Implement a COVID-19 exposure notification system that protects user privacy.",
+      "source_url": "https://developer.apple.com/documentation/exposurenotification",
+      "source_label": "Apple Developer: Exposure Notification",
+      "verbatim": true,
+      "source_document_sha256": "e1f94211114daded54e54d0de4d46832f9786efa5de4eb009002729f62a96147",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ExtensionFoundation.framework/ExtensionFoundation",
+      "summary": "Create executable bundles to extend the functionality of other apps.",
+      "source_url": "https://developer.apple.com/documentation/extensionfoundation",
+      "source_label": "Apple Developer: ExtensionFoundation",
+      "verbatim": true,
+      "source_document_sha256": "1fb57ddf53a3f93bc145db76a5a8c8d65b75aa36ba662b32c0302375b399b7ea",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ExtensionKit.framework/ExtensionKit",
+      "summary": "Make custom UI from an app extension available in a host app, and manage the list of enabled and disabled app extensions.",
+      "source_url": "https://developer.apple.com/documentation/extensionkit",
+      "source_label": "Apple Developer: ExtensionKit",
+      "verbatim": true,
+      "source_document_sha256": "71241411ef869c31581ddb1b7d18ae22e6d5953520c0337f68ce67fab2281ef4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ExternalAccessory.framework/ExternalAccessory",
+      "summary": "Communicate with accessories that connect to a device with the Apple Lightning connector, or with Bluetooth wireless technology.",
+      "source_url": "https://developer.apple.com/documentation/externalaccessory",
+      "source_label": "Apple Developer: External Accessory",
+      "verbatim": true,
+      "source_document_sha256": "a56fbd4e4ebc3e780e4c9e16e7f6eb0eee607dfd536d5d9a446ffc4aab11b85f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/FamilyControls.framework/FamilyControls",
+      "summary": "Authorize your app to provide parental controls on a device.",
+      "source_url": "https://developer.apple.com/documentation/familycontrols",
+      "source_label": "Apple Developer: Family Controls",
+      "verbatim": true,
+      "source_document_sha256": "f06844abdc581f58ab5cfc3a590e35ce4e49c397d22b7613a71f72e16737c8ee",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/FileProvider.framework/FileProvider",
+      "summary": "File Provider lets an app expose and synchronize its managed files through a system extension used by other apps.",
+      "source_url": "https://developer.apple.com/documentation/fileprovider",
+      "source_label": "Apple Developer: File Provider",
+      "source_document_sha256": "b2991cbd66908ae66e27be6ede0bca315ecab6342a6d50665c9eb07377db87f7",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/FileProviderUI.framework/FileProviderUI",
+      "summary": "Add actions to the document browser’s context menu.",
+      "source_url": "https://developer.apple.com/documentation/fileproviderui",
+      "source_label": "Apple Developer: File Provider UI",
+      "verbatim": true,
+      "source_document_sha256": "b1aac9d94dcf9ced91f0308cc3afd684d5b51e5cfce374dedc242acc1fe877d0",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/FinanceKit.framework/FinanceKit",
+      "summary": "Access financial data and interact with Apple Card, Apple Cash, and orders in Wallet.",
+      "source_url": "https://developer.apple.com/documentation/financekit",
+      "source_label": "Apple Developer: FinanceKit",
+      "verbatim": true,
+      "source_document_sha256": "15d4d2f8e3507767dbb30a5e681510afe2697907ef71b22a3d46cd543faeb716",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/FinanceKitUI.framework/FinanceKitUI",
+      "summary": "Add orders to Apple Wallet.",
+      "source_url": "https://developer.apple.com/documentation/financekitui",
+      "source_label": "Apple Developer: FinanceKitUI",
+      "verbatim": true,
+      "source_document_sha256": "0b6ef5471864fef89bd7d46a99961834bc4663aaa97c1abb3180cdf4192a59dd",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
+      "summary": "Foundation supplies core data types and services for strings, collections, dates, persistence, and networking.",
+      "source_url": "https://developer.apple.com/documentation/foundation",
+      "source_label": "Apple Developer: Foundation",
+      "source_document_sha256": "f8ea294a1cba1c8392e3eedcf04ab5faa4483fa0713a3011233b64182133fb67",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/FoundationModels.framework/FoundationModels",
+      "summary": "Perform tasks with models that specialize in language understanding, structured output, and tool calling.",
+      "source_url": "https://developer.apple.com/documentation/foundationmodels",
+      "source_label": "Apple Developer: Foundation Models",
+      "verbatim": true,
+      "source_document_sha256": "b809499069ba658449c7d50a208cc535f7de551a67d281b2b3e23dc26b7f392c",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GLKit.framework/GLKit",
+      "summary": "GLKit supplies math, texture loading, effects, and view helpers for OpenGL and OpenGL ES apps.",
+      "source_url": "https://developer.apple.com/documentation/glkit",
+      "source_label": "Apple Developer: GLKit",
+      "verbatim": false,
+      "source_document_sha256": "51354da075d5adfb34f557572ee5507e13e836b41c8af9bd0e7b2bdc1a9c17c5",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GSS.framework/GSS",
+      "summary": "Conduct secure, authenticated network transactions.",
+      "source_url": "https://developer.apple.com/documentation/gss",
+      "source_label": "Apple Developer: GSS",
+      "verbatim": true,
+      "source_document_sha256": "d5b289b80eeac35b4e12731700533e9acd88bc65c045207847cd09375097def4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GameController.framework/GameController",
+      "summary": "Support hardware game controllers in your game.",
+      "source_url": "https://developer.apple.com/documentation/gamecontroller",
+      "source_label": "Apple Developer: Game Controller",
+      "verbatim": true,
+      "source_document_sha256": "bf0142a6653503184b97dd2365edfa19065294c963e96bf14016a1edfde3b2c1",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GameKit.framework/GameKit",
+      "summary": "Enable players to interact with friends, compare leaderboard ranks, earn achievements, and participate in multiplayer games.",
+      "source_url": "https://developer.apple.com/documentation/gamekit",
+      "source_label": "Apple Developer: GameKit",
+      "verbatim": true,
+      "source_document_sha256": "04f68730f28836627eba3ee43b039074cf17735dd2e2d48156da8a2a9f4e6f92",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GameSave.framework/GameSave",
+      "summary": "Store and sync your application’s save files in iCloud.",
+      "source_url": "https://developer.apple.com/documentation/gamesave",
+      "source_label": "Apple Developer: GameSave",
+      "verbatim": true,
+      "source_document_sha256": "8fbf485c8a7dbaeac04a77804734e7af0213acf12a0abd3b035d91186e732ad9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GameplayKit.framework/GameplayKit",
+      "summary": "Architect and organize your game logic. Incorporate common gameplay behaviors such as random number generation, artificial intelligence, pathfinding, and agent behavior.",
+      "source_url": "https://developer.apple.com/documentation/gameplaykit",
+      "source_label": "Apple Developer: GameplayKit",
+      "verbatim": true,
+      "source_document_sha256": "8fc5e0ffea844d2d5541a8667b57723bd981f9be86ea2254dc0aa854f5171c82",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GeoToolbox.framework/GeoToolbox",
+      "summary": "Determine place descriptor information for map coordinates.",
+      "source_url": "https://developer.apple.com/documentation/geotoolbox",
+      "source_label": "Apple Developer: GeoToolbox",
+      "verbatim": true,
+      "source_document_sha256": "767a0f0d0407f69c0b06ae772f0bfa9da167d91c46672451363e66c438518a5a",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/GroupActivities.framework/GroupActivities",
+      "summary": "Create app-specific activities your users can share and experience together.",
+      "source_url": "https://developer.apple.com/documentation/groupactivities",
+      "source_label": "Apple Developer: Group Activities",
+      "verbatim": true,
+      "source_document_sha256": "f6f54b3a3414bfd9fba5dada7c4c511ad11008d142646bf37332836ccefa2ed8",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/HealthKit.framework/HealthKit",
+      "summary": "HealthKit stores health and fitness data and gives apps permission-based access to read and share it.",
+      "source_url": "https://developer.apple.com/documentation/healthkit",
+      "source_label": "Apple Developer: HealthKit",
+      "source_document_sha256": "b8160a4ac738b09dd4bf829660a095a18f55fa0ee31e8e062d987953ebf4802b",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/HealthKitUI.framework/HealthKitUI",
+      "summary": "Display user interface that enables a person to view and interact with their health data.",
+      "source_url": "https://developer.apple.com/documentation/healthkitui",
+      "source_label": "Apple Developer: HealthKitUI",
+      "verbatim": true,
+      "source_document_sha256": "0f19e2e9c73e1be6b21e7b230aeb349cf6aa9f69d01f781caa193392ec2a3475",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/HomeKit.framework/HomeKit",
+      "summary": "HomeKit supports configuring, communicating with, and controlling home automation accessories.",
+      "source_url": "https://developer.apple.com/documentation/homekit",
+      "source_label": "Apple Developer: HomeKit",
+      "source_document_sha256": "2dd90f9f59bcf8f5608ba0ffaecfe52a56899e66f0e67902ecaa4d1ce741ca96",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/IOSurface.framework/IOSurface",
+      "summary": "Share hardware-accelerated buffer data (framebuffers and textures) across multiple processes. Manage image memory more efficiently.",
+      "source_url": "https://developer.apple.com/documentation/iosurface",
+      "source_label": "Apple Developer: IOSurface",
+      "verbatim": true,
+      "source_document_sha256": "42550118b57ec14b982159ac9438e7b0e15c9201d1a96eb12b5245d093195720",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/IdentityDocumentServices.framework/IdentityDocumentServices",
+      "summary": "Share mobile documents using the Digital Credentials API.",
+      "source_url": "https://developer.apple.com/documentation/identitydocumentservices",
+      "source_label": "Apple Developer: IdentityDocumentServices",
+      "verbatim": true,
+      "source_document_sha256": "05189a1fbafb4ced077f0763809b63605cf238ae2ff65c615aed1cebd83b267c",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/IdentityDocumentServicesUI.framework/IdentityDocumentServicesUI",
+      "summary": "Provide an interface so people can present mobile documents.",
+      "source_url": "https://developer.apple.com/documentation/identitydocumentservicesui",
+      "source_label": "Apple Developer: IdentityDocumentServicesUI",
+      "verbatim": true,
+      "source_document_sha256": "574cc918b10d9bc6414dc27802f5dd1ecb14f6fa0873c6ab2339db79fec86f5e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/IdentityLookup.framework/IdentityLookup",
+      "summary": "Create app extensions to manage and report unwanted SMS messages and spam calls.",
+      "source_url": "https://developer.apple.com/documentation/identitylookup",
+      "source_label": "Apple Developer: SMS and Call Reporting",
+      "verbatim": true,
+      "source_document_sha256": "0e944cb41cdf46a8b701d76f1ee4d9b5cfa7f48cdfae3f90f5f4994b8b77b7a7",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ImageCaptureCore.framework/ImageCaptureCore",
+      "summary": "Browse for media devices and control them programmatically from your app.",
+      "source_url": "https://developer.apple.com/documentation/imagecapturecore",
+      "source_label": "Apple Developer: ImageCaptureCore",
+      "verbatim": true,
+      "source_document_sha256": "ac8763bfde23d2556ef23bd9e5a27f12fa520bcdf9c6575def45b4254714c80e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ImageIO.framework/ImageIO",
+      "summary": "Read and write most image file formats, and access an image’s metadata.",
+      "source_url": "https://developer.apple.com/documentation/imageio",
+      "source_label": "Apple Developer: Image I/O",
+      "verbatim": true,
+      "source_document_sha256": "9678d1d7563957413b1e4dde17506be3a6a1267db80f25babb608388a2363641",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ImagePlayground.framework/ImagePlayground",
+      "summary": "Present a system interface to generate images based on descriptive information.",
+      "source_url": "https://developer.apple.com/documentation/imageplayground",
+      "source_label": "Apple Developer: Image Playground",
+      "verbatim": true,
+      "source_document_sha256": "627bef1f1911eea8b335b17790505ddc56458ac6ee5e5934ed4c0e831330cda4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Intents.framework/Intents",
+      "summary": "Empower people to customize interactions for your app on their device.",
+      "source_url": "https://developer.apple.com/documentation/intents",
+      "source_label": "Apple Developer: Intents",
+      "verbatim": true,
+      "source_document_sha256": "ac490ff2a4c231fd0bc0bef61434aa3ee44cce2d634ef6ce1364c2d067622ab7",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/IntentsUI.framework/IntentsUI",
+      "summary": "Customize content in the interface for Siri and Maps.",
+      "source_url": "https://developer.apple.com/documentation/intentsui",
+      "source_label": "Apple Developer: IntentsUI",
+      "verbatim": true,
+      "source_document_sha256": "ec7f2be19eed153730d7b60f7dd69cf0eea236adea9a3b86c874013585cc6fbd",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore",
+      "summary": "Evaluate JavaScript programs from within an app, and support JavaScript scripting of your app.",
+      "source_url": "https://developer.apple.com/documentation/javascriptcore",
+      "source_label": "Apple Developer: JavaScriptCore",
+      "verbatim": true,
+      "source_document_sha256": "9f8449d1cd36d1e31c883df8e7c3e87f3c83f5b57b387d0de48b39c27b37cdf7",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/JournalingSuggestions.framework/JournalingSuggestions",
+      "summary": "Display a set of recent, personal events that inspire someone to contribute to your app’s creative workflow.",
+      "source_url": "https://developer.apple.com/documentation/journalingsuggestions",
+      "source_label": "Apple Developer: Journaling Suggestions",
+      "verbatim": true,
+      "source_document_sha256": "5388c999d03625e53c5b24af964b0d46054a6a3b267d10fdac7559fc4ea164b1",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/LightweightCodeRequirements.framework/LightweightCodeRequirements",
+      "summary": "Test the identity of executable code on disk and in running processes.",
+      "source_url": "https://developer.apple.com/documentation/lightweightcoderequirements",
+      "source_label": "Apple Developer: LightweightCodeRequirements",
+      "verbatim": true,
+      "source_document_sha256": "fefaf2ceabfca6aa2ff13448744a59f4fed747b46424234da0c559843e35d361",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/LinkPresentation.framework/LinkPresentation",
+      "summary": "Fetch, provide, and present rich links in your app.",
+      "source_url": "https://developer.apple.com/documentation/linkpresentation",
+      "source_label": "Apple Developer: Link Presentation",
+      "verbatim": true,
+      "source_document_sha256": "64d967adfa2860da5bb01972082bc8ef5dcc7d7612a83df7adfe8fcecb69ebd6",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/LiveCommunicationKit.framework/LiveCommunicationKit",
+      "summary": "LiveCommunicationKit coordinates VoIP and cellular conversations with the system and other communication apps.",
+      "source_url": "https://developer.apple.com/documentation/livecommunicationkit",
+      "source_label": "Apple Developer: LiveCommunicationKit",
+      "verbatim": false,
+      "source_document_sha256": "85bac22e929b70cadb4e1f92cd1edddf23a509e8a2b4f8af533ab0dfdfd7bb63",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/LocalAuthentication.framework/LocalAuthentication",
+      "summary": "Authenticate users biometrically or with a passphrase they already know.",
+      "source_url": "https://developer.apple.com/documentation/localauthentication",
+      "source_label": "Apple Developer: Local Authentication",
+      "verbatim": true,
+      "source_document_sha256": "fa3a382630dbf3d19f569229a6283685b7b10feac56c0c2dc1336a1f45e20410",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/LocalAuthenticationEmbeddedUI.framework/LocalAuthenticationEmbeddedUI",
+      "summary": "Present a standard local authentication view icon in a custom authentication view.",
+      "source_url": "https://developer.apple.com/documentation/localauthenticationembeddedui",
+      "source_label": "Apple Developer: Local Authentication Embedded UI",
+      "verbatim": true,
+      "source_document_sha256": "24acd85a125e4be8ac1f143dcbdd9d633ac22276e2d8b62793107cb70775e083",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/LockedCameraCapture.framework/LockedCameraCapture",
+      "summary": "Capture content with your app’s camera experience when the device is locked.",
+      "source_url": "https://developer.apple.com/documentation/lockedcameracapture",
+      "source_label": "Apple Developer: LockedCameraCapture",
+      "verbatim": true,
+      "source_document_sha256": "59a636083403b97efca331143c578076b415689dd79c29797962feb7014cb4bd",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MLCompute.framework/MLCompute",
+      "summary": "Accelerate training and validation of neural networks across the CPU and one or more GPUs.",
+      "source_url": "https://developer.apple.com/documentation/mlcompute",
+      "source_label": "Apple Developer: ML Compute",
+      "verbatim": true,
+      "source_document_sha256": "f587c8ce35dbe38511d73722b88426a690ac6fa4691dd3f692e4229a596f2f4b",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ManagedApp.framework/ManagedApp",
+      "summary": "Customize your app for managed deployments by providing configurable features that rely on secure access to secrets and data that an administrator provisions.",
+      "source_url": "https://developer.apple.com/documentation/managedapp",
+      "source_label": "Apple Developer: ManagedApp",
+      "verbatim": true,
+      "source_document_sha256": "85de7f7c25271332951457c28b24a205c3242a9fce9b30b130fbc58eaf539178",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ManagedAppDistribution.framework/ManagedAppDistribution",
+      "summary": "Manage the distribution of apps within an organization.",
+      "source_url": "https://developer.apple.com/documentation/managedappdistribution",
+      "source_label": "Apple Developer: ManagedAppDistribution",
+      "verbatim": true,
+      "source_document_sha256": "aff703e0158782cc4530934e91b0e704f4246559522548b13c922e0a32bf9cc4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ManagedSettings.framework/ManagedSettings",
+      "summary": "Access and change settings with your app while maintaining user privacy and control.",
+      "source_url": "https://developer.apple.com/documentation/managedsettings",
+      "source_label": "Apple Developer: Managed Settings",
+      "verbatim": true,
+      "source_document_sha256": "205ccee30667016a065800d0705d9d3f20966741897dc14542bec0ca79b7e840",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ManagedSettingsUI.framework/ManagedSettingsUI",
+      "summary": "Define and configure the appearance of shielding views.",
+      "source_url": "https://developer.apple.com/documentation/managedsettingsui",
+      "source_label": "Apple Developer: Managed Settings UI",
+      "verbatim": true,
+      "source_document_sha256": "ff438598b0d461bcc5633c8e61d8c6a67b012ef9b965069324b76a29ce36dd0b",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MapKit.framework/MapKit",
+      "summary": "MapKit provides maps, place annotations, and geographic information for app interfaces.",
+      "source_url": "https://developer.apple.com/documentation/mapkit",
+      "source_label": "Apple Developer: MapKit",
+      "source_document_sha256": "e8b82cad51b4495730bbfbb00715bba355ad056dd10db4028c605950be8826bf",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MarketplaceKit.framework/MarketplaceKit",
+      "summary": "Create an alternative app marketplace, distribute your app on an alternative app marketplace, or distribute your app from your website.",
+      "source_url": "https://developer.apple.com/documentation/marketplacekit",
+      "source_label": "Apple Developer: MarketplaceKit",
+      "verbatim": true,
+      "source_document_sha256": "c3007acae3c7b036d7ace2dd57d1ca44ca4163e8bdaea134e80f0f644c27498e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Matter.framework/Matter",
+      "summary": "Communicate with and control smart home devices from a variety of manufacturers.",
+      "source_url": "https://developer.apple.com/documentation/matter",
+      "source_label": "Apple Developer: Matter",
+      "verbatim": true,
+      "source_document_sha256": "57fcf4ddfbcd574265cf8c581033a33b38df7a982657b101a43342bd0b9d00dc",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MatterSupport.framework/MatterSupport",
+      "summary": "Coordinate and control compatible smart home accessories.",
+      "source_url": "https://developer.apple.com/documentation/mattersupport",
+      "source_label": "Apple Developer: MatterSupport",
+      "verbatim": true,
+      "source_document_sha256": "971284ec94589fddfb9c8d2b2624383782fbd2b4faca5a03d3a723cf49f626a5",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MediaAccessibility.framework/MediaAccessibility",
+      "summary": "Make your app’s media more accessible by supporting people’s systemwide preferences for video and audio content.",
+      "source_url": "https://developer.apple.com/documentation/mediaaccessibility",
+      "source_label": "Apple Developer: Media Accessibility",
+      "verbatim": true,
+      "source_document_sha256": "50ab79f7ec10ca342bc7211fe7f10cd8ede3869e80c502cb3e1b28616ef6d364",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MediaPlayer.framework/MediaPlayer",
+      "summary": "Find and play songs, audio podcasts, audio books, and more from within your app.",
+      "source_url": "https://developer.apple.com/documentation/mediaplayer",
+      "source_label": "Apple Developer: Media Player",
+      "verbatim": true,
+      "source_document_sha256": "d1460dfdb3550f098cefbf153f8520231d117d0dfcb7c620525218aed8884c08",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MediaSetup.framework/MediaSetup",
+      "summary": "Enable users to configure HomePod speakers to stream music directly from your media service.",
+      "source_url": "https://developer.apple.com/documentation/mediasetup",
+      "source_label": "Apple Developer: Media Setup",
+      "verbatim": true,
+      "source_document_sha256": "67c265ca5bfdf99d80e3548c8f967669c2ea5f5849a514dff6581d913f4091a3",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MediaToolbox.framework/MediaToolbox",
+      "summary": "Enable support for media format readers; tap and process audio from an audio mix.",
+      "source_url": "https://developer.apple.com/documentation/mediatoolbox",
+      "source_label": "Apple Developer: Media Toolbox",
+      "verbatim": true,
+      "source_document_sha256": "1eb7a1e0dc89f01a7aed412ab237a0ae911eb11956189976f6f4e9bf5cec68da",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MessageUI.framework/MessageUI",
+      "summary": "Create a user interface for composing email and text messages, so users can edit and send messages without leaving your app.",
+      "source_url": "https://developer.apple.com/documentation/messageui",
+      "source_label": "Apple Developer: Message UI",
+      "verbatim": true,
+      "source_document_sha256": "364588235716174477b081d32fec4ae7f4127ffd368ab50715c9ef229ca46be4",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Messages.framework/Messages",
+      "summary": "Create app extensions that allow users to send text, stickers, media files, and interactive messages.",
+      "source_url": "https://developer.apple.com/documentation/messages",
+      "source_label": "Apple Developer: Messages",
+      "verbatim": true,
+      "source_document_sha256": "2b2dc589d6e3a5ce2e99d312ea61502fdb1089af9df5c86db9faa538316fa506",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Metal.framework/Metal",
+      "summary": "Metal provides direct GPU access for graphics rendering and parallel compute workloads.",
+      "source_url": "https://developer.apple.com/documentation/metal",
+      "source_label": "Apple Developer: Metal",
+      "source_document_sha256": "44d197158653c4c6bd751a10099d50b30ec5b65d53a07861c99a49a7c0bdcf1d",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MetalFX.framework/MetalFX",
+      "summary": "Boost your Metal app’s performance by upscaling lower-resolution content to save GPU time.",
+      "source_url": "https://developer.apple.com/documentation/metalfx",
+      "source_label": "Apple Developer: MetalFX",
+      "verbatim": true,
+      "source_document_sha256": "12a9214b2dcba5690f7f82d92be6eb6ca736dfdfb14ec4691b7ecb724ca1210f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MetalKit.framework/MetalKit",
+      "summary": "Build Metal apps quicker and easier using a common set of utility classes.",
+      "source_url": "https://developer.apple.com/documentation/metalkit",
+      "source_label": "Apple Developer: MetalKit",
+      "verbatim": true,
+      "source_document_sha256": "9d97073a2d4dc1bbe6470ac250f770e3c37cfe65aa5a0d1ecd28ef732e077df5",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MetalPerformanceShaders.framework/MetalPerformanceShaders",
+      "summary": "Optimize graphics and compute performance with kernels that are fine-tuned for the unique characteristics of each Metal GPU family.",
+      "source_url": "https://developer.apple.com/documentation/metalperformanceshaders",
+      "source_label": "Apple Developer: Metal Performance Shaders",
+      "verbatim": true,
+      "source_document_sha256": "f02a5c83c22a1054e8307cf57c597a4e98a0b25a0ed39703de704287d06488f9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MetalPerformanceShadersGraph.framework/MetalPerformanceShadersGraph",
+      "summary": "Build, compile, and execute compute graphs utilizing all the different compute devices on the platform, including GPU, CPU, and Neural Engine.",
+      "source_url": "https://developer.apple.com/documentation/metalperformanceshadersgraph",
+      "source_label": "Apple Developer: Metal Performance Shaders Graph",
+      "verbatim": true,
+      "source_document_sha256": "48207a76d8af41895909eb9ae3a9bb07fce77a764cd0b95c5aa9ab01488bfe52",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ModelIO.framework/ModelIO",
+      "summary": "Import, export, and manipulate 3D models using a common infrastructure that integrates MetalKit, GLKit, and SceneKit.",
+      "source_url": "https://developer.apple.com/documentation/modelio",
+      "source_label": "Apple Developer: Model I/O",
+      "verbatim": true,
+      "source_document_sha256": "6506d671803f0264c3596329be1a9b784d597714bf63127071ea349989e32d2e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MultipeerConnectivity.framework/MultipeerConnectivity",
+      "summary": "Support peer-to-peer connectivity and the discovery of nearby devices.",
+      "source_url": "https://developer.apple.com/documentation/multipeerconnectivity",
+      "source_label": "Apple Developer: Multipeer Connectivity",
+      "verbatim": true,
+      "source_document_sha256": "3da687461dce69225aac4af9872c0dc900579644d01d5a053bd6f5a585435377",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/NaturalLanguage.framework/NaturalLanguage",
+      "summary": "Analyze natural language text and deduce its language-specific metadata.",
+      "source_url": "https://developer.apple.com/documentation/naturallanguage",
+      "source_label": "Apple Developer: Natural Language",
+      "verbatim": true,
+      "source_document_sha256": "df5da6b6f1a10b8cdc28a937fbf55783ddba1d5b15e97ec44325ec9fee8fceee",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/NearbyInteraction.framework/NearbyInteraction",
+      "summary": "Locate and interact with nearby devices using identifiers, distance, and direction.",
+      "source_url": "https://developer.apple.com/documentation/nearbyinteraction",
+      "source_label": "Apple Developer: Nearby Interaction",
+      "verbatim": true,
+      "source_document_sha256": "21fe0b895c89391cd090e89d0a3bedf06d959de8f095c8ff445912b15009c3f1",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Network.framework/Network",
+      "summary": "Network creates transport connections and exposes protocols such as TLS, TCP, and UDP to apps.",
+      "source_url": "https://developer.apple.com/documentation/network",
+      "source_label": "Apple Developer: Network",
+      "source_document_sha256": "d3bea3fc6260c4565b5d9c0f281afb3120a20996e263d3ea1f025933ffcd7839",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/NetworkExtension.framework/NetworkExtension",
+      "summary": "Customize and extend core networking features.",
+      "source_url": "https://developer.apple.com/documentation/networkextension",
+      "source_label": "Apple Developer: Network Extension",
+      "verbatim": true,
+      "source_document_sha256": "97d5e9d0a282f1bc1667ac2c09d7aad8de3fc185ed6fbd1194ade00aa3ad0847",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/NotificationCenter.framework/NotificationCenter",
+      "summary": "Create and manage widgets for the Today view.",
+      "source_url": "https://developer.apple.com/documentation/notificationcenter",
+      "source_label": "Apple Developer: Notification Center",
+      "verbatim": true,
+      "source_document_sha256": "062174f1d861512c4d13fd1b8f33b0cf24fbd84cf8f822a412c0a6168dd5f3d3",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/OSLog.framework/OSLog",
+      "summary": "A unified logging system for the reading of historical data.",
+      "source_url": "https://developer.apple.com/documentation/oslog",
+      "source_label": "Apple Developer: OSLog",
+      "verbatim": true,
+      "source_document_sha256": "80f4980c31c37113e5c21d6f300e4c512f73ffb40e8fd8604af87f8a8ecb2359",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PDFKit.framework/PDFKit",
+      "summary": "PDFKit displays and manipulates PDF documents in app interfaces.",
+      "source_url": "https://developer.apple.com/documentation/pdfkit",
+      "source_label": "Apple Developer: PDFKit",
+      "source_document_sha256": "ccdde2795cb89036cd633ce9f5bfa78d9f999151c1368947a8120370e4eb5bdd",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PHASE.framework/PHASE",
+      "summary": "Create dynamic audio experiences in your game or app that react to events and cues in the environment.",
+      "source_url": "https://developer.apple.com/documentation/phase",
+      "source_label": "Apple Developer: PHASE",
+      "verbatim": true,
+      "source_document_sha256": "97241d6ac4dda785296c7c8b0ea1451a04f9bba412a9cfd8cae756128ebcb87e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PaperKit.framework/PaperKit",
+      "summary": "Add drawings, shapes, and a consistent markup experience to your app.",
+      "source_url": "https://developer.apple.com/documentation/paperkit",
+      "source_label": "Apple Developer: PaperKit",
+      "verbatim": true,
+      "source_document_sha256": "295905c418c01f8096addc7b23891fc8030efc8ab965ac6a20c5c228c92592f8",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PassKit.framework/PassKit",
+      "summary": "Process Apple Pay payments in your app, and create and distribute passes for the Wallet app.",
+      "source_url": "https://developer.apple.com/documentation/passkit",
+      "source_label": "Apple Developer: PassKit (Apple Pay and Wallet)",
+      "verbatim": true,
+      "source_document_sha256": "266c173f60673001b49e6ccfc175bec159ac44545719f5fa93e2205df4bf198a",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PencilKit.framework/PencilKit",
+      "summary": "PencilKit captures drawing input from Apple Pencil or touch and displays the resulting content.",
+      "source_url": "https://developer.apple.com/documentation/pencilkit",
+      "source_label": "Apple Developer: PencilKit",
+      "source_document_sha256": "ff3d6aee6b3294a297391a7a080a03e84ae6e88e6a6b34d9f57e87f21e753d40",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PermissionKit.framework/PermissionKit",
+      "summary": "Create communication experiences between a child and their parent or guardian.",
+      "source_url": "https://developer.apple.com/documentation/permissionkit",
+      "source_label": "Apple Developer: PermissionKit",
+      "verbatim": true,
+      "source_document_sha256": "37537ca49655ffc475f08319ef24e176d2fdfd520f67ddce7adda6a30df0d875",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Photos.framework/Photos",
+      "summary": "Photos provides access to image and video assets managed by the Photos app, including iCloud Photos assets.",
+      "source_url": "https://developer.apple.com/documentation/photos",
+      "source_label": "Apple Developer: Photos",
+      "source_document_sha256": "bd246d2522e214cad24610a21257689c9641db670cea491536946b0d27f4920d",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PhotosUI.framework/PhotosUI",
+      "summary": "Present a person’s photo library using a picker interface, display Live Photos, or extend the Photos app with custom functionality.",
+      "source_url": "https://developer.apple.com/documentation/photosui",
+      "source_label": "Apple Developer: PhotosUI",
+      "verbatim": true,
+      "source_document_sha256": "2acdf9d8c55be827ac52c474a9a902f311adf4b71a493ab7a5bfcd500e2a041b",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ProximityReader.framework/ProximityReader",
+      "summary": "Read contactless physical and digital wallet cards using your iPhone.",
+      "source_url": "https://developer.apple.com/documentation/proximityreader",
+      "source_label": "Apple Developer: ProximityReader",
+      "verbatim": true,
+      "source_document_sha256": "4dd917c60d35b1e121a8bdac3e0abbca2b199181d09d1b6ec83088c441830dc5",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PushKit.framework/PushKit",
+      "summary": "Respond to push notifications related to your app’s complications, file providers, and VoIP services.",
+      "source_url": "https://developer.apple.com/documentation/pushkit",
+      "source_label": "Apple Developer: PushKit",
+      "verbatim": true,
+      "source_document_sha256": "568be82ab9827a4b29d0e6f8871d1e27b9154f9fd9282e501cf27cf13ae5640f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/PushToTalk.framework/PushToTalk",
+      "summary": "Display the system user interface for your app’s Push to Talk services.",
+      "source_url": "https://developer.apple.com/documentation/pushtotalk",
+      "source_label": "Apple Developer: Push to Talk",
+      "verbatim": true,
+      "source_document_sha256": "a0cea9e813e20d48db7ee181ff1c48229cdbc014f461ffac2b9d95c1c4e44f89",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/QuartzCore.framework/QuartzCore",
+      "summary": "Render, compose, and animate visual elements.",
+      "source_url": "https://developer.apple.com/documentation/quartzcore",
+      "source_label": "Apple Developer: Core Animation",
+      "verbatim": true,
+      "source_document_sha256": "d3ef107d13b242b7e9026a41850411f94fd85de2b29fc9f93a5c83b959b4dc7e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/QuickLook.framework/QuickLook",
+      "summary": "Create previews of files to use inside your app, or perform simple edits on previews.",
+      "source_url": "https://developer.apple.com/documentation/quicklook",
+      "source_label": "Apple Developer: Quick Look",
+      "verbatim": true,
+      "source_document_sha256": "5a7d87eaa6e516fc9488e50ef64b31d29f2d3c7279078309e62dd27d8c7ee57f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/QuickLookThumbnailing.framework/QuickLookThumbnailing",
+      "summary": "Generate thumbnails for common file types and add a Thumbnail Extension to your app to enable others to create thumbnails of your custom files.",
+      "source_url": "https://developer.apple.com/documentation/quicklookthumbnailing",
+      "source_label": "Apple Developer: Quick Look Thumbnailing",
+      "verbatim": true,
+      "source_document_sha256": "d863ddd3ca2916f45cd6c4378072c065906240d895ba86d811351119e61f0476",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/RealityKit.framework/RealityKit",
+      "summary": "Simulate and render 3D content for use in your augmented reality apps.",
+      "source_url": "https://developer.apple.com/documentation/realitykit",
+      "source_label": "Apple Developer: RealityKit",
+      "verbatim": true,
+      "source_document_sha256": "5bde27bcfcd489bb0a1bcba717d58073b7f70528559fb2ccf494644517812b0d",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/RelevanceKit.framework/RelevanceKit",
+      "summary": "Provide on-device intelligence with contextual clues that increase your widget’s visibility on Apple Watch.",
+      "source_url": "https://developer.apple.com/documentation/relevancekit",
+      "source_label": "Apple Developer: RelevanceKit",
+      "verbatim": true,
+      "source_document_sha256": "2e6659b8d0ff332e63cdc77965b86ef2689ab9c7db5ef585d7012f49dddb9a9f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ReplayKit.framework/ReplayKit",
+      "summary": "Record or stream video from the screen, and audio from the app and microphone.",
+      "source_url": "https://developer.apple.com/documentation/replaykit",
+      "source_label": "Apple Developer: ReplayKit",
+      "verbatim": true,
+      "source_document_sha256": "89405ae03638b7ad0bfc2011f31d0ff10a73c22de8b78222d91b1cada1a197d5",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/RoomPlan.framework/RoomPlan",
+      "summary": "Create a 3D model of a room by interactively guiding people to scan their physical environment using a device’s camera.",
+      "source_url": "https://developer.apple.com/documentation/roomplan",
+      "source_label": "Apple Developer: RoomPlan",
+      "verbatim": true,
+      "source_document_sha256": "532e3b78f76bfc723766ea3054d2bd6ce4d340c913d745169acf60cc82d6a3a7",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SafariServices.framework/SafariServices",
+      "summary": "Enable web views and services in your app.",
+      "source_url": "https://developer.apple.com/documentation/safariservices",
+      "source_label": "Apple Developer: Safari Services",
+      "verbatim": true,
+      "source_document_sha256": "729321032067464a1bf936b09a9e1fef63cac818189dc0c1674ce51b216a9764",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SafetyKit.framework/SafetyKit",
+      "summary": "Detect and respond to car crash events in your app.",
+      "source_url": "https://developer.apple.com/documentation/safetykit",
+      "source_label": "Apple Developer: SafetyKit",
+      "verbatim": true,
+      "source_document_sha256": "9e7b618e892fe65b07b7efc91fbb66bb80290f5fc9795f6fa46875ee6bc8a662",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SceneKit.framework/SceneKit",
+      "summary": "SceneKit describes, animates, and renders 3D scenes with physics and particle effects.",
+      "source_url": "https://developer.apple.com/documentation/scenekit",
+      "source_label": "Apple Developer: SceneKit",
+      "verbatim": false,
+      "source_document_sha256": "dc1c045d9db7840384dc93441e5252505a94daa46d14d3ef7977c2646103cbae",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ScreenTime.framework/ScreenTime",
+      "summary": "Share and manage web-usage data, and observe changes made by a parent or guardian.",
+      "source_url": "https://developer.apple.com/documentation/screentime",
+      "source_label": "Apple Developer: Screen Time",
+      "verbatim": true,
+      "source_document_sha256": "94d60c4845803d85e888fcd05b7a98a244b677fb3ba1258b86616ac2b1c4b464",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SecureElementCredential.framework/SecureElementCredential",
+      "summary": "Allow access to credentials inside the Secure Element on device.",
+      "source_url": "https://developer.apple.com/documentation/secureelementcredential",
+      "source_label": "Apple Developer: SecureElementCredential",
+      "verbatim": true,
+      "source_document_sha256": "596d51573363e35c656ff8f718d976b07bcd3343a54763dc4d6a14ff3489ea44",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Security.framework/Security",
+      "summary": "Security provides services for protecting app data, evaluating trust, and controlling access.",
+      "source_url": "https://developer.apple.com/documentation/security",
+      "source_label": "Apple Developer: Security",
+      "source_document_sha256": "acb779ecbea39baa32669c8204ecb38c1fcb526ac0529869f33781f91d728c7a",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SecurityUI.framework/SecurityUI",
+      "summary": "The SecurityUI framework provides a public API for displaying certificates, including support for Qualified Web Authentication Certificates (QWAC).",
+      "source_url": "https://developer.apple.com/documentation/securityui",
+      "source_label": "Apple Developer: SecurityUI",
+      "verbatim": true,
+      "source_document_sha256": "7ac5adb1c6489044ae8e733dd810d4f081387864a624fe5727730b0533e05f80",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SensitiveContentAnalysis.framework/SensitiveContentAnalysis",
+      "summary": "Provide a safer experience in your app by detecting and alerting people to sensitive content in images and videos before displaying them.",
+      "source_url": "https://developer.apple.com/documentation/sensitivecontentanalysis",
+      "source_label": "Apple Developer: Sensitive Content Analysis",
+      "verbatim": true,
+      "source_document_sha256": "271d6c3e07062f5498bc8ab8246ee3f72cb8e00633f515f732b666964671ccf9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SensorKit.framework/SensorKit",
+      "summary": "Retrieve data and derived metrics from sensors on an iPhone, or paired Apple Watch.",
+      "source_url": "https://developer.apple.com/documentation/sensorkit",
+      "source_label": "Apple Developer: SensorKit",
+      "verbatim": true,
+      "source_document_sha256": "e1f5f4084d0aa4823d43225718b064fb30d3a76d161635fe9045ec28aea360a6",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SharedWithYou.framework/SharedWithYou",
+      "summary": "Surface shared content and collaborate in your app.",
+      "source_url": "https://developer.apple.com/documentation/sharedwithyou",
+      "source_label": "Apple Developer: Shared with You",
+      "verbatim": true,
+      "source_document_sha256": "d267bb78278bc4144631d50a65589aec373f18ed417605d07df0803a31b2bb18",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SharedWithYouCore.framework/SharedWithYouCore",
+      "summary": "Integrate custom collaboration with Messages, Mail, and FaceTime.",
+      "source_url": "https://developer.apple.com/documentation/sharedwithyoucore",
+      "source_label": "Apple Developer: Shared with You Core",
+      "verbatim": true,
+      "source_document_sha256": "2d4750b4b2b45fa5ca0ef09c30140c74ea82de9b78cf4ff0205644455c98d094",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ShazamKit.framework/ShazamKit",
+      "summary": "Find information about a specific audio recording when a segment of it’s part of captured sound in the Shazam catalog or your custom catalog.",
+      "source_url": "https://developer.apple.com/documentation/shazamkit",
+      "source_label": "Apple Developer: ShazamKit",
+      "verbatim": true,
+      "source_document_sha256": "ef9656f271de35ba926931f570c9ae47e5be2e0a6e336a1401b06281c83f8901",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Social.framework/Social",
+      "summary": "Post content to supported social networking services, using standard system interfaces.",
+      "source_url": "https://developer.apple.com/documentation/social",
+      "source_label": "Apple Developer: Social",
+      "verbatim": true,
+      "source_document_sha256": "0d1f3d78fb90725aa99c2cd90f3265c4d1d39942da36cddc22c29052df4fdfdb",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SoundAnalysis.framework/SoundAnalysis",
+      "summary": "Classify various sounds by analyzing audio files or streams.",
+      "source_url": "https://developer.apple.com/documentation/soundanalysis",
+      "source_label": "Apple Developer: Sound Analysis",
+      "verbatim": true,
+      "source_document_sha256": "789b83aeff5e1ebb7381c2d419a3d969dbbca321eeba0d997f8109bfcf0f70e9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Speech.framework/Speech",
+      "summary": "Perform speech recognition on live or prerecorded audio, and receive transcriptions, alternative interpretations, and confidence levels of the results.",
+      "source_url": "https://developer.apple.com/documentation/speech",
+      "source_label": "Apple Developer: Speech",
+      "verbatim": true,
+      "source_document_sha256": "f706a809a9178ae6e912157d6093b411b3214ff86c9bc8ea0d6041250959eab8",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SpriteKit.framework/SpriteKit",
+      "summary": "Add high-performance 2D content with smooth animations to your app, or create a game with a high-level set of 2D game-based tools.",
+      "source_url": "https://developer.apple.com/documentation/spritekit",
+      "source_label": "Apple Developer: SpriteKit",
+      "verbatim": true,
+      "source_document_sha256": "2d00d6cb1e9d7a30767bea76f674dde282284ba36e5c24b9b8863b3e7fd45d6a",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/StoreKit.framework/StoreKit",
+      "summary": "StoreKit supports in-app purchases and interactions between apps and the App Store.",
+      "source_url": "https://developer.apple.com/documentation/storekit",
+      "source_label": "Apple Developer: StoreKit",
+      "source_document_sha256": "46a1be5d05822e1aa063deb5e20a94a2764f38fdf8e5a61032203d7667db8dee",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SwiftData.framework/SwiftData",
+      "summary": "Write your model code declaratively to add managed persistence and efficient model fetching.",
+      "source_url": "https://developer.apple.com/documentation/swiftdata",
+      "source_label": "Apple Developer: SwiftData",
+      "verbatim": true,
+      "source_document_sha256": "3f639f81f8dd1b31e86026f3c6d4b517a3af11319c8eba7d39983eb2003b5b36",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SwiftUI.framework/SwiftUI",
+      "summary": "SwiftUI supplies declarative views, controls, and layouts for building app interfaces across Apple platforms.",
+      "source_url": "https://developer.apple.com/documentation/swiftui",
+      "source_label": "Apple Developer: SwiftUI",
+      "source_document_sha256": "33eef327e5c00e247b1075df0ea9afcf65e20b815a15d795dda9645874d40f50",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Symbols.framework/Symbols",
+      "summary": "Apply universal animations to symbol-based images.",
+      "source_url": "https://developer.apple.com/documentation/symbols",
+      "source_label": "Apple Developer: Symbols",
+      "verbatim": true,
+      "source_document_sha256": "ef48a8c00179c3b5881d5ad1d07c3d6692e9b5e2b809581f2ad992d9714f1496",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration",
+      "summary": "Allow applications to access a device’s network configuration settings. Determine the reachability of the device, such as whether Wi-Fi or cell connectivity are active.",
+      "source_url": "https://developer.apple.com/documentation/systemconfiguration",
+      "source_label": "Apple Developer: System Configuration",
+      "verbatim": true,
+      "source_document_sha256": "77b00b3f8b56457323effaabf1166a3f9f3704447c284233ee1b23042c537e9d",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/SystemExtensions.framework/SystemExtensions",
+      "summary": "Install and manage user space code that extends the capabilities of macOS.",
+      "source_url": "https://developer.apple.com/documentation/systemextensions",
+      "source_label": "Apple Developer: System Extensions",
+      "verbatim": true,
+      "source_document_sha256": "88db35765d6b56a60dda8145fcc414ef02c31ccdb0d67469f144b5ce807df858",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/TabularData.framework/TabularData",
+      "summary": "Import, organize, and prepare a table of data to train a machine learning model.",
+      "source_url": "https://developer.apple.com/documentation/tabulardata",
+      "source_label": "Apple Developer: TabularData",
+      "verbatim": true,
+      "source_document_sha256": "025578054893bc39154979889c4f1ae1c99d18811ea07bf03e2b948954dfee80",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/TelephonyMessagingKit.framework/TelephonyMessagingKit",
+      "summary": "Send and receive standards-based messages over cellular networks.",
+      "source_url": "https://developer.apple.com/documentation/telephonymessagingkit",
+      "source_label": "Apple Developer: TelephonyMessagingKit",
+      "verbatim": true,
+      "source_document_sha256": "54f7915fe38f8b30759c962fe6712be845833af29ee671fc644be311d7d2f2b0",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/ThreadNetwork.framework/ThreadNetwork",
+      "summary": "Create robust, smart device networks using Thread Border Routers.",
+      "source_url": "https://developer.apple.com/documentation/threadnetwork",
+      "source_label": "Apple Developer: ThreadNetwork",
+      "verbatim": true,
+      "source_document_sha256": "87f4750c69ba8d5b38a07dcc3ad634310a660886e04c99868f750cd03911e602",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/TipKit.framework/TipKit",
+      "summary": "Display tips that help people discover features in your app.",
+      "source_url": "https://developer.apple.com/documentation/tipkit",
+      "source_label": "Apple Developer: TipKit",
+      "verbatim": true,
+      "source_document_sha256": "115ce52d39b6bb3c52a0ebba43423da850277ac0c54995d7829c330c068670c1",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/TouchController.framework/TouchController",
+      "summary": "Integrate onscreen touch controls into your Metal-based games.",
+      "source_url": "https://developer.apple.com/documentation/touchcontroller",
+      "source_label": "Apple Developer: Touch Controller",
+      "verbatim": true,
+      "source_document_sha256": "93da7a4ac841172c92ef24876be2662771ec0ceefeefe6f32cf9e9bff03fab96",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Translation.framework/Translation",
+      "summary": "Translate text in your app from one language to another.",
+      "source_url": "https://developer.apple.com/documentation/translation",
+      "source_label": "Apple Developer: Translation",
+      "verbatim": true,
+      "source_document_sha256": "26fe111f3dbdcaf6148e49512b4131cb1fe536107f2e1994a9c31d2b440165b3",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/TranslationUIProvider.framework/TranslationUIProvider",
+      "summary": "Provide UI for translations of text people select.",
+      "source_url": "https://developer.apple.com/documentation/translationuiprovider",
+      "source_label": "Apple Developer: TranslationUIProvider",
+      "verbatim": true,
+      "source_document_sha256": "34b708a29a6cc20d224431298c113915eceed0c228a2d9c5dc8329111c186704",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/UIKit.framework/UIKit",
+      "summary": "UIKit supplies windows, views, controls, event handling, and drawing infrastructure for app interfaces.",
+      "source_url": "https://developer.apple.com/documentation/uikit",
+      "source_label": "Apple Developer: UIKit",
+      "source_document_sha256": "7d96f8f2a0b9b300522554824f3a3b63ea5c4fb35c3b69549e8d956881eacc75",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/UniformTypeIdentifiers.framework/UniformTypeIdentifiers",
+      "summary": "Provide uniform type identifiers that describe file types for storage or transfer.",
+      "source_url": "https://developer.apple.com/documentation/uniformtypeidentifiers",
+      "source_label": "Apple Developer: Uniform Type Identifiers",
+      "verbatim": true,
+      "source_document_sha256": "fb24e4fd1ab008e7f65cc0edadad6f32455259cfb54cca8283e15da7c4bc7875",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/UserNotifications.framework/UserNotifications",
+      "summary": "User Notifications schedules local notifications and manages notifications delivered from a server.",
+      "source_url": "https://developer.apple.com/documentation/usernotifications",
+      "source_label": "Apple Developer: User Notifications",
+      "source_document_sha256": "1711174611ace26d07b09377fbcacafffebd7dad7fc5c96b38b3b9db9d0d68f9",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/UserNotificationsUI.framework/UserNotificationsUI",
+      "summary": "Customize the interface that displays local and remote notifications.",
+      "source_url": "https://developer.apple.com/documentation/usernotificationsui",
+      "source_label": "Apple Developer: User Notifications UI",
+      "verbatim": true,
+      "source_document_sha256": "eddddd1ec3bae34254d047088f7a8a99232875163a561ae749a838e99d1b6248",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/VideoSubscriberAccount.framework/VideoSubscriberAccount",
+      "summary": "Support TV provider and Apple TV app functionality.",
+      "source_url": "https://developer.apple.com/documentation/videosubscriberaccount",
+      "source_label": "Apple Developer: Video Subscriber Account",
+      "verbatim": true,
+      "source_document_sha256": "580b1d516a51f1e02a608662f114acb0ad9489d7af68e09137abc1b0d8d79d26",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/VideoToolbox.framework/VideoToolbox",
+      "summary": "Work directly with hardware-accelerated video encoding and decoding capabilities.",
+      "source_url": "https://developer.apple.com/documentation/videotoolbox",
+      "source_label": "Apple Developer: Video Toolbox",
+      "verbatim": true,
+      "source_document_sha256": "7c402d31e6ff4e628ec0d70f8fa543af9c962daec904b1fd09b23fdbb55fb52c",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/Vision.framework/Vision",
+      "summary": "Vision analyzes images and video with computer vision tasks such as object detection, text recognition, and segmentation.",
+      "source_url": "https://developer.apple.com/documentation/vision",
+      "source_label": "Apple Developer: Vision",
+      "source_document_sha256": "db1dcf18afcb8d9b47aa35885bdc3a8e2df5a7f69eb9adc035d8654dbc509002",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/VisionKit.framework/VisionKit",
+      "summary": "Identify and extract information in the environment using the device’s camera, or in images that your app displays.",
+      "source_url": "https://developer.apple.com/documentation/visionkit",
+      "source_label": "Apple Developer: VisionKit",
+      "verbatim": true,
+      "source_document_sha256": "dd59aa6b404f92a84b829f5b57ad7a57af8f2d14377c5f0df83d15c89f0b61ee",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/VisualIntelligence.framework/VisualIntelligence",
+      "summary": "Include your app’s content in search results that visual intelligence provides.",
+      "source_url": "https://developer.apple.com/documentation/visualintelligence",
+      "source_label": "Apple Developer: Visual Intelligence",
+      "verbatim": true,
+      "source_document_sha256": "3c0281c2e15505dc9b8314e42cef4f3f3d0f66b2d567528196773ea70e2d79b6",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WatchConnectivity.framework/WatchConnectivity",
+      "summary": "Implement two-way communication between an iOS app and its paired watchOS app.",
+      "source_url": "https://developer.apple.com/documentation/watchconnectivity",
+      "source_label": "Apple Developer: Watch Connectivity",
+      "verbatim": true,
+      "source_document_sha256": "3ec11ad80da94ea3fe3814ca3912713ce56b63f297ad0da48de809eb6c5ea014",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WatchKit.framework/WatchKit",
+      "summary": "Build watchOS apps that use features the app delegate monitors or controls, such as background tasks and extended runtime sessions.",
+      "source_url": "https://developer.apple.com/documentation/watchkit",
+      "source_label": "Apple Developer: WatchKit",
+      "verbatim": true,
+      "source_document_sha256": "57932e900bf3b34fbf2146c5926d5d9f74327ad81967adce9fe92ca9bd2c229a",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WeatherKit.framework/WeatherKit",
+      "summary": "Deliver weather conditions and alerts to your users.",
+      "source_url": "https://developer.apple.com/documentation/weatherkit",
+      "source_label": "Apple Developer: WeatherKit",
+      "verbatim": true,
+      "source_document_sha256": "2c4e354a56d7438c64d651af845162c62654e1f2ff46468a3b1a9fa296b4706f",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WebKit.framework/WebKit",
+      "summary": "WebKit embeds web content in an app and provides browser views and controls for interacting with it.",
+      "source_url": "https://developer.apple.com/documentation/webkit",
+      "source_label": "Apple Developer: WebKit",
+      "source_document_sha256": "d892962fe114f5d1eba7ed11fe559e73e48dfd43532390b9e6409ca72b496d47",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WiFiAware.framework/WiFiAware",
+      "summary": "Securely pair and connect to external devices over peer-to-peer Wi-Fi.",
+      "source_url": "https://developer.apple.com/documentation/wifiaware",
+      "source_label": "Apple Developer: Wi-Fi Aware",
+      "verbatim": true,
+      "source_document_sha256": "ae5aded5a55058a9663b709557d430635af792ee688d453b2375d9fb42655833",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WidgetKit.framework/WidgetKit",
+      "summary": "Extend the reach of your app by creating widgets, watch complications, Live Activities, and controls.",
+      "source_url": "https://developer.apple.com/documentation/widgetkit",
+      "source_label": "Apple Developer: WidgetKit",
+      "verbatim": true,
+      "source_document_sha256": "aedb4f0d606422aa92d968e19726058682a20222746796a279301b96c29e59e9",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WirelessInsights.framework/WirelessInsights",
+      "summary": "Receive notifications for anticipated changes in cellular data service conditions.",
+      "source_url": "https://developer.apple.com/documentation/wirelessinsights",
+      "source_label": "Apple Developer: WirelessInsights",
+      "verbatim": true,
+      "source_document_sha256": "8a305e5ba4cdb95f8168298ec4303444822e213488c13d06097ebbea3e43ddbc",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/WorkoutKit.framework/WorkoutKit",
+      "summary": "Create, preview, and sync workout compositions to the Workout app.",
+      "source_url": "https://developer.apple.com/documentation/workoutkit",
+      "source_label": "Apple Developer: WorkoutKit",
+      "verbatim": true,
+      "source_document_sha256": "2ca6d2267d83c41684595701a148bef8c42424cf40e89bc09c12b1a1b6ae415e",
+      "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/iAd.framework/iAd",
+      "summary": "The Apple Search Ads iAd Attribution API is a legacy framework for attributing app data that originates from Apple Search Ads campaigns on iOS devices.",
+      "source_url": "https://developer.apple.com/documentation/iad",
+      "source_label": "Apple Developer: iAd",
+      "verbatim": true,
+      "source_document_sha256": "f4515bdbb1506c85eeb5de70247239919c97f14fe607ed620867f5b5745f289f",
+      "source_checked_at": "2026-11-05"
     }
   ]
 }
