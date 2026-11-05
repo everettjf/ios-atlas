@@ -21,7 +21,8 @@ from collect_live_device import private_path
 SAFE_PREFIXES = (
     "/rootfs/Applications", "/rootfs/Library", "/rootfs/System",
     "/rootfs/bin", "/rootfs/sbin", "/rootfs/usr", "/rootfs/private/etc",
-    "/var/jb", "/private/var/jb",
+    "/Applications", "/Library", "/System", "/basebin", "/bin",
+    "/etc", "/lib", "/sbin", "/usr",
 )
 KINDS = {"file", "directory", "symlink", "character_device", "block_device",
          "socket", "fifo", "unknown"}
@@ -82,6 +83,8 @@ def export(manifest_path: Path, allowlist_path: Path) -> dict:
         if not scan or scan.get("status") != "complete":
             coverage.append({"status": scan.get("status", "not_scanned") if scan else "not_scanned",
                              "published": False})
+            if scan:
+                unpublished_entry_count += scan["entry_count"]
             continue
         source = manifest_path.parent / scan["file"]
         if source.resolve().parent != manifest_path.parent.resolve() or not source.is_file():

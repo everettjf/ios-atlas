@@ -22,21 +22,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_ROOT = (ROOT / ".local").resolve()
-STAT_FORMAT = "%z|%p|%u|%g|%i|%d|%m|%HT"
+DARWIN_STAT_FORMAT = "%z|%p|%u|%g|%i|%d|%m|%HT"
 FIND_BODY = r'''for path do
   printf '%s\0' "$path"
-  if stat -n -f '__STAT_FORMAT__' "$path" 2>/dev/null; then
+  if __STAT_COMMAND__ "$path" 2>/dev/null; then
     printf '\0'
-    if [ -L "$path" ]; then stat -n -f '%Y' "$path" 2>/dev/null; fi
+    if [ -L "$path" ]; then __READLINK_COMMAND__ "$path" 2>/dev/null; fi
     printf '\0'
   else
     printf '!stat-error\0\0'
   fi
-done'''.replace("__STAT_FORMAT__", STAT_FORMAT)
+done'''
 KIND = {
     "Regular File": "file", "Directory": "directory", "Symbolic Link": "symlink",
     "Character Device": "character_device", "Block Device": "block_device",
     "Socket": "socket", "FIFO": "fifo",
+    "regular file": "file", "regular empty file": "file",
+    "directory": "directory", "symbolic link": "symlink",
+    "character special file": "character_device", "block special file": "block_device",
+    "socket": "socket", "fifo": "fifo",
+    "f": "file", "d": "directory", "l": "symlink", "c": "character_device",
+    "b": "block_device", "s": "socket", "p": "fifo",
 }
 
 
@@ -64,10 +70,20 @@ def remote(args: argparse.Namespace, command: str) -> bytes:
     return result.stdout
 
 
-def scan_command(root: str) -> str:
+def scan_command(root: str, stat_style: str = "gnu") -> str:
     if not root.startswith("/") or root != os.path.normpath(root) or "\0" in root:
         raise ValueError("scan root must be an absolute normalized path")
-    return f"find {shlex.quote(root)} -xdev -exec sh -c {shlex.quote(FIND_BODY)} sh {{}} +"
+    if stat_style == "gnu":
+        format_string = r"%p\0%s|%m|%U|%G|%i|%D|%T@|%y\0%l\0"
+        return f"find {shlex.quote(root)} -xdev -printf {shlex.quote(format_string)}"
+    elif stat_style == "darwin":
+        stat_command = f"stat -n -f {shlex.quote(DARWIN_STAT_FORMAT)}"
+        readlink_command = "stat -n -f '%Y'"
+    else:
+        raise ValueError("unsupported stat style")
+    body = FIND_BODY.replace("__STAT_COMMAND__", stat_command).replace(
+        "__READLINK_COMMAND__", readlink_command)
+    return f"find {shlex.quote(root)} -xdev -exec sh -c {shlex.quote(body)} sh {{}} +"
 
 
 def parse_mounts(output: str) -> list[dict]:
@@ -104,7 +120,8 @@ def parse_record(parts: list[bytes], root: str) -> list:
         raise ValueError("unexpected Darwin stat format")
     try:
         size, mode, uid, gid, inode, device, mtime = (
-            int(fields[0]), int(fields[1], 8), *(int(field) for field in fields[2:7]))
+            int(fields[0]), int(fields[1], 8), *(int(field) for field in fields[2:6]),
+            int(float(fields[6])))
     except ValueError as error:
         raise ValueError("invalid numeric stat field") from error
     kind = KIND[fields[-1]]
@@ -146,20 +163,25 @@ def discover(args: argparse.Namespace, output_dir: Path) -> dict:
     build = decode(remote(args, "sw_vers -buildVersion")).strip()
     if product != args.product or build != args.build:
         raise ValueError("connected device product/build differs from requested snapshot")
+    stat_version = decode(remote(args, "stat --version | head -1"))
+    if not stat_version.startswith("stat (GNU coreutils)"):
+        raise ValueError("device stat is not the validated GNU variant")
     raw_mounts = decode(remote(args, "mount"))
     mounts = parse_mounts(raw_mounts)
     rootfs = decode(remote(args, "if [ -d /rootfs ]; then printf yes; fi")) == "yes"
-    roots = [{"path": item["target"], "source": item["source"],
+    if not rootfs:
+        raise ValueError("RootHide /rootfs view is missing")
+    roots = [{"path": "/rootfs" + ("" if item["target"] == "/" else item["target"]),
+              "mount_target": item["target"], "source": item["source"],
               "mount_type": item["type"], "role": "mount"} for item in mounts]
-    if rootfs and not any(item["path"] == "/rootfs" for item in roots):
-        roots.append({"path": "/rootfs", "source": "RootHide base-system view",
-                      "mount_type": "alias", "role": "namespace_alias"})
+    roots.append({"path": "/", "source": "RootHide jailbreak view",
+                  "mount_type": "namespace", "role": "namespace_alias"})
     roots.sort(key=lambda item: item["path"])
     manifest = {"schema_version": 1, "kind": "private_live_device_snapshot",
                 "product_type": product, "build": build,
                 "observed_at_utc": datetime.now(timezone.utc).isoformat(),
                 "mount_table_sha256": hashlib.sha256(raw_mounts.encode("utf-8", "surrogateescape")).hexdigest(),
-                "mounts": mounts, "roots": roots, "scans": {},
+                "mounts": mounts, "roots": roots, "stat_style": "gnu", "scans": {},
                 "privacy": "private; contains user and app paths; never publish directly"}
     save_json(output_dir / "manifest.json", manifest)
     (output_dir / "mount.txt").write_bytes(raw_mounts.encode("utf-8", "surrogateescape"))
@@ -174,7 +196,7 @@ def scan_root(args: argparse.Namespace, output_dir: Path, root: str) -> dict:
     counts: Counter[str] = Counter()
     started = time.monotonic()
     with stderr_path.open("wb") as errors, gzip.open(temporary, "wt", encoding="ascii") as sink:
-        process = subprocess.Popen(ssh_prefix(args) + [scan_command(root)],
+        process = subprocess.Popen(ssh_prefix(args) + [scan_command(root, "gnu")],
                                    stdout=subprocess.PIPE, stderr=errors)
         assert process.stdout is not None
         try:

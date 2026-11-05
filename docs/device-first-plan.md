@@ -11,9 +11,10 @@ Keep a full local metadata inventory for the owner's review. The public site con
 ## Current evidence
 
 - The official `23A355` firmware has 452,096 entries across FileSystem, SystemOS, and AppOS; 4,170 iOS cache images; 51 DriverKit images; and 3,363 standalone Mach-O files. The cache method and named-symbol indexes already cover every exact iOS cache image. See [acquisition](acquisition-23A355.md).
-- The published live-device catalog is **only** 430,719 paths and types beneath seven `/rootfs` system roots. It excludes the jailbreak namespace, preboot, data volume, and other roots. The current collector and site builder intentionally reject device-only paths. See [boundary note](../research/23A355/Stock-Device-Boundary.md) and [`collect_device.py`](../tools/collect_device.py).
+- The first published device catalog contained **only** 430,719 paths beneath seven `/rootfs` system roots. The newer private scan visited 12 views and found 531,311 path observations; two data-volume views were partial because of protected directories. Its privacy-reviewed public export contains 439,366 distinct system and jailbreak installation paths. See [boundary note](../research/23A355/Stock-Device-Boundary.md) and [collection procedure](live-device-collection.md).
 - All 80 iOS and three DriverKit physical cache files were previously checked against the device by SHA-256. This proves those cache bytes at that observation time, not that every other firmware file matches the running phone.
-- The site currently centers official firmware and still contains a `Compare builds` tab. These presentation choices must change for the new goal.
+- The site now opens with device files and no longer exposes a `Compare builds` tab. It labels the first published catalog as partial while the whole-device scan is prepared.
+- On 2026-11-05, CopyApp's saved device-specific SSH profile authenticated this exact phone as both `mobile` and `root`. A private mount discovery found 11 kernel mount targets plus the RootHide jailbreak namespace. The first `/rootfs/System/Developer` pilot recorded 177 entries without errors.
 
 ## Work order and acceptance gates
 
@@ -49,8 +50,8 @@ Start with a horizontal inventory: short, evidence-backed introductions for libr
 
 ## Immediate next implementation slice
 
-1. Build the namespace/mount manifest and a private, resumable whole-device metadata collector; validate it on one system mount and the jailbreak prefix before expanding to all mounts. The [collection procedure](live-device-collection.md) now specifies commands and the publication gate; the real full scan awaits a working root transport.
-2. Add a privacy-review/export stage that derives the public system/jailbreak catalog without leaking data-volume names.
-3. Adapt the site schema and navigation to live-device-first records, then import the existing cache and static metadata only where device identity is established.
+1. Inspect the two partial data-volume scans and document their inaccessible scope; keep their reachable paths and stderr private.
+2. Reconcile live standalone code against the exact-build firmware records by hash or UUID, then analyze jailbreak-only binaries separately.
+3. Expand library pages from metadata overview to source-backed purpose, observed device identity, dependencies, methods, and explicit open questions.
 
 The [research TODO](research-todo.md) tracks the remaining library-level work. The earlier [research and delivery plan](plan.md) documents the first firmware-centered implementation and its existing evidence; this document governs the next phase.

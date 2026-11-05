@@ -22,13 +22,23 @@ class LiveDevicePipelineTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         PRIVATE_ROOT.mkdir(parents=True, exist_ok=True)
 
+    def test_gnu_find_protocol_preserves_symlink_target(self) -> None:
+        root = "/rootfs/System"
+        payload = (b"/rootfs/System/link\0"
+                   b"11|777|0|0|42|9|1790739622.5|l\0"
+                   b"line\nbreak\0")
+        rows = list(records_from_chunks([payload[:13], payload[13:]], root))
+        self.assertEqual(rows, [["/rootfs/System/link", "symlink", 11, 0o777,
+                                 0, 0, 42, 9, 1790739622, "line\nbreak"]])
+        self.assertIn("-printf", scan_command(root))
+
     @unittest.skipUnless(sys.platform == "darwin", "Darwin stat protocol")
     def test_scan_keeps_newlines_and_symlink_targets(self) -> None:
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
             root = Path(temporary).resolve()
             (root / "line\nbreak").write_bytes(b"abc")
             (root / "shortcut").symlink_to("line\nbreak")
-            result = subprocess.run(["sh", "-c", scan_command(str(root))],
+            result = subprocess.run(["sh", "-c", scan_command(str(root), "darwin")],
                                     check=True, capture_output=True)
             rows = list(records_from_chunks([result.stdout[:7], result.stdout[7:]], str(root)))
             by_name = {Path(row[0]).name: row for row in rows}

@@ -17,10 +17,12 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.
 - [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 218 of 227 exact top-level iOS framework images and one DriverKit image; nine top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
 - [ ] Verify selected live device files outside the cache against the exact-build firmware, with exact namespace and path mapping.
-- [ ] Record all live mounts and RootHide namespaces; capture a private, resumable whole-device metadata snapshot with per-root completeness and error counts.
-- [ ] Publish a privacy-reviewed catalog of live system and jailbreak paths, including code-bearing files absent from the stock IPSW; keep user and app data path names private.
+- [x] Record all live mounts and RootHide namespaces; capture a private, resumable metadata snapshot with per-root completeness and error counts. Ten roots completed; two data-volume roots have protected-directory errors.
+- [x] Publish a privacy-reviewed catalog of live system and jailbreak installation paths, including paths absent from the stock IPSW; keep user and app data path names private.
+- [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
 - [ ] Analyze live standalone executables, dylibs, frameworks, extensions, and tweak components; link firmware analysis only to verified matching binaries.
-- [ ] Make live device files the primary website view, add mount and analysis coverage, and remove cross-version comparison navigation.
+- [x] Make live device files the primary website view, show scan-root coverage, and remove cross-version comparison navigation.
+- [ ] Add live standalone Mach-O and library analysis coverage by mount, including unsupported and failed states.
 
 ## Deeper studies, one component at a time
 
