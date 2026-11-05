@@ -370,6 +370,68 @@ def build() -> None:
                          "objc_image_count": len(image_counts),
                          "objc_unresolved_count": resolution_counts["unresolved"],
                          "objc_url": f"data/{build}-objc.json.gz"}
+        method_info = {}
+        method_paths = sorted(directory.glob("objc-methods-*.json"))
+        if method_paths:
+            if not objc_path.exists():
+                raise ValueError("method catalogs require the Objective-C class catalog")
+            segment_catalog = load(directory / "dyld-segments.json")
+            if (not segment_catalog["complete"] or
+                    segment_catalog["build"] != build or
+                    segment_catalog["cache_uuid"] != dyld["cache_uuid"] or
+                    segment_catalog["firmware_sha256"] != dyld["firmware_sha256"]):
+                raise ValueError("method catalogs require matching Mach-O segments")
+            segments_by_name = {item["install_name"]: item for item in segment_catalog["images"]}
+            class_keys = {(row[0], row[3]) for row in objc["records"] if row[3]}
+            classes = []
+            method_rows = []
+            seen_classes = set()
+            for path in method_paths:
+                source = load(path)
+                name = source["class_name"]
+                install_name = source["install_name"]
+                key = (name, install_name)
+                image = segments_by_name.get(install_name)
+                if not image:
+                    raise ValueError(f"method image absent from segment catalog: {path}")
+                text_segments = [part for part in image["segments"] if part["name"] == "__TEXT"]
+                rows = source["methods"]
+                if (source["schema_version"] != 1 or
+                        source["kind"] != "selected_objc_class_methods" or
+                        source["source"] != "official_ipsw_intact_cache_family" or
+                        source["build"] != build or
+                        source["product_type"] != dyld["product_type"] or
+                        source["firmware_sha256"] != dyld["firmware_sha256"] or
+                        source["cache_uuid"] != dyld["cache_uuid"] or
+                        source["image_uuid"] != image["uuid"] or
+                        key not in class_keys or key in seen_classes or
+                        len(text_segments) != 1 or
+                        source["method_count"] != len(rows) or
+                        source["class_method_count"] != sum(row[0] == "+" for row in rows) or
+                        source["instance_method_count"] != sum(row[0] == "-" for row in rows) or
+                        len({(row[0], row[1]) for row in rows}) != len(rows) or
+                        any(not re.fullmatch(r"[0-9a-f]{64}", source[field])
+                            for field in ("extracted_image_sha256", "class_dump_sha256"))):
+                    raise ValueError(f"incomplete or mismatched method catalog: {path}")
+                start = text_segments[0]["addr"]
+                end = start + text_segments[0]["memsz"]
+                if any(len(row) != 3 or row[0] not in ("+", "-") or
+                       not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[1]) or
+                       not re.fullmatch(r"0x[0-9a-f]+", row[2]) or
+                       not start <= int(row[2], 16) < end for row in rows):
+                    raise ValueError(f"invalid method selector or address: {path}")
+                seen_classes.add(key)
+                classes.append({field: source[field] for field in
+                                ("class_name", "install_name", "image_uuid", "extracted_image_sha256",
+                                 "class_dump_sha256", "method_count", "class_method_count",
+                                 "instance_method_count")})
+                method_rows.extend([[name, install_name, *row] for row in rows])
+            dump(DIST / "data" / f"{build}-objc-methods.json.gz",
+                 {"schema_version": 1, "build": build, "classes": classes,
+                  "records": method_rows}, compressed=True)
+            method_info = {"objc_method_count": len(method_rows),
+                           "objc_method_class_count": len(classes),
+                           "objc_methods_url": f"data/{build}-objc-methods.json.gz"}
         protocol_info = {}
         protocol_path = directory / "objc-protocols.json"
         if protocol_path.exists():
@@ -640,6 +702,7 @@ def build() -> None:
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
                        "dyld_url": f"data/{build}-dyld.json", **dependency_info, **objc_info,
+                       **method_info,
                        **protocol_info, **swift_info,
                        **device_info,
                        **driverkit_info, **archive_info, **restore_info, **kernel_info,

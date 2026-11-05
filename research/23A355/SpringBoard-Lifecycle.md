@@ -10,6 +10,7 @@ Target: iPhone 11 (`iPhone12,1`), build `23A355`, iOS arm64e dyld cache UUID `C0
 - The metadata names several startup-related entry points: `+initializeSystemServicesBeforeApplicationDidFinishLaunching` at `0x21d69fde4`, `-applicationDidFinishLaunching:` at `0x21d6a1a48`, `-_completeStartupAfterMainSceneConnect:` at `0x21d6a41d8`, `-_startBulletinBoardServer` at `0x21d6a1730`, `-_startSystemStatusServerAndFriends` at `0x21d6a38e4`, and `-_initializeDeferredItems` at `0x21d6aafc8`.
 - The class's declared instance variables include `_mainWorkspace`, `_lockScreenService`, `_homeScreenService`, `_appSwitcherSystemService`, `_notificationDispatcher`, and `_restartManager`. Their names and offsets are visible in the cache metadata; this observation alone does not establish when or how they are initialized.
 - The framework has 244 direct Mach-O dylib load declarations in the [dependency catalog](../../catalog/ios/23A355/dyld-dependencies.json). They describe potential load relationships, not calls from any particular startup method.
+- A focused [method catalog](../../catalog/ios/23A355/objc-methods-SpringBoard.json) records all 645 declarations in this selected `SpringBoard` class dump: four class methods and 641 instance methods. Every recorded implementation address is inside this image's `__TEXT` segment. The [site method view](https://xnu.app/ios-atlas/#methods) searches selectors and addresses; its coverage is limited to classes individually cataloged this way.
 
 ## Interpretation and open questions
 
@@ -26,5 +27,7 @@ Use the exact IPSW and intact cache family identified in [the acquisition record
 `ipsw class-dump <MAIN_DSC> /System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard --class '^SpringBoard$' --re -V`
 
 `ipsw dyld extract <MAIN_DSC> /System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard --output .local/rea/extracted --slide --objc --stubs --cache <MAIN_DSC>.a2s`
+
+Save the class dump output under ignored `.local/rea/springboard-class.txt`, then run `python3 tools/catalog_objc_methods.py --class-dump .local/rea/springboard-class.txt --class-name SpringBoard --image .local/rea/extracted/SpringBoard --image-sha256 7732a59763b6fa34a52bfe8531d6dc0fcfa69761f6a96f438c0cda3363bb20be --install-name /System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard --segments catalog/ios/23A355/dyld-segments.json --expected-method-count 645 --output catalog/ios/23A355/objc-methods-SpringBoard.json`.
 
 The full class dump, extracted binary, and disassembly remain local. Published metadata and this note are derived from the exact build; no live execution is asserted.

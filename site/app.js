@@ -29,7 +29,7 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods' ? await compressedJSON(info.objc_methods_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
   if (kind === 'dependencies' || kind === 'driverkit_dependencies') {
     result.byName = new Map(result.images.map((item) => [item.install_name, item]));
@@ -56,7 +56,7 @@ function setTab(tab, query = '') {
   state.browsePath = '/';
   state.swiftImage = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
-  history.replaceState(null, '', tab === 'research' && query ? `#research/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
+  history.replaceState(null, '', (tab === 'research' || tab === 'methods') && query ? `#${tab}/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
   document.querySelector('.workspace').scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -70,17 +70,20 @@ function updateSource() {
   const kernel = state.tab === 'kernel';
   const services = state.tab === 'services';
   const objc = state.tab === 'objc';
+  const methods = state.tab === 'methods';
   const protocols = state.tab === 'protocols';
   const swift = state.tab === 'swift';
   const research = state.tab === 'research';
   const observation = state.tab === 'observation';
   const reach = state.tab === 'reach';
-  $('#source-title').textContent = observation ? 'Sources: official IPSW and filtered live /rootfs' : device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
+  $('#source-method').href = methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Lifecycle.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
+  $('#source-title').textContent = observation ? 'Sources: official IPSW and filtered live /rootfs' : device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : methods ? 'Source: selected class dumps from the exact iOS cache' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
     : observation ? 'Exact path/type pairs within seven scanned roots only. IPSW image paths and the live RootHide namespace can differ; this is not a jailbreak before/after comparison.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. All 3 files matched the connected device by SHA-256.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
+    : methods ? 'Method selectors and IMP addresses are indexed for selected classes only. These are static metadata, not observed calls or recommended tweak hooks.'
     : protocols ? 'Protocol entries come from the intact iOS cache optimization table. Repeated image basenames are kept as ambiguous associations.'
     : swift ? 'Static type-to-protocol conformance records from the intact cache. Addresses resolve to exact Mach-O images; names are raw symbols when available.'
     : reach ? 'Shortest paths follow exact in-cache install-name matches from static Mach-O load commands. No path proves runtime loading.'
@@ -95,7 +98,7 @@ function updateSource() {
 
 function toolbar({placeholder, volumes = [], filterLabel = 'All volumes'}) {
   const filterName = filterLabel === 'All variants' ? 'Filter variant' : filterLabel === 'All resolutions' ? 'Filter executable resolution' : 'Filter volume';
-  return `<div class="toolbar"><label class="searchbox"><span class="sr-only">Search paths</span><input id="catalog-search" type="search" autocomplete="off" placeholder="${escapeHTML(placeholder)}" value="${escapeHTML(state.query)}"></label>${volumes.length ? `<select id="volume-filter" aria-label="${filterName}"><option value="all">${filterLabel}</option>${volumes.map((name) => `<option value="${escapeHTML(name)}" ${state.volume === name ? 'selected' : ''}>${escapeHTML(name)}</option>`).join('')}</select>` : ''}<span class="result-count" id="result-count"></span></div>`;
+  return `<div class="toolbar"><label class="searchbox"><span class="sr-only">Search catalog</span><input id="catalog-search" type="search" autocomplete="off" placeholder="${escapeHTML(placeholder)}" value="${escapeHTML(state.query)}"></label>${volumes.length ? `<select id="volume-filter" aria-label="${filterName}"><option value="all">${filterLabel}</option>${volumes.map((name) => `<option value="${escapeHTML(name)}" ${state.volume === name ? 'selected' : ''}>${escapeHTML(name)}</option>`).join('')}</select>` : ''}<span class="result-count" id="result-count"></span></div>`;
 }
 
 function bindToolbar() {
@@ -157,7 +160,13 @@ function detailHTML(item, mode, data) {
   if (mode === 'objc') {
     const [name, address, label, installName, resolution] = item;
     const imageLink = installName ? `<button class="inline-link" data-linked-tab="images" data-linked-query="${escapeHTML(installName)}">${escapeHTML(installName)} ↗</button>` : 'Unresolved';
-    return `<span class="detail-label">OBJECTIVE-C CLASS ENTRY</span><h3>${escapeHTML(name)}</h3><dl><dt>CLASS METADATA ADDRESS</dt><dd>${escapeHTML(address)}</dd><dt>CACHE IMAGE LABEL</dt><dd>${escapeHTML(label)}</dd><dt>DEFINING CACHE IMAGE</dt><dd>${imageLink}</dd><dt>IMAGE RESOLUTION</dt><dd>${resolution === 'segment_address' ? 'Class address within a Mach-O segment of one matching image' : resolution === 'unique_label' ? 'Unique image basename in this cache' : 'No unique image established'}</dd></dl><p class="explain">This is an entry in the dyld cache Objective-C optimization table. Names and addresses describe static metadata in the official firmware, not live objects or method calls. Multiple entries may share a class name.</p>`;
+    const methods = state.datasets.get(`methods:${state.build}`)?.classes.find((entry) => entry.class_name === name && entry.install_name === installName);
+    return `<span class="detail-label">OBJECTIVE-C CLASS ENTRY</span><h3>${escapeHTML(name)}</h3><dl><dt>CLASS METADATA ADDRESS</dt><dd>${escapeHTML(address)}</dd><dt>CACHE IMAGE LABEL</dt><dd>${escapeHTML(label)}</dd><dt>DEFINING CACHE IMAGE</dt><dd>${imageLink}</dd><dt>IMAGE RESOLUTION</dt><dd>${resolution === 'segment_address' ? 'Class address within a Mach-O segment of one matching image' : resolution === 'unique_label' ? 'Unique image basename in this cache' : 'No unique image established'}</dd>${methods ? `<dt>INDEXED METHODS</dt><dd><button class="inline-link" data-linked-tab="methods" data-linked-query="class:${escapeHTML(name)}">${fmt(methods.method_count)} selectors ↗</button></dd>` : ''}</dl><p class="explain">This is an entry in the dyld cache Objective-C optimization table. Names and addresses describe static metadata in the official firmware, not live objects or method calls. Multiple entries may share a class name.</p>`;
+  }
+  if (mode === 'methods') {
+    const [className, installName, kind, selector, address] = item;
+    const source = data.classes.find((entry) => entry.class_name === className && entry.install_name === installName);
+    return `<span class="detail-label">SELECTED OBJECTIVE-C METHOD</span><h3>${escapeHTML(`${kind}[${className} ${selector}]`)}</h3><dl><dt>IMP ADDRESS</dt><dd>${escapeHTML(address)}</dd><dt>DEFINING IMAGE</dt><dd><button class="inline-link" data-linked-tab="images" data-linked-query="${escapeHTML(installName)}">${escapeHTML(installName)} ↗</button></dd><dt>MACH-O UUID</dt><dd>${escapeHTML(source.image_uuid)}</dd><dt>EXTRACTED IMAGE SHA-256</dt><dd>${escapeHTML(source.extracted_image_sha256)}</dd><dt>CLASS DUMP SHA-256</dt><dd>${escapeHTML(source.class_dump_sha256)}</dd></dl><p class="explain">Selector and implementation address from a selected class dump of the exact cache image. This does not show a runtime call, verify method behavior, or establish a safe tweak hook. The extracted image and full dump remain local.</p>`;
   }
   if (mode === 'protocols') {
     const [name, address, label, installName, resolution] = item;
@@ -218,14 +227,14 @@ function detailHTML(item, mode, data) {
 function renderRows(items, mode, data) {
   const visible = items.slice(0, state.limit);
   const rows = visible.map((item, index) => {
-    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : mode === 'objc' || mode === 'protocols' ? item[0] : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' ? item.path : mode === 'kernel' ? item.id : mode === 'services' ? item.label || item.plist_path : item.name;
-    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'objc' || mode === 'protocols' ? item[2] : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'kernel' ? item.variant.toUpperCase() : mode === 'services' ? item.executable.status.toUpperCase() : size(item.size);
-    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : mode === 'objc' || mode === 'protocols' ? '◌' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' ? '▧' : mode === 'kernel' ? '✳' : mode === 'services' ? '◉' : '◈';
+    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : mode === 'methods' ? `${item[2]}[${item[0]} ${item[3]}]` : mode === 'objc' || mode === 'protocols' ? item[0] : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' ? item.path : mode === 'kernel' ? item.id : mode === 'services' ? item.label || item.plist_path : item.name;
+    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'methods' ? item[4] : mode === 'objc' || mode === 'protocols' ? item[2] : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'kernel' ? item.variant.toUpperCase() : mode === 'services' ? item.executable.status.toUpperCase() : size(item.size);
+    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : mode === 'objc' || mode === 'protocols' || mode === 'methods' ? '◌' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' ? '▧' : mode === 'kernel' ? '✳' : mode === 'services' ? '◉' : '◈';
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
   $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
-  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'services' ? 'SERVICE LABEL' : mode === 'objc' ? 'CLASS NAME' : mode === 'protocols' ? 'PROTOCOL NAME' : 'PATH / INSTALL NAME';
-  const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : mode === 'objc' || mode === 'protocols' ? 'IMAGE LABEL' : 'SOURCE';
+  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'services' ? 'SERVICE LABEL' : mode === 'methods' ? 'METHOD' : mode === 'objc' ? 'CLASS NAME' : mode === 'protocols' ? 'PROTOCOL NAME' : 'PATH / INSTALL NAME';
+  const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : mode === 'methods' ? 'IMP ADDRESS' : mode === 'objc' || mode === 'protocols' ? 'IMAGE LABEL' : 'SOURCE';
   $('#results').innerHTML = `<div class="result-head"><span>${heading}</span><span>${sourceHeading}</span></div>${rows || '<p class="empty-state">No matching entries in the selected source.</p>'}${items.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
   $('#detail').innerHTML = detailHTML(state.selected, mode, data);
   for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
@@ -236,15 +245,19 @@ function renderResults() {
   const mode = state.tab;
   if (mode === 'swift') { renderSwiftResults(); return; }
   if (mode === 'reach') { renderReachResults(); return; }
-  const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
-  if (!data || !['images','driverkit','objc','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
+  const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'methods' ? 'methods' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
+  if (!data || !['images','driverkit','objc','methods','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
   if ((filesystemMode(mode) || mode === 'device') && !state.query.trim()) { renderDirectoryResults(mode, data); return; }
   const query = state.query.trim().toLocaleLowerCase();
   let items;
   if (filesystemMode(mode)) items = data.entries.filter((item) => (state.volume === 'all' || data.volumes[item[0]].name === state.volume) && (!query || item[1].toLocaleLowerCase().includes(query)));
   else if (mode === 'device') items = data.entries.filter((item) => !query || item[0].toLocaleLowerCase().includes(query));
   else if (mode === 'objc' && query.startsWith('image:')) items = data.records.filter((item) => item[3] === state.query.trim().slice(6));
+  else if (mode === 'objc' && query.startsWith('class:')) items = data.records.filter((item) => item[0] === state.query.trim().slice(6));
   else if (mode === 'objc') items = data.records.filter((item) => !query || `${item[0]} ${item[1]} ${item[2]} ${item[3] || ''}`.toLocaleLowerCase().includes(query));
+  else if (mode === 'methods' && query.startsWith('class:')) items = data.records.filter((item) => item[0] === state.query.trim().slice(6));
+  else if (mode === 'methods' && query.startsWith('image:')) items = data.records.filter((item) => item[1] === state.query.trim().slice(6));
+  else if (mode === 'methods') items = data.records.filter((item) => !query || `${item[0]} ${item[1]} ${item[3]} ${item[4]}`.toLocaleLowerCase().includes(query));
   else if (mode === 'protocols' && query.startsWith('image:')) items = data.records.filter((item) => item[3] === state.query.trim().slice(6));
   else if (mode === 'protocols') items = data.records.filter((item) => !query || `${item[0]} ${item[1]} ${item[2]} ${item[3] || ''}`.toLocaleLowerCase().includes(query));
   else if ((mode === 'images' || mode === 'driverkit') && query.startsWith('imports:')) {
@@ -459,6 +472,7 @@ async function renderExplorer() {
   if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
   if (mode === 'driverkit' && !activeBuild().driverkit_url) { explorer.innerHTML = '<p class="empty-state">No DriverKit cache is cataloged for this build.</p>'; return; }
   if (mode === 'objc' && !activeBuild().objc_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C class table is cataloged for this build.</p>'; return; }
+  if (mode === 'methods' && !activeBuild().objc_methods_url) { explorer.innerHTML = '<p class="empty-state">No selected method catalogs are published for this build.</p>'; return; }
   if (mode === 'protocols' && !activeBuild().objc_protocol_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C protocol table is cataloged for this build.</p>'; return; }
   if (mode === 'archive' && !activeBuild().archive_url) { explorer.innerHTML = '<p class="empty-state">No restore archive is cataloged for this build.</p>'; return; }
   if (mode === 'restore' && !activeBuild().restore_url) { explorer.innerHTML = '<p class="empty-state">No restore RAM disks are cataloged for this build.</p>'; return; }
@@ -466,8 +480,9 @@ async function renderExplorer() {
   if (mode === 'services' && !activeBuild().service_url) { explorer.innerHTML = '<p class="empty-state">No official launchd service catalog is available for this build.</p>'; return; }
   explorer.innerHTML = '<p class="loading">Opening source-bound catalog…</p>';
   const [data] = await Promise.all([
-    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
+    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'methods' ? 'methods' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
     ...(mode === 'images' && activeBuild().dyld_dependency_url ? [dataset('dependencies')] : []),
+    ...(mode === 'objc' && activeBuild().objc_methods_url ? [dataset('methods')] : []),
     ...(mode === 'files' ? [dataset('dyld')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : [])
   ]);
@@ -475,10 +490,11 @@ async function renderExplorer() {
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
   const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div>${activeBuild().service_direct_import_count == null ? '' : `<div><strong>${fmt(activeBuild().service_direct_import_count)} DIRECT LOADS</strong><span>From ${fmt(activeBuild().service_executable_count)} service executables; ${fmt(activeBuild().service_cache_matched_import_count)} match cache images</span></div>`}</div>` : '';
   const objcSummary = mode === 'objc' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_class_count)} CLASS ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_image_count)} CACHE IMAGES</strong><span>${fmt(activeBuild().objc_unresolved_count)} class entries without an exact image</span></div></div>` : '';
+  const methodSummary = mode === 'methods' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_method_count)} METHODS</strong><span>Selectors and IMP addresses from selected class dumps</span></div><div><strong>${fmt(activeBuild().objc_method_class_count)} CLASS${activeBuild().objc_method_class_count === 1 ? '' : 'ES'}</strong><span>Focused analysis coverage within the exact build</span></div></div>` : '';
   const protocolSummary = mode === 'protocols' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_protocol_entry_count)} PROTOCOL ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_protocol_ambiguous_label_count)} AMBIGUOUS ENTRIES</strong><span>${fmt(activeBuild().objc_protocol_unique_label_count)} entries have a unique image-label match</span></div></div>` : '';
   const prefix = mode === 'driverkit' ? 'driverkit' : 'dyld';
   const dependencySummary = (mode === 'images' || mode === 'driverkit') && activeBuild()[`${prefix}_dependency_url`] ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild()[`${prefix}_direct_import_count`])} DIRECT LIBRARY LOADS</strong><span>From ${fmt(activeBuild()[`${prefix}_dependency_image_count`])} cached images</span></div><div><strong>${fmt(activeBuild()[`${prefix}_exact_cache_match_count`])} EXACT CACHE MATCHES</strong><span>Static install-name matches within this cache family</span></div></div>` : '';
-  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + methodSummary + protocolSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'methods' ? 'Search selected classes, selectors, or IMP addresses…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#detail').addEventListener('click', (event) => {
     const link = event.target.closest('[data-linked-tab]');
@@ -575,8 +591,9 @@ async function start() {
   $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
-  if (['files','restore','device','images','objc','protocols','swift','reach','driverkit','caches','archive','kernel','services','research','observation','compare'].includes(initial)) state.tab = initial;
+  if (['files','restore','device','images','objc','methods','protocols','swift','reach','driverkit','caches','archive','kernel','services','research','observation','compare'].includes(initial)) state.tab = initial;
   if (initial === 'research' && noteId) state.query = decodeURIComponent(noteId);
+  if (initial === 'methods' && noteId) state.query = decodeURIComponent(noteId);
   if (initial === 'reach' && noteId) state.reachSource = decodeURIComponent(noteId);
   if (['files','restore','device'].includes(initial) && noteId) state.browsePath = decodeURIComponent(noteId);
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
