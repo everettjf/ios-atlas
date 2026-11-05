@@ -807,6 +807,85 @@ def build() -> None:
                                         "standalone_objc_file_count": len(files),
                                         "standalone_objc_no_info_count": status_counts["no_objc_info"],
                                         "standalone_objc_index_url": index_url})
+            symbol_path = directory / "standalone-symbols.json.gz"
+            if symbol_path.exists():
+                symbols = load(symbol_path)
+                files = symbols["files"]
+                by_file = {(item["volume"], item["path"]): item for item in rows}
+                if (symbols["schema_version"] != 1 or
+                        symbols["kind"] != "standalone_macho_named_text_symbols" or
+                        symbols["source"] != "official_ipsw_mounted_images" or
+                        symbols["product_type"] != dyld["product_type"] or
+                        symbols["build"] != build or
+                        symbols["firmware_sha256"] != dyld["firmware_sha256"] or
+                        symbols["macho_file_count"] != len(files) or
+                        len(files) != len(rows)):
+                    raise ValueError("standalone symbol source mismatch")
+                totals = Counter()
+                summaries = []
+                buckets = defaultdict(list)
+                seen = set()
+                for item in files:
+                    key = (item["volume"], item["path"])
+                    original = by_file.get(key)
+                    sections = item["text_sections"]
+                    named = item["symbols"]
+                    if (original is None or key in seen or
+                            item["sha256"] != original["sha256"] or
+                            item["uuid"] != original["slices"][0]["uuid"] or
+                            item["named_symbol_count"] != len(named) or
+                            len({tuple(row) for row in named}) != len(named) or
+                            any(not re.fullmatch(r"[0-9a-f]{64}", item[field]) for field in
+                                ("macho_loads_sha256", "symbol_dump_sha256")) or
+                            any(item[field] < 0 for field in
+                                ("symbol_dump_replacement_char_count",
+                                 "duplicate_symbol_row_count", "unnamed_text_row_count",
+                                 "outside_text_row_count")) or
+                            any(len(section) != 3 or not section[0] or
+                                not isinstance(section[1], int) or
+                                not isinstance(section[2], int) or section[2] < 0
+                                for section in sections)):
+                        raise ValueError(f"invalid standalone symbol catalog: {key}")
+                    ranges = defaultdict(list)
+                    for segment, address, length in sections:
+                        ranges[segment].append((address, address + length))
+                    if any(len(row) != 4 or not re.fullmatch(r"0x[0-9a-f]+", row[0]) or
+                           not row[1] or not row[2] or row[3] not in ranges or
+                           not any(lo <= int(row[0], 16) < hi for lo, hi in ranges[row[3]])
+                           for row in named):
+                        raise ValueError(f"standalone named symbol outside __text: {key}")
+                    seen.add(key)
+                    totals["named_symbols"] += len(named)
+                    totals["duplicate_rows"] += item["duplicate_symbol_row_count"]
+                    totals["unnamed_rows"] += item["unnamed_text_row_count"]
+                    totals["outside_rows"] += item["outside_text_row_count"]
+                    totals["files_without_names"] += not bool(named)
+                    bucket_id = hashlib.sha256(f'{key[0]}\0{key[1]}'.encode()).digest()[0] % 64
+                    bucket_url = (f"data/{build}-standalone-symbols/{bucket_id:02x}.json.gz"
+                                  if named else None)
+                    summaries.append({"volume": key[0], "path": key[1],
+                                      "sha256": item["sha256"], "uuid": item["uuid"],
+                                      "named_symbol_count": len(named),
+                                      "bucket_url": bucket_url})
+                    if named:
+                        buckets[bucket_id].append({"volume": key[0], "path": key[1],
+                                                   "sha256": item["sha256"],
+                                                   "symbols": named})
+                if (len(seen) != len(rows) or
+                        any(symbols["totals"].get(name) != value for name, value in totals.items())):
+                    raise ValueError("standalone symbol totals disagree")
+                for bucket_id, entries in buckets.items():
+                    dump(DIST / f"data/{build}-standalone-symbols/{bucket_id:02x}.json.gz",
+                         {"schema_version": 1, "build": build, "files": entries},
+                         compressed=True)
+                index_url = f"data/{build}-standalone-symbol-index.json.gz"
+                dump(DIST / index_url,
+                     {"schema_version": 1, "build": build, "files": summaries,
+                      "totals": symbols["totals"]}, compressed=True)
+                standalone_info.update({"standalone_named_symbol_count": totals["named_symbols"],
+                                        "standalone_symbol_file_count": len(files),
+                                        "standalone_symbol_empty_file_count": totals["files_without_names"],
+                                        "standalone_symbol_index_url": index_url})
         device_info = {}
         device_path = directory / "device-rootfs.json.gz"
         if device_path.exists():

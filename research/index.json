@@ -44,6 +44,13 @@
     "note": "research/23A355/Standalone-ObjC-Method-Coverage.md"
   },
   {
+    "id": "standalone-named-symbol-coverage",
+    "build": "23A355",
+    "title": "Which named code symbols are visible in standalone Mach-O files?",
+    "summary": "An exact-file pass over all 3,363 standalone Mach-O files yields 323,061 unique named __text records in 1,200 files. Symbol names complement ObjC methods but do not enumerate every function.",
+    "note": "research/23A355/Standalone-Named-Symbol-Coverage.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",
