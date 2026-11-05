@@ -28,6 +28,40 @@ def dump(path: Path, value: object, compressed: bool = False) -> None:
     path.write_bytes(gzip.compress(content, mtime=0) if compressed else content)
 
 
+def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dict:
+    dependencies = load(path)
+    dependency_images = dependencies["images"]
+    expected = {image["install_name"]: image["uuid"] for image in cache["images"]}
+    actual = {image["install_name"]: image["uuid"] for image in dependency_images}
+    imports = [imp for image in dependency_images for imp in image["imports"]]
+    if (not dependencies["complete"] or
+            dependencies["kind"] != "dyld_image_direct_loads" or
+            dependencies["source"] != "official_ipsw_intact_cache_family" or
+            dependencies["build"] != build or
+            dependencies["product_type"] != cache["product_type"] or
+            dependencies["firmware_sha256"] != cache["firmware_sha256"] or
+            dependencies["cache_uuid"] != cache["cache_uuid"] or
+            dependencies["image_count"] != len(dependency_images) or
+            len(actual) != len(dependency_images) or actual != expected or
+            dependencies["direct_import_count"] != len(imports) or
+            dependencies["exact_cache_name_match_count"] != sum(
+                imp["install_name"] in expected for imp in imports) or
+            dependencies["load_command_counts"] != {
+                command: sum(imp["load_command"] == command for imp in imports)
+                for command in dependencies["load_command_counts"]} or
+            sum(dependencies["load_command_counts"].values()) != len(imports)):
+        raise ValueError(f"incomplete or mismatched {label} dependency catalog in {path.parent}")
+    url = f"data/{build}-{label}-dependencies.json.gz"
+    dump(DIST / url, {"schema_version": 1, "build": build,
+         "images": [{"install_name": image["install_name"],
+                     "imports": image["imports"]} for image in dependency_images]},
+         compressed=True)
+    return {f"{label}_dependency_image_count": len(dependency_images),
+            f"{label}_direct_import_count": len(imports),
+            f"{label}_exact_cache_match_count": dependencies["exact_cache_name_match_count"],
+            f"{label}_dependency_url": url}
+
+
 def build() -> None:
     if DIST.exists():
         shutil.rmtree(DIST)
@@ -80,38 +114,7 @@ def build() -> None:
         dependency_info = {}
         dependency_path = directory / "dyld-dependencies.json"
         if dependency_path.exists():
-            dependencies = load(dependency_path)
-            dependency_images = dependencies["images"]
-            expected = {image["install_name"]: image["uuid"] for image in dyld["images"]}
-            actual = {image["install_name"]: image["uuid"] for image in dependency_images}
-            imports = [imp for image in dependency_images for imp in image["imports"]]
-            if (not dependencies["complete"] or
-                    dependencies["kind"] != "dyld_image_direct_loads" or
-                    dependencies["source"] != "official_ipsw_intact_cache_family" or
-                    dependencies["build"] != build or
-                    dependencies["product_type"] != dyld["product_type"] or
-                    dependencies["firmware_sha256"] != dyld["firmware_sha256"] or
-                    dependencies["cache_uuid"] != dyld["cache_uuid"] or
-                    dependencies["image_count"] != len(dependency_images) or
-                    len(actual) != len(dependency_images) or actual != expected or
-                    dependencies["direct_import_count"] != len(imports) or
-                    dependencies["exact_cache_name_match_count"] != sum(
-                        imp["install_name"] in expected for imp in imports) or
-                    dependencies["load_command_counts"] != {
-                        command: sum(imp["load_command"] == command for imp in imports)
-                        for command in dependencies["load_command_counts"]} or
-                    sum(dependencies["load_command_counts"].values()) != len(imports)):
-                raise ValueError(f"incomplete or mismatched dyld dependency catalog in {directory}")
-            dump(DIST / "data" / f"{build}-dyld-dependencies.json.gz",
-                 {"schema_version": 1, "build": build,
-                  "images": [{"install_name": image["install_name"],
-                              "imports": image["imports"]} for image in dependency_images]},
-                 compressed=True)
-            dependency_info = {
-                "dyld_dependency_image_count": len(dependency_images),
-                "dyld_direct_import_count": len(imports),
-                "dyld_exact_cache_match_count": dependencies["exact_cache_name_match_count"],
-                "dyld_dependency_url": f"data/{build}-dyld-dependencies.json.gz"}
+            dependency_info = publish_dependencies(dependency_path, dyld, build, "dyld")
         driverkit_info = {}
         if driverkit_path.exists():
             driverkit = load(driverkit_path)
@@ -129,6 +132,10 @@ def build() -> None:
             driverkit_info = {"driverkit_image_count": len(driverkit_images),
                               "driverkit_cache_file_count": len(driverkit["files"]),
                               "driverkit_url": f"data/{build}-driverkit.json"}
+            driverkit_dependency_path = directory / "driverkit-dependencies.json"
+            if driverkit_dependency_path.exists():
+                driverkit_info.update(publish_dependencies(driverkit_dependency_path,
+                                                           driverkit, build, "driverkit"))
         device_info = {}
         device_path = directory / "device-rootfs.json.gz"
         if device_path.exists():
