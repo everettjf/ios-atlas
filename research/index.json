@@ -16,6 +16,13 @@
     "note": "research/23A355/Foundation-Method-Surface.md"
   },
   {
+    "id": "method-catalog-coverage",
+    "build": "23A355",
+    "title": "What does the per-image Objective-C method catalog cover?",
+    "summary": "Nineteen exact cache images yield 645,046 method entries. The index preserves three missing selector labels and 28 Swift-marked classes outside the ObjC optimization class table.",
+    "note": "research/23A355/Method-Catalog-Coverage.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",

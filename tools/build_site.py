@@ -397,6 +397,9 @@ def build() -> None:
                 class_table = {(row[0], row[1]) for row in objc["records"] if row[3] == install_name}
                 class_groups = [group for group in groups if group["category_name"] is None]
                 category_groups = [group for group in groups if group["category_name"] is not None]
+                actual_class_table = {(group["class_name"], group["metadata_address"])
+                                      for group in class_groups}
+                extra_classes = actual_class_table - class_table
                 if (source["schema_version"] != 1 or
                         source["kind"] != "dyld_objc_image_methods" or
                         source["source"] != "official_ipsw_intact_cache_family" or
@@ -408,11 +411,17 @@ def build() -> None:
                         install_name in seen_images or
                         len(text_segments) != 1 or
                         source["class_count"] != len(class_groups) or
+                        source["toc_class_count"] != len(class_table) or
+                        source["unlisted_swift_class_count"] != len(extra_classes) or
+                        not class_table <= actual_class_table or
+                        len(class_groups) != len(class_table) + len(extra_classes) or
+                        any(not group["is_swift"] for group in class_groups
+                            if (group["class_name"], group["metadata_address"]) in extra_classes) or
                         source["category_count"] != len(category_groups) or
                         source["method_count"] != len(rows) or
+                        not isinstance(source["class_dump_replacement_char_count"], int) or
+                        source["class_dump_replacement_char_count"] < 0 or
                         not 0 <= source["rendered_protocol_count"] <= source["toc_protocol_count"] or
-                        {(group["class_name"], group["metadata_address"])
-                         for group in class_groups} != class_table or
                         len({group["display_name"] for group in groups}) != len(groups) or
                         len({tuple(row) for row in rows}) != len(rows) or
                         any(not re.fullmatch(r"[0-9a-f]{64}", source[field])
@@ -424,7 +433,8 @@ def build() -> None:
                           for part in image["segments"] if part["name"] != "__LINKEDIT"]
                 if any(len(row) != 4 or not isinstance(row[0], int) or
                        not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
-                       not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2]) or
+                       (row[2] is not None and
+                        not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2])) or
                        not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
                        not start <= int(row[3], 16) < end for row in rows):
                     raise ValueError(f"invalid method selector or address: {path}")
@@ -435,20 +445,23 @@ def build() -> None:
                                                   else f"{group['class_name']} ({group['category_name']})")
                         for index, group in enumerate(groups))):
                     raise ValueError(f"method group counts or addresses disagree: {path}")
-                duplicate_groups = Counter((row[0], row[1], row[2]) for row in rows)
-                if source["duplicate_selector_group_count"] != sum(count > 1 for count in duplicate_groups.values()):
+                duplicate_groups = Counter((row[0], row[1], row[2]) for row in rows if row[2] is not None)
+                if (source["unknown_selector_count"] != sum(row[2] is None for row in rows) or
+                        source["duplicate_selector_group_count"] != sum(count > 1 for count in duplicate_groups.values())):
                     raise ValueError(f"duplicate selector count mismatch: {path}")
                 seen_images.add(install_name)
                 totals["class"] += len(class_groups)
                 totals["category"] += len(category_groups)
                 totals["method"] += len(rows)
+                totals["unknown_selector"] += source["unknown_selector_count"]
+                totals["unlisted_swift_class"] += source["unlisted_swift_class_count"]
                 classes = [{**group, "install_name": install_name, "image_uuid": image["uuid"],
                             "extracted_image_sha256": source["extracted_image_sha256"],
                             "class_dump_sha256": source["class_dump_sha256"]}
                            for group in groups]
                 method_rows = [[groups[row[0]]["display_name"], install_name,
                                 row[1], row[2], row[3]] for row in rows]
-                method_rows.sort(key=lambda row: (row[0].casefold(), row[3].casefold(), row[2], row[4]))
+                method_rows.sort(key=lambda row: (row[0].casefold(), (row[3] or "").casefold(), row[2], row[4]))
                 url = f"data/{build}-objc-methods/{image['uuid']}.json.gz"
                 target = DIST / url
                 dump(target, {"schema_version": 1, "build": build,
@@ -459,6 +472,8 @@ def build() -> None:
                                       "class_count": len(class_groups),
                                       "category_count": len(category_groups),
                                       "method_count": len(rows),
+                                      "unknown_selector_count": source["unknown_selector_count"],
+                                      "unlisted_swift_class_count": source["unlisted_swift_class_count"],
                                       "groups": [[group["display_name"], group["method_count"]]
                                                  for group in groups],
                                       "url": url, "size": len(blob),
@@ -470,6 +485,8 @@ def build() -> None:
             method_info = {"objc_method_count": totals["method"],
                            "objc_method_class_count": totals["class"],
                            "objc_method_category_count": totals["category"],
+                           "objc_method_unknown_selector_count": totals["unknown_selector"],
+                           "objc_method_unlisted_swift_class_count": totals["unlisted_swift_class"],
                            "objc_method_image_count": len(seen_images),
                            "objc_method_index_url": f"data/{build}-objc-method-index.json.gz"}
         protocol_info = {}

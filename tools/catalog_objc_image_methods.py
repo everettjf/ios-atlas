@@ -21,21 +21,35 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def selector_from_declaration(line: str) -> tuple[str, str]:
-    declaration = re.fullmatch(r"([+-]) \([^)]*\)(.+);", line)
-    if not declaration:
+def selector_from_declaration(line: str) -> tuple[str, str | None]:
+    if not re.match(r"^[+-] \(", line) or not line.endswith(";"):
         raise ValueError(f"unrecognized method declaration: {line[:160]}")
-    body = declaration[2].strip()
+    depth = 0
+    close = None
+    for index, char in enumerate(line[2:-1], 2):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                close = index
+                break
+    if close is None:
+        raise ValueError(f"unbalanced return type: {line[:160]}")
+    body = line[close + 1:-1].strip()
+    if not body:
+        # Preserve an IMP whose selector the dump did not decode.
+        return line[0], None
     pieces = re.findall(r"\b([A-Za-z_][A-Za-z_0-9]*:)\s*\(", body)
     selector = "".join(pieces) if pieces else body
     if not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", selector):
         raise ValueError(f"could not recover selector: {line[:160]}")
     # Bitfield types contain colons, so counting ':' in the whole declaration is incorrect.
-    return declaration[1], selector
+    return line[0], selector
 
 
 def parse_dump(text: str, class_table: set[tuple[str, str]],
-               ranges: list[tuple[int, int]], code_range: tuple[int, int]) -> tuple[list[dict], list[list], int, int]:
+               ranges: list[tuple[int, int]], code_range: tuple[int, int]) -> tuple[list[dict], list[list], int, int, int]:
     lines = text.splitlines()
     toc = {}
     for line in lines[:15]:
@@ -58,10 +72,12 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
         elif line.startswith("@interface "):
             if current is not None:
                 raise ValueError(f"unterminated interface at line {number + 1}")
-            match = re.match(r"^@interface (\S+)(?: \(([^)]+)\))?.*// (0x[0-9a-f]+)(?: \([^)]*\))?$", line)
+            match = re.match(r"^@interface (\S+)(?: \(([^)]+)\))?.*// (0x[0-9a-f]+)(?: \(([^)]*)\))?$", line)
             if not match:
                 raise ValueError(f"unrecognized interface header at line {number + 1}")
-            class_name, category_name, address = match.groups()
+            class_name, category_name, address, marker = match.groups()
+            if marker not in (None, "Swift"):
+                raise ValueError(f"unrecognized interface marker at line {number + 1}: {marker}")
             metadata = int(address, 16)
             if not any(start <= metadata < end for start, end in ranges):
                 raise ValueError(f"interface metadata outside defining image: {address}")
@@ -70,6 +86,7 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
                 "category_name": category_name,
                 "display_name": class_name if category_name is None else f"{class_name} ({category_name})",
                 "metadata_address": address,
+                "is_swift": marker == "Swift",
                 "method_count": 0,
             })
             current = len(groups) - 1
@@ -89,15 +106,29 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
 
     class_groups = [group for group in groups if group["category_name"] is None]
     category_groups = [group for group in groups if group["category_name"] is not None]
-    if (len(class_groups) != toc["__objc_classlist"] or
+    actual_class_table = {(group["class_name"], group["metadata_address"]) for group in class_groups}
+    extra_classes = actual_class_table - class_table
+    if (len(class_table) != toc["__objc_classlist"] or
+            len(class_groups) != toc["__objc_classlist"] + len(extra_classes) or
             len(category_groups) != toc["__objc_catlist"] or
             protocol_count > toc["__objc_protolist"] or
-            {(group["class_name"], group["metadata_address"]) for group in class_groups} != class_table or
+            not class_table <= actual_class_table or
+            any(not group["is_swift"] for group in class_groups
+                if (group["class_name"], group["metadata_address"]) in extra_classes) or
             len({group["display_name"] for group in groups}) != len(groups) or
             len({tuple(row) for row in records}) != len(records) or
             sum(group["method_count"] for group in groups) != len(records)):
-        raise ValueError("class, category, protocol, or method counts disagree with source metadata")
-    return groups, records, protocol_count, toc["__objc_protolist"]
+        raise ValueError(
+            "class/category/protocol/method validation failed: "
+            f"classes {len(class_groups)}/{toc['__objc_classlist']}, "
+            f"categories {len(category_groups)}/{toc['__objc_catlist']}, "
+            f"protocols {protocol_count}/{toc['__objc_protolist']}, "
+            f"class table missing {len(class_table - actual_class_table)}, "
+            f"extra Swift classes {len(extra_classes)}, "
+            f"unique groups {len({group['display_name'] for group in groups})}/{len(groups)}, "
+            f"unique method rows {len({tuple(row) for row in records})}/{len(records)}"
+        )
+    return groups, records, protocol_count, toc["__objc_protolist"], len(extra_classes)
 
 
 def main() -> None:
@@ -108,7 +139,8 @@ def main() -> None:
     parser.add_argument("--install-name", required=True)
     parser.add_argument("--segments", required=True, type=Path)
     parser.add_argument("--objc-classes", required=True, type=Path)
-    parser.add_argument("--expected-method-count", required=True, type=int)
+    parser.add_argument("--expected-method-count", type=int,
+                        help="Optional independently reviewed count for a single-image run")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
@@ -138,11 +170,14 @@ def main() -> None:
               for part in image["segments"] if part["name"] != "__LINKEDIT"]
     class_table = {(row[0], row[1]) for row in classes["records"]
                    if row[3] == args.install_name}
-    groups, records, rendered_protocols, toc_protocols = parse_dump(
-        args.class_dump.read_text(encoding="utf-8"), class_table, ranges, code_range)
-    if len(records) != args.expected_method_count:
+    # ipsw may print raw, invalid UTF-8 bytes in type or ivar descriptions.
+    # They are not used as names or selectors, but their loss is recorded.
+    dump_text = args.class_dump.read_bytes().decode("utf-8", errors="replace")
+    groups, records, rendered_protocols, toc_protocols, extra_swift_classes = parse_dump(
+        dump_text, class_table, ranges, code_range)
+    if args.expected_method_count is not None and len(records) != args.expected_method_count:
         raise ValueError(f"expected {args.expected_method_count} methods, found {len(records)}")
-    selector_counts = Counter((row[0], row[1], row[2]) for row in records)
+    selector_counts = Counter((row[0], row[1], row[2]) for row in records if row[2] is not None)
     output = {
         "schema_version": 1,
         "kind": "dyld_objc_image_methods",
@@ -156,11 +191,15 @@ def main() -> None:
         "image_uuid": image["uuid"],
         "extracted_image_sha256": image_hash,
         "class_dump_sha256": sha256(args.class_dump),
+        "class_dump_replacement_char_count": dump_text.count("\ufffd"),
         "class_count": sum(group["category_name"] is None for group in groups),
+        "toc_class_count": len(class_table),
+        "unlisted_swift_class_count": extra_swift_classes,
         "category_count": sum(group["category_name"] is not None for group in groups),
         "rendered_protocol_count": rendered_protocols,
         "toc_protocol_count": toc_protocols,
         "method_count": len(records),
+        "unknown_selector_count": sum(row[2] is None for row in records),
         "duplicate_selector_group_count": sum(count > 1 for count in selector_counts.values()),
         "groups": groups,
         "records": records,
