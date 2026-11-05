@@ -7,7 +7,7 @@ const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
+const state = { manifest:null, build:null, tab:'device', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map() };
 let searchTimer;
 
 async function json(url) {
@@ -99,13 +99,13 @@ function updateSource() {
   const protocols = state.tab === 'protocols';
   const swift = state.tab === 'swift';
   const research = state.tab === 'research';
-  const observation = state.tab === 'observation';
   const reach = state.tab === 'reach';
-  $('#source-method').href = methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : images ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/iOS-Cache-Named-Symbol-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
-  $('#source-title').textContent = observation ? 'Sources: official IPSW and filtered live /rootfs' : device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : macho ? 'Source: mounted official IPSW Mach-O files' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
+  $('#source-method').href = device ? 'https://github.com/everettjf/ios-atlas/blob/main/docs/device-first-plan.md' : methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : images ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/iOS-Cache-Named-Symbol-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 file paths' : driverkit ? 'Source: official DriverKit cache' : macho ? 'Source: mounted official IPSW Mach-O files' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
-    ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
-    : observation ? 'Exact path/type pairs within seven scanned roots only. IPSW image paths and the live RootHide namespace can differ; this is not a jailbreak before/after comparison.'
+    ? activeBuild().device_scope === 'reviewed_live'
+      ? `Privacy-reviewed live snapshot: ${fmt(activeBuild().device_count)} published paths from ${fmt(activeBuild().device_complete_root_count)} of ${fmt(activeBuild().device_snapshot_root_count)} scanned roots. User and app data paths are withheld.`
+      : 'Read-only /rootfs observation of seven Apple system roots. The jailbreak namespace, preboot, and user data are not yet in the public catalog.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. Named __text symbols are searchable per image; they are not a complete function inventory.'
     : macho ? 'Regular Mach-O files in three official firmware images, with hashes, UUIDs, Objective-C methods, named __text symbols, and Swift dump declarations. These are distinct from dyld cache images; metadata is not a complete function list.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
@@ -159,9 +159,10 @@ function renderDirectoryResults(mode, data) {
     const source = child.type === 'virtual directory' ? 'PARENT' : stock ? data.volumes[child.volume].name : child.type.toUpperCase();
     return `<button class="result-row folder-row" data-index="${index}" title="${escapeHTML(child.path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(label)}${folder ? '/' : ''}</span></span><span class="row-sub">${escapeHTML(source)}</span></button>`;
   }).join('');
-  const cache = mode === 'files' && state.volume === 'all' ? state.datasets.get(`dyld:${state.build}`) : null;
-  const images = cache ? cache.images.filter((item) => parentDirectory(item.install_name) === state.browsePath) : [];
-  const cacheRows = images.length ? `<div class="folder-cache"><div class="folder-cache-heading"><strong>${fmt(images.length)} logical image${images.length === 1 ? '' : 's'} in dyld cache</strong><span>These are cache images, not filesystem entries.</span></div>${images.slice(0, 20).map((image) => `<button class="folder-cache-row" data-linked-tab="images" data-linked-query="${escapeHTML(image.install_name)}"><span>◇ ${escapeHTML(image.install_name.split('/').pop())}</span><small>IN CACHE ↗</small></button>`).join('')}${images.length > 20 ? `<button class="more-button" data-linked-tab="images" data-linked-query="${escapeHTML(state.browsePath + '/')}">Explore all matching images ↗</button>` : ''}</div>` : '';
+  const cache = (mode === 'files' || mode === 'device') && state.volume === 'all' ? state.datasets.get(`dyld:${state.build}`) : null;
+  const logicalPath = mode === 'device' && (state.browsePath === '/rootfs' || state.browsePath.startsWith('/rootfs/')) ? state.browsePath.slice(7) || '/' : state.browsePath;
+  const images = cache ? cache.images.filter((item) => parentDirectory(item.install_name) === logicalPath) : [];
+  const cacheRows = images.length ? `<div class="folder-cache"><div class="folder-cache-heading"><strong>${fmt(images.length)} logical image${images.length === 1 ? '' : 's'} in dyld cache</strong><span>${mode === 'device' ? 'Cache bytes matched this device at the recorded observation; these images are not separate filesystem entries.' : 'These are cache images, not filesystem entries.'}</span></div>${images.slice(0, 20).map((image) => `<button class="folder-cache-row" data-linked-tab="images" data-linked-query="${escapeHTML(image.install_name)}"><span>◇ ${escapeHTML(image.install_name.split('/').pop())}</span><small>IN CACHE ↗</small></button>`).join('')}${images.length > 20 ? `<button class="more-button" data-linked-tab="images" data-linked-query="${escapeHTML(logicalPath + '/')}">Explore all matching images ↗</button>` : ''}</div>` : '';
   $('#result-count').textContent = `${fmt(children.length)} direct path${children.length === 1 ? '' : 's'}`;
   $('#results').innerHTML = breadcrumbs + `<div class="result-head"><span>DIRECT CHILD</span><span>${stock ? 'VOLUME' : 'TYPE'}</span></div>${rows || '<p class="empty-state">No direct entries in this scanned source.</p>'}${children.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}` + cacheRows;
   $('#detail').innerHTML = `<div class="empty-detail">Browse a folder or select a file. Symlinks are not followed. PARENT labels identify unobserved ancestors needed to reach a scanned path.</div>`;
@@ -379,8 +380,9 @@ function detailHTML(item, mode, data) {
     return `<span class="detail-label">${mode === 'restore' ? 'RESTORE RAMDISK ENTRY' : 'FILESYSTEM ENTRY'}</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>PATH</dt><dd>${escapeHTML(path)}</dd><dt>VOLUME</dt><dd>${escapeHTML(volume.name)}</dd><dt>SOURCE IMAGE</dt><dd>${escapeHTML(volume.image_name)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd><dt>SIZE</dt><dd>${escapeHTML(size(bytes))}</dd>${target ? `<dt>LINK TARGET</dt><dd>${escapeHTML(target)}</dd>` : ''}</dl><p class="explain">${mode === 'restore' ? 'Observed in a mounted IPSW restore environment. This is not the normal running iOS root filesystem.' : 'Observed in the mounted official firmware image. A file path here does not establish that the same bytes are present on a running device.'}</p>`;
   }
   if (mode === 'device') {
-    const [path, type] = item;
-    return `<span class="detail-label">DEVICE SYSTEM PATH</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>PATH IN /ROOTFS</dt><dd>${escapeHTML(path)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd><dt>SOURCE</dt><dd>Read-only device observation, selected Apple system roots</dd></dl><p class="explain">This path was seen in the live RootHide /rootfs view. It is not evidence that the jailbreak created or changed it. User data and the jailbreak namespace are outside this catalog.</p>`;
+    const [path, type, bytes] = item;
+    const broad = data.kind === 'live_device_public_paths';
+    return `<span class="detail-label">OBSERVED DEVICE PATH</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>LIVE PATH</dt><dd>${escapeHTML(path)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd>${bytes == null ? '' : `<dt>SIZE AT SCAN</dt><dd>${escapeHTML(size(bytes))}</dd>`}<dt>SOURCE</dt><dd>${broad ? 'Privacy-reviewed live device snapshot' : 'Read-only scan of seven /rootfs system roots'}</dd></dl><p class="explain">${broad ? 'This path was observed in a reviewed live scan. Other paths, including user and app data, are withheld from the public catalog.' : 'This path was observed in the RootHide /rootfs view. The public scan does not yet cover the jailbreak namespace, preboot, or user data.'} A path record alone does not prove file contents or runtime use.</p>`;
   }
   if (mode === 'archive') {
     const roles = [...new Set(item.manifest_roles.map((pair) => pair[1]))].join(', ') || 'No BuildManifest role';
@@ -745,7 +747,6 @@ async function renderExplorer() {
     };
     return;
   }
-  if (mode === 'compare') { await renderCompare(); return; }
   if (mode === 'observation') { await renderObservation(); return; }
   if (mode === 'swift') { await renderSwiftExplorer(); return; }
   if (mode === 'reach') { await renderReachExplorer(); return; }
@@ -766,7 +767,7 @@ async function renderExplorer() {
     ...(mode === 'images' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
     ...(mode === 'images' && activeBuild().ios_symbol_index_url ? [dataset('ios_symbol_index')] : []),
     ...(mode === 'objc' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
-    ...(mode === 'files' ? [dataset('dyld')] : []),
+    ...(mode === 'files' || mode === 'device' ? [dataset('dyld')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_function_url ? [dataset('driverkit_functions')] : []),
     ...(mode === 'macho' && activeBuild().standalone_objc_index_url ? [dataset('macho_methods_index')] : []),
@@ -774,6 +775,9 @@ async function renderExplorer() {
     ...(mode === 'macho' && activeBuild().standalone_swift_index_url ? [dataset('macho_swift_index')] : [])
   ]);
   if (state.tab !== mode) return;
+  const deviceSummary = mode === 'device' ? data.kind === 'live_device_public_paths'
+    ? `<div class="kernel-summary"><div><strong>${fmt(data.entry_count)} PUBLISHED PATHS</strong><span>Reviewed system and jailbreak paths only</span></div><div><strong>${fmt(data.complete_root_count)} / ${fmt(data.snapshot_root_count)} ROOTS COMPLETE</strong><span>Private snapshot coverage; user and app path names withheld</span></div><div><strong>${fmt(data.unpublished_entry_count)} PRIVATE PATH RECORDS</strong><span>Counts only; no names or content published</span></div></div>`
+    : `<div class="kernel-summary"><div><strong>${fmt(data.entry_count)} OBSERVED PATHS</strong><span>Seven selected /rootfs system roots</span></div><div><strong>PARTIAL DEVICE COVERAGE</strong><span>Jailbreak, preboot and data-volume paths are not yet published</span></div></div>` : '';
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
   const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div>${activeBuild().service_direct_import_count == null ? '' : `<div><strong>${fmt(activeBuild().service_direct_import_count)} DIRECT LOADS</strong><span>From ${fmt(activeBuild().service_executable_count)} service executables; ${fmt(activeBuild().service_cache_matched_import_count)} match cache images</span></div>`}</div>` : '';
   const objcSummary = mode === 'objc' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_class_count)} CLASS ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_image_count)} CACHE IMAGES</strong><span>${fmt(activeBuild().objc_unresolved_count)} class entries without an exact image</span></div></div>` : '';
@@ -785,7 +789,7 @@ async function renderExplorer() {
   const driverkitSummary = mode === 'driverkit' && activeBuild().driverkit_named_function_count != null ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().driverkit_named_function_count)} NAMED FUNCTIONS</strong><span>Symbols in __text across all ${fmt(activeBuild().driverkit_image_count)} DriverKit cache images</span></div></div>` : '';
   const iosSymbolSummary = mode === 'images' && activeBuild().ios_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().ios_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>From ${fmt(activeBuild().ios_symbol_image_count)} exact iOS cache images</span></div><div><strong>${fmt(activeBuild().ios_symbol_empty_image_count)} IMAGES WITHOUT NAMES</strong><span>Names complement Objective-C methods and do not enumerate every function</span></div></div>` : '';
   const machoSummary = mode === 'macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} PHYSICAL MACH-O FILES</strong><span>Across FileSystem, SystemOS, and AppOS in the official IPSW</span></div><div><strong>${fmt(data.excluded_candidates.length)} MIXED CONTAINERS</strong><span>Metal libraries with non-Mach-O slices are listed in the coverage note</span></div></div>${activeBuild().standalone_objc_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_objc_method_count)} OBJECTIVE-C METHODS</strong><span>Static entries from inspected standalone files</span></div><div><strong>${fmt(activeBuild().standalone_objc_no_info_count)} FILES WITHOUT OBJC INFO</strong><span>A zero ObjC result is not a complete function inventory</span></div></div>` : ''}${activeBuild().standalone_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>Records within code sections of standalone files</span></div><div><strong>${fmt(activeBuild().standalone_symbol_empty_file_count)} FILES WITHOUT NAMES</strong><span>Stripped symbol tables do not imply missing functions</span></div></div>` : ''}${activeBuild().standalone_swift_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_swift_declaration_count)} SWIFT DUMP DECLARATIONS</strong><span>Static type and extension lines across standalone files</span></div><div><strong>${fmt(activeBuild().standalone_swift_partial_count)} PARTIAL OUTPUTS</strong><span>Malformed lines are counted, not silently accepted</span></div></div>` : ''}` : '';
-  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + iosSymbolSummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = deviceSummary + kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + iosSymbolSummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search published live paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#intro-filter')?.addEventListener('click', () => { state.query = 'intro:'; state.limit = 80; $('#catalog-search').value = state.query; renderResults(); });
   $('#detail').addEventListener('click', (event) => {
@@ -894,36 +898,6 @@ function renderObservationResults(data) {
   $('#observation-stock-link')?.addEventListener('click', () => setTab('files', state.selected[0]));
 }
 
-async function renderCompare() {
-  const explorer = $('#explorer');
-  const builds = state.manifest.builds;
-  if (builds.length < 2) {
-    explorer.innerHTML = '<div class="compare-panel"><span class="detail-label">BUILD COMPARISON</span><h3>One build is cataloged.</h3><p class="empty-detail">Comparison becomes available when a second exact firmware build passes the same collection and validation steps. The interface will compare in-cache image names and UUIDs.</p></div>';
-    return;
-  }
-  state.compareOld ??= builds[0].build;
-  state.compareNew ??= builds.at(-1).build;
-  const options = builds.map((item) => `<option value="${escapeHTML(item.build)}">${escapeHTML(item.build)}</option>`).join('');
-  explorer.innerHTML = `<div class="compare-panel"><div class="compare-controls"><label>FROM<select id="compare-old">${options}</select></label><label>TO<select id="compare-new">${options}</select></label></div><div id="compare-results" class="compare-section"></div></div>`;
-  $('#compare-old').value = state.compareOld;
-  $('#compare-new').value = state.compareNew;
-  for (const id of ['compare-old','compare-new']) $("#" + id).addEventListener('change', async () => { state.compareOld = $('#compare-old').value; state.compareNew = $('#compare-new').value; await compareData(); });
-  await compareData();
-}
-
-async function compareData() {
-  const target = $('#compare-results');
-  if (state.compareOld === state.compareNew) { target.innerHTML = '<p>Select two different builds.</p>'; return; }
-  target.innerHTML = '<p>Comparing indexed images…</p>';
-  const [oldData, newData] = await Promise.all([dataset('dyld', state.compareOld), dataset('dyld', state.compareNew)]);
-  const oldMap = new Map(oldData.images.map((item) => [item.install_name, item]));
-  const newMap = new Map(newData.images.map((item) => [item.install_name, item]));
-  const added = newData.images.filter((item) => !oldMap.has(item.install_name));
-  const removed = oldData.images.filter((item) => !newMap.has(item.install_name));
-  const changed = newData.images.filter((item) => oldMap.has(item.install_name) && oldMap.get(item.install_name).uuid !== item.uuid);
-  target.innerHTML = `<h3>${fmt(added.length)} added · ${fmt(removed.length)} removed · ${fmt(changed.length)} changed UUID</h3><p>This compares image names and binary UUIDs in two complete, build-specific caches. UUID changes alone do not explain the behavior change.</p>${[['Added',added],['Removed',removed],['Changed UUID',changed]].map(([label,items]) => `<div class="compare-section"><h3>${label}</h3>${items.slice(0,100).map((item) => `<div class="compare-item">${escapeHTML(item.install_name)}</div>`).join('') || '<p>None</p>'}${items.length > 100 ? `<p>Showing 100 of ${fmt(items.length)}.</p>` : ''}</div>`).join('')}`;
-}
-
 async function render() { await renderExplorer(); }
 function showError(error) { $('#explorer').innerHTML = `<p class="empty-state">Unable to open this catalog: ${escapeHTML(error.message)}</p>`; }
 
@@ -931,15 +905,16 @@ async function start() {
   state.manifest = await json('data/manifest.json');
   const first = state.manifest.builds[0];
   state.build = first.build;
-  $('#metric-files').textContent = fmt(first.file_count);
+  $('#metric-files').textContent = first.device_count == null ? '—' : fmt(first.device_count);
+  $('#metric-files-note').textContent = first.device_scope === 'reviewed_live' ? 'Privacy-reviewed live snapshot' : 'Seven selected /rootfs roots';
   $('#metric-images').textContent = fmt(first.image_count);
   $('#metric-caches').textContent = fmt(first.cache_file_count);
   $('#metric-build').textContent = first.build;
   $('#build-select').innerHTML = state.manifest.builds.map((item) => `<option value="${escapeHTML(item.build)}">${escapeHTML(item.version)} · ${escapeHTML(item.build)}</option>`).join('');
-  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.methodImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
+  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.methodImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = build.device_count == null ? '—' : fmt(build.device_count); $('#metric-files-note').textContent = build.device_scope === 'reviewed_live' ? 'Privacy-reviewed live snapshot' : 'Seven selected /rootfs roots'; $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
-  if (['files','restore','device','images','objc','methods','protocols','swift','reach','driverkit','macho','caches','archive','kernel','services','research','observation','compare'].includes(initial)) state.tab = initial;
+  if (['files','restore','device','images','objc','methods','protocols','swift','reach','driverkit','macho','caches','archive','kernel','services','research'].includes(initial)) state.tab = initial;
   if (initial === 'research' && noteId) state.query = decodeURIComponent(noteId);
   if (initial === 'methods' && noteId) state.query = decodeURIComponent(noteId);
   if (initial === 'reach' && noteId) state.reachSource = decodeURIComponent(noteId);

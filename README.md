@@ -2,11 +2,11 @@
 
 An independent, build-specific map of iOS system files, dyld shared-cache images, and their relationships.
 
-The first dataset covers **iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`)**. The [static explorer](https://xnu.app/ios-atlas/) searches 452,096 filesystem entries from three official IPSW images, 4,170 iOS shared-cache images, 51 separate DriverKit cache images, 3,363 standalone Mach-O files, 83 physical cache files, and 430,719 paths in a filtered live device system view.
+The first dataset covers **iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`)**. The [static explorer](https://xnu.app/ios-atlas/) starts with 430,719 paths in a filtered live device system view, then offers 452,096 filesystem entries from three official IPSW images, 4,170 iOS shared-cache images, 51 separate DriverKit cache images, 3,363 standalone Mach-O files, and 83 physical cache files. The current published device scan covers seven `/rootfs` system roots; a whole-device snapshot remains pending.
 
-The **Filesystem**, **Restore RAM disks**, and **Device system paths** views also browse paths folder by folder. A folder link can be shared directly, such as [Foundation.framework in the stock filesystem](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework). The stock folder view lists any logical dyld images under that directory in a separate section; these are not counted as files. Typing in the search field searches the full selected catalog.
+The **On-device files**, **Filesystem**, and **Restore RAM disks** views browse paths folder by folder. A folder link can be shared directly, such as [Foundation.framework in the stock filesystem](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework). Device and stock folder views list matching logical dyld images in a separate section; these are not counted as files. Typing in the search field searches the full selected catalog.
 
-The **Stock ↔ device** view compares exact path/type pairs within the seven filtered `/rootfs` system roots. It separates FileSystem, SystemOS, and AppOS source images and lets readers inspect 4,133 stock paths without a same-path device record. The [interpretation note](research/23A355/Stock-Device-Boundary.md) explains why these paths cannot be called jailbreak deletions or whole-device absences.
+The [stock/device boundary note](research/23A355/Stock-Device-Boundary.md) retains the earlier path/type provenance analysis. It explains why 4,133 stock paths without same-path records in the filtered device view cannot be called jailbreak deletions or whole-device absences. The site no longer offers cross-version comparison.
 
 The same build also indexes every member of the restore IPSW (127 archive entries), both restore RAM disks (4,132 entries), and two kernelcache variants with 256 kext metadata records each. Restore environments and kernelcache metadata have their own views; they are not counted as files on the normally running system.
 
@@ -36,7 +36,7 @@ The [**Standalone Mach-O** view](https://xnu.app/ios-atlas/#macho) indexes 3,363
 
 The [**Objective-C methods** view](https://xnu.app/ios-atlas/#methods) indexes 3,065,801 static method entries across all 4,170 exact iOS cache images. Each image page provides a brief source-derived overview and a direct link to its compressed method list. An empty method list means the class dump yielded no method entries, not that the library has no code. Ten entries have no decoded selector and remain explicitly unknown. The [coverage note](research/23A355/Method-Catalog-Coverage.md) explains the checks and limits; the [research TODO](docs/research-todo.md) tracks later functional descriptions and deeper implementation studies.
 
-The [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact inputs and coverage, including a read-only device check: all 83 cache files match the live device by SHA-256, and the published device paths and types occur in the official IPSW indexes. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
+The [device-first plan](docs/device-first-plan.md) sets the next phase: a privacy-reviewed inventory of this jailbroken phone's live files and code, with no cross-version comparison. The earlier [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact inputs and coverage, including a read-only device check: all 83 cache files match the live device by SHA-256, and the published device paths and types occur in the official IPSW indexes. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
 
 ## Build locally
 
@@ -51,7 +51,7 @@ Open `http://localhost:8000/`. GitHub Pages uses the same build script.
 
 - `catalog/`: versioned, machine-readable indexes and coverage reports, including restore artifacts, kernel metadata, and a separate filtered device observation.
 - `research/`: evidence-backed component and behavior notes.
-- `tools/`: reproducible, read-only collection and validation tools.
+- `tools/`: reproducible, read-only collection and validation tools, including the [private live-device snapshot procedure](docs/live-device-collection.md).
 - `site/`: a searchable static website built from the public catalog.
 
 Raw firmware, dyld caches, extracted Apple binaries, and private device data stay outside Git. Published results contain derived metadata, provenance, and original analysis. The official IPSW is a stock **distribution** baseline, while the live jailbroken device is a separate observation; this project does not imply a clean before/after jailbreak comparison.

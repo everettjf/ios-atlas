@@ -1,0 +1,56 @@
+# Device-first plan: iPhone 11 / iOS 26.0.1 (23A355)
+
+## Goal and boundary
+
+Map the **currently jailbroken iPhone 11** as it is observed now: its visible files, physical dyld cache files, logical in-cache libraries, standalone Mach-O binaries, services, and a first-pass description of each library's exposed metadata. The official `23A355` IPSW remains a source of exact-build binary metadata and provenance, but the live device is the primary answer to “what is on this phone?”. No second firmware build or cross-version comparison is part of this plan. The partially acquired local `23B85` material is outside the publication pipeline.
+
+“All files” means every traversable path in the named live filesystem namespaces at a recorded observation time, with scan failures and inaccessible areas counted explicitly. A path in a volatile or synthetic mount is labeled as such. Symlinks are recorded without following them; bind mounts, firmlinks, cryptexes, and the RootHide `/rootfs` view are documented before de-duplication. This is a repeatable **snapshot**, not a promise that mutable files cannot change during the scan.
+
+Keep a full local metadata inventory for the owner's review. The public site contains system and jailbreak-owned paths that pass a privacy review. User and app data paths may themselves reveal private information, so publish their mount-level counts and redacted structure only; never publish their names, contents, identifiers, or hashes. Raw firmware, caches, binaries, keys, and private observations stay out of Git.
+
+## Current evidence
+
+- The official `23A355` firmware has 452,096 entries across FileSystem, SystemOS, and AppOS; 4,170 iOS cache images; 51 DriverKit images; and 3,363 standalone Mach-O files. The cache method and named-symbol indexes already cover every exact iOS cache image. See [acquisition](acquisition-23A355.md).
+- The published live-device catalog is **only** 430,719 paths and types beneath seven `/rootfs` system roots. It excludes the jailbreak namespace, preboot, data volume, and other roots. The current collector and site builder intentionally reject device-only paths. See [boundary note](../research/23A355/Stock-Device-Boundary.md) and [`collect_device.py`](../tools/collect_device.py).
+- All 80 iOS and three DriverKit physical cache files were previously checked against the device by SHA-256. This proves those cache bytes at that observation time, not that every other firmware file matches the running phone.
+- The site currently centers official firmware and still contains a `Compare builds` tab. These presentation choices must change for the new goal.
+
+## Work order and acceptance gates
+
+### 1. Define and record the live namespaces
+
+Read-only collection of product/build, observation time, mount table, APFS/cryptex layout, `/` versus `/rootfs`, jailbreak prefix, firmlinks, and cache locations. Assign each mount a stable source label. List all traversable roots and explicit exclusions before the large scan. Check that the device still reports `iPhone12,1` / `23A355`; stop if its build changed.
+
+**Gate:** a local namespace map identifies every scanned mount, duplicate view, inaccessible root, and synthetic/volatile area. No path is silently treated as a normal on-disk file.
+
+### 2. Capture the whole live path inventory locally
+
+Extend the collector to enumerate path, type, size, mode, symlink target, mount ID, namespace, and scan outcome without reading file contents. Walk system volumes, cryptexes, preboot, the jailbreak prefix, and the data volume; keep user/app paths in a private local output. Use bounded batches, NUL-safe names, checkpointing, and a manifest that marks each root `complete`, `partial`, or `failed`. Do not cross mounts implicitly or follow symlinks. Review paths for personal data before deriving any public catalog.
+
+**Gate:** every in-scope mount has an entry count and error count; all path records point to a recorded mount; interrupted scans cannot masquerade as complete. A second count pass or sampled directory checks validate the snapshot. Publication remains blocked until the privacy filter is reviewed.
+
+### 3. Reconcile code on this device
+
+Inventory and hash the physical iOS and DriverKit cache families in their live locations. Link their previously indexed logical images to the verified cache UUIDs/hashes. Identify every **live standalone Mach-O** from the publishable system and jailbreak paths, including executables, dylibs, bundles, frameworks, app extensions, tweak injection components, and trust/launch helpers. Record full-file hash, architecture, UUID, code-signing identity when available, and exact live path. Reuse the existing `23A355` firmware analysis only when bytes or exact binary identity justify the link; otherwise analyze the observed file separately. Keep ordinary files, physical caches, and logical images as distinct records.
+
+**Gate:** every public code-bearing live file has a provenance and analysis status (`inspected`, `unsupported`, or `failed`); cache images do not appear as fictitious standalone files; mismatched or unverified binaries are visibly labeled.
+
+### 4. Publish broad library and file pages
+
+Make **Device files** the default site view. Browse the live mount tree and search by path, file type, owner category, executable/library kind, framework, service, and source. Library pages show one concise purpose sentence where supported, install name or live path, architecture/UUID, dependencies, ObjC classes and methods, named symbols, Swift metadata, associated services, and evidence links. Empty metadata results are explicit. Add a coverage dashboard with totals and gaps by mount and analysis type. Remove the `Compare builds` tab and stop treating a second build as a prerequisite. Keep firmware records as an exact-build reference, with clear source labels; the stock/device path comparison becomes a provenance note rather than the main navigation.
+
+**Gate:** a visitor can browse every publishable live path and every verified cache image, see why a cache image may have no standalone file, and distinguish device observation from firmware-derived analysis. The site never exposes a private path through search, links, generated JSON, or build artifacts.
+
+### 5. Add first-pass reverse-engineering notes and TODOs
+
+Start with a horizontal inventory: short, evidence-backed introductions for library families; per-image methods/symbols/dependencies; and a category for unknown purpose. Add focused notes for the jailbreak loader/injection path, SpringBoard, Foundation, WidgetKit, and representative services. A note should cite exact binary identity, relevant declarations or disassembly addresses, observed versus inferred behavior, and open questions. Record deeper call tracing, runtime validation, and tweak hypotheses as separate TODOs. Never turn a symbol name alone into a claim about runtime behavior or a safe hook.
+
+**Gate:** every library has at least an honest metadata overview and a visible research state; focused notes are reproducible and link back to the exact observed or byte-matched artifact.
+
+## Immediate next implementation slice
+
+1. Build the namespace/mount manifest and a private, resumable whole-device metadata collector; validate it on one system mount and the jailbreak prefix before expanding to all mounts. The [collection procedure](live-device-collection.md) now specifies commands and the publication gate; the real full scan awaits a working root transport.
+2. Add a privacy-review/export stage that derives the public system/jailbreak catalog without leaking data-volume names.
+3. Adapt the site schema and navigation to live-device-first records, then import the existing cache and static metadata only where device identity is established.
+
+The [research TODO](research-todo.md) tracks the remaining library-level work. The earlier [research and delivery plan](plan.md) documents the first firmware-centered implementation and its existing evidence; this document governs the next phase.

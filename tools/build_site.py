@@ -13,6 +13,10 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
+from export_live_device import KINDS as LIVE_DEVICE_KINDS
+from export_live_device import check_prefix as check_live_prefix
+from export_live_device import has_private_characters, inside
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "catalog" / "ios"
@@ -101,6 +105,50 @@ def dump(path: Path, value: object, compressed: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     content = json.dumps(value, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode() + b"\n"
     path.write_bytes(gzip.compress(content, mtime=0) if compressed else content)
+
+
+def publish_live_device(build: str, product: str, path: Path) -> dict:
+    """Revalidate the privacy export before placing it in public site assets."""
+    data = load(path)
+    prefixes = data.get("reviewed_prefixes")
+    entries = data.get("entries")
+    if (data.get("schema_version") != 1 or data.get("kind") != "live_device_public_paths" or
+            data.get("source") != "trusted_device_private_snapshot_privacy_export" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(prefixes, list) or not prefixes or len(prefixes) != len(set(prefixes)) or
+            not isinstance(entries, list) or not entries or data.get("entry_count") != len(entries)):
+        raise ValueError("incomplete or mismatched live-device public catalog")
+    for prefix in prefixes:
+        check_live_prefix(prefix)
+    seen = set()
+    counts = Counter()
+    for row in entries:
+        if (not isinstance(row, list) or len(row) != 3 or
+                not isinstance(row[0], str) or not row[0].startswith("/") or
+                any(part in ("", ".", "..") for part in row[0][1:].split("/")) or
+                has_private_characters(row[0]) or
+                not any(inside(row[0], prefix) for prefix in prefixes) or
+                row[1] not in LIVE_DEVICE_KINDS or row[1] == "unknown" or
+                (row[1] == "file" and (not isinstance(row[2], int) or row[2] < 0)) or
+                (row[1] != "file" and row[2] is not None) or row[0] in seen):
+            raise ValueError("unsafe or duplicate live-device public path")
+        seen.add(row[0])
+        counts[row[1]] += 1
+    if data.get("type_counts") != dict(counts):
+        raise ValueError("live-device path types disagree with recorded totals")
+    if (not isinstance(data.get("snapshot_root_count"), int) or
+            not isinstance(data.get("complete_root_count"), int) or
+            not 0 <= data["complete_root_count"] <= data["snapshot_root_count"] or
+            not isinstance(data.get("unpublished_entry_count"), int) or
+            data["unpublished_entry_count"] < 0):
+        raise ValueError("invalid live-device snapshot coverage")
+    url = f"data/{build}-device-live.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"device_url": url, "device_count": len(entries),
+            "device_observed_at_utc": data["observed_at_utc"],
+            "device_scope": "reviewed_live", "device_snapshot_root_count": data["snapshot_root_count"],
+            "device_complete_root_count": data["complete_root_count"],
+            "device_unpublished_entry_count": data["unpublished_entry_count"]}
 
 
 def publish_device_comparison(build: str, device: dict, device_path: Path,
@@ -1099,6 +1147,9 @@ def build() -> None:
                            **publish_device_comparison(build, device, device_path,
                                                        compact_entries, volume_metadata,
                                                        dyld["firmware_sha256"])}
+        live_device_path = directory / "device-live.json.gz"
+        if live_device_path.exists():
+            device_info.update(publish_live_device(build, dyld["product_type"], live_device_path))
         archive_info = {}
         archive_path = directory / "firmware-archive.json"
         kernel_path = directory / "kernel.json"

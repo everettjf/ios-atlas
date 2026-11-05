@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f5f0">
-  <meta name="description" content="A build-specific map of iOS system files and dyld shared-cache images, with evidence and coverage attached.">
+  <meta name="description" content="An evidence-backed map of one jailbroken iPhone's observed system files, libraries, and iOS internals.">
   <title>iOS Atlas — A map of the system</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="tree.css">
@@ -21,10 +21,10 @@
   <main>
     <section class="hero" id="overview">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="live-dot"></span> SYSTEM MAP / BUILD SPECIFIC</div>
+        <div class="eyebrow"><span class="live-dot"></span> ONE IPHONE / ONE IOS BUILD</div>
         <h1>Explore iOS<br><em>beneath the surface.</em></h1>
-        <p>Follow files, frameworks, and libraries through a real firmware build. Every record names its source; shared-cache images stay distinct from files on disk.</p>
-        <div class="hero-actions"><button class="primary-button" data-tab="images">Explore libraries <span>↗</span></button><button class="text-button" data-tab="files">Browse filesystem <span>→</span></button></div>
+        <p>Explore files observed on a jailbroken iPhone, then follow verified libraries and exact-build firmware evidence. Each view states its current coverage.</p>
+        <div class="hero-actions"><button class="primary-button" data-tab="device">Browse device files <span>↗</span></button><button class="text-button" data-tab="images">Explore libraries <span>→</span></button></div>
       </div>
       <div class="hero-visual" aria-hidden="true">
         <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
@@ -34,17 +34,18 @@
     </section>
 
     <section class="metrics" aria-label="Catalog summary">
-      <div class="metric"><span class="metric-label">FILESYSTEM ENTRIES</span><strong id="metric-files">—</strong><span class="metric-note">Across three firmware images</span></div>
+      <div class="metric"><span class="metric-label">PUBLISHED DEVICE PATHS</span><strong id="metric-files">—</strong><span class="metric-note" id="metric-files-note">Coverage is stated in the device view</span></div>
       <div class="metric"><span class="metric-label">IN-CACHE IMAGES</span><strong id="metric-images">—</strong><span class="metric-note">Logical library install names</span></div>
       <div class="metric"><span class="metric-label">iOS CACHE FILES</span><strong id="metric-caches">—</strong><span class="metric-note">Main cache + subcaches; DriverKit separate</span></div>
-      <div class="metric"><span class="metric-label">FIRST BUILD</span><strong id="metric-build">—</strong><span class="metric-note">iPhone 11 · arm64e</span></div>
+      <div class="metric"><span class="metric-label">DEVICE BUILD</span><strong id="metric-build">—</strong><span class="metric-note">iPhone 11 · arm64e</span></div>
     </section>
 
     <section class="workspace" aria-labelledby="workspace-title">
       <div class="section-heading"><div><div class="eyebrow">THE CATALOG</div><h2 id="workspace-title">A system you can inspect.</h2></div><div class="build-selector"><label for="build-select">BUILD</label><select id="build-select" aria-label="Select iOS build"></select></div></div>
-      <div class="source-strip"><span class="source-icon">◉</span><div><strong id="source-title">Source: official iPhone 11 firmware</strong><span id="source-description">All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.</span></div><a id="source-method" href="https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md" target="_blank" rel="noopener">Method ↗</a></div>
+      <div class="source-strip"><span class="source-icon">◉</span><div><strong id="source-title">Source: observed iPhone paths</strong><span id="source-description">The current public device scan has a defined scope; exact-build firmware records are labeled separately.</span></div><a id="source-method" href="https://github.com/everettjf/ios-atlas/blob/main/docs/device-first-plan.md" target="_blank" rel="noopener">Method ↗</a></div>
       <div class="tabs" role="tablist" aria-label="Catalog views">
-        <button role="tab" data-tab="images" aria-selected="true">Shared-cache images</button>
+        <button role="tab" data-tab="device" aria-selected="true">On-device files</button>
+        <button role="tab" data-tab="images" aria-selected="false">Shared-cache images</button>
         <button role="tab" data-tab="objc" aria-selected="false">Objective-C classes</button>
         <button role="tab" data-tab="methods" aria-selected="false">Objective-C methods</button>
         <button role="tab" data-tab="protocols" aria-selected="false">ObjC protocols</button>
@@ -53,25 +54,22 @@
         <button role="tab" data-tab="driverkit" aria-selected="false">DriverKit images</button>
         <button role="tab" data-tab="macho" aria-selected="false">Standalone Mach-O</button>
         <button role="tab" data-tab="files" aria-selected="false">Filesystem</button>
-        <button role="tab" data-tab="device" aria-selected="false">Device system paths</button>
         <button role="tab" data-tab="caches" aria-selected="false">Cache files</button>
         <button role="tab" data-tab="archive" aria-selected="false">Firmware archive</button>
         <button role="tab" data-tab="restore" aria-selected="false">Restore RAM disks</button>
         <button role="tab" data-tab="kernel" aria-selected="false">Kernel &amp; kexts</button>
         <button role="tab" data-tab="services" aria-selected="false">System services</button>
         <button role="tab" data-tab="research" aria-selected="false">Research</button>
-        <button role="tab" data-tab="observation" aria-selected="false">Stock ↔ device</button>
-        <button role="tab" data-tab="compare" aria-selected="false">Compare builds</button>
       </div>
       <div id="explorer" class="explorer" aria-live="polite"><p class="loading">Loading catalog…</p></div>
     </section>
 
     <section class="method-grid" aria-label="How to read the atlas">
-      <div class="method-card"><span class="method-number">01 / DISK</span><h3>Files as shipped</h3><p>Paths observed in the mounted FileSystem, SystemOS, and AppOS images. Volume boundaries and source build stay visible.</p></div>
+      <div class="method-card"><span class="method-number">01 / DEVICE</span><h3>Files as observed</h3><p>Published live paths have a stated scan scope. Private user and app paths remain local.</p></div>
       <div class="method-card"><span class="method-number">02 / CACHE</span><h3>Libraries inside dyld</h3><p>Logical install names extracted from the intact cache family. Missing standalone executables are explained instead of called absent.</p></div>
       <div class="method-card"><span class="method-number">03 / EVIDENCE</span><h3>Claims with a trail</h3><p>Research notes link back to exact firmware, cache UUIDs, and reproducible inspection commands. Unknowns remain explicit.</p></div>
     </section>
   </main>
-  <footer><span>iOS ATLAS <span class="footer-separator">/</span> An independent map of iOS internals.</span><span>Research data for exact builds, never a claim about every device.</span></footer>
+  <footer><span>iOS ATLAS <span class="footer-separator">/</span> An independent map of iOS internals.</span><span>One observed device and build; each view states its source and coverage.</span></footer>
 </body>
 </html>

@@ -27,6 +27,8 @@ jobs:
         run: node tools/test_reach.mjs
       - name: Check directory browse logic
         run: node tools/test_tree.mjs
+      - name: Check live-device privacy export
+        run: python3 tools/test_live_device_pipeline.py
       - name: Build static site
         run: python3 tools/build_site.py
       - uses: actions/upload-pages-artifact@v3

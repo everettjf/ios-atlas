@@ -1,6 +1,6 @@
 # iOS Atlas research TODO
 
-Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horizontal inventory from questions that need implementation or device evidence.
+Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-first plan](device-first-plan.md) defines the next collection and publication gates. The checks below describe completed firmware work and remaining device and library research.
 
 ## Horizontal pass
 
@@ -16,7 +16,11 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 - [x] Index named `__text` symbols in all 3,363 standalone Mach-O files, including explicit zero-name results.
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.
 - [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 218 of 227 exact top-level iOS framework images and one DriverKit image; nine top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
-- [ ] Hash and compare selected live device files outside the cache to the official firmware, with exact namespace and path mapping.
+- [ ] Verify selected live device files outside the cache against the exact-build firmware, with exact namespace and path mapping.
+- [ ] Record all live mounts and RootHide namespaces; capture a private, resumable whole-device metadata snapshot with per-root completeness and error counts.
+- [ ] Publish a privacy-reviewed catalog of live system and jailbreak paths, including code-bearing files absent from the stock IPSW; keep user and app data path names private.
+- [ ] Analyze live standalone executables, dylibs, frameworks, extensions, and tweak components; link firmware analysis only to verified matching binaries.
+- [ ] Make live device files the primary website view, add mount and analysis coverage, and remove cross-version comparison navigation.
 
 ## Deeper studies, one component at a time
 
@@ -27,7 +31,6 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 - [ ] Follow WidgetKit's `_WidgetExtensionSession` timeline and control request methods into their immediate call sites, and distinguish its code from `ChronoServices`.
 - [ ] Inspect selected method bodies and call sites in the exact image; attach addresses, disassembly, and tool versions.
 - [ ] Confirm process ownership and load behavior with bounded, read-only device observation where possible.
-- [ ] Compare the same library across two firmware builds before describing changes.
 - [ ] Record tweak ideas as hypotheses with the function, expected hook point, version constraints, and a device validation plan.
 
 A checklist item is complete only at its stated scope. Static metadata does not prove runtime execution or a safe hook point. Use [the acquisition record](acquisition-23A355.md) and [method coverage note](../research/23A355/Method-Catalog-Coverage.md) for provenance.
