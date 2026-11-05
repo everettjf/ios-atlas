@@ -58,9 +58,9 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** each displayed difference says what was compared and whether its origin is established or merely suspected.
 
-### 3. Add relationships and research notes — launchd catalog and two component examples completed; deeper traces pending
+### 3. Add relationships and research notes — direct library graph and component examples completed; deeper traces pending
 
-- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists now have source-bound service records, and 600 distinct service executables have 14,843 direct Mach-O load declarations linked to cache or disk catalogs. The SpringBoard note follows one plist through its disk entry point into a cached framework. ObjC/Swift, transitive links, and runtime process ownership remain future research.
+- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists have source-bound service records; 600 distinct service executables have 14,843 direct Mach-O load declarations. All 4,170 iOS cache images now have 90,837 direct library loads in a navigable, two-way graph. The SpringBoard note follows one plist through its disk entry point into a cached framework. ObjC/Swift, transitive links, and runtime process ownership remain future research.
 - Follow one user-visible behavior from entry point through framework and service, confirming static hypotheses with bounded runtime observation where needed.
 - Keep analysis evidence and uncertainty attached to each claim. Use REA for focused binary questions after selecting an exact artifact; do not infer execution from decompilation alone.
 
@@ -87,4 +87,4 @@ ipsw class-dump <MAIN_DSC> <FULL_INSTALL_NAME>
 
 `ipsw dyld extract` is reserved for a selected image when another analysis tool needs a standalone Mach-O; the primary inventory comes from the intact cache. `ipsw idev fsyms` can retrieve device linker/cache files if firmware and live cache identity need reconciliation, but this may transfer a large amount of data and has not been run.
 
-The first spike validated the cache parser against the intact 80-file iOS and 3-file DriverKit arm64e cache families and inspected Foundation's Mach-O metadata. The built site compares physical file presence against logical install names. Additional samples and runtime investigations are future research.
+The cache parser was validated against the intact 80-file iOS and 3-file DriverKit arm64e cache families. The built site compares physical file presence against logical install names and navigates all direct loads among the iOS cache images. DriverKit image-to-image loads and runtime investigations remain future research.
