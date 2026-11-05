@@ -37,6 +37,14 @@
     "note": "research/23A355/Framework-Introduction-Coverage.md"
   },
   {
+    "id": "widgetkit-library-overview",
+    "build": "23A355",
+    "title": "What can we establish about WidgetKit in this build?",
+    "summary": "Apple documents widgets, timelines, Live Activities, and controls; the exact cached image has 152 Objective-C method entries, 323 named code symbols, and 55 direct library loads. The note separates API documentation from binary evidence.",
+    "install_name": "/System/Library/Frameworks/WidgetKit.framework/WidgetKit",
+    "note": "research/23A355/WidgetKit-Library-Overview.md"
+  },
+  {
     "id": "driverkit-function-surface",
     "build": "23A355",
     "title": "What function names are visible in the DriverKit cache?",

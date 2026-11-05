@@ -22,7 +22,9 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 
 - [x] Trace Foundation as a cache image and document its ObjC method surface.
 - [x] Trace SpringBoard's launch declaration and startup entry point; document its ObjC method surface.
-- [ ] Pick a library with a clear user-visible function; document purpose, key types, exported APIs, and its immediate dependencies with cited evidence.
+- [x] Create a source-bound WidgetKit overview with documented purpose and API types, exact-image method and symbol examples, direct dependencies, and known gaps.
+- [ ] Map selected public Swift APIs to exact-image metadata or exports before describing their implementation in this build.
+- [ ] Follow WidgetKit's `_WidgetExtensionSession` timeline and control request methods into their immediate call sites, and distinguish its code from `ChronoServices`.
 - [ ] Inspect selected method bodies and call sites in the exact image; attach addresses, disassembly, and tool versions.
 - [ ] Confirm process ownership and load behavior with bounded, read-only device observation where possible.
 - [ ] Compare the same library across two firmware builds before describing changes.

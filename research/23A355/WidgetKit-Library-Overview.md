@@ -1,0 +1,19 @@
+# What can we establish about WidgetKit in this iOS build?
+
+Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`), official restore IPSW SHA-256 `2773217713e94b81fbbaa6ecb6b7e87fb176f58f5edefdb868d8d71ec6547bd2`. The inspected image is `/System/Library/Frameworks/WidgetKit.framework/WidgetKit` in iOS cache family `C0A7E671-35E1-3E6C-842D-FCE4E0A08C7E`, with Mach-O UUID `E032053D-5979-39EB-BD2B-CACAF1DAAE54`. It is a logical cache image; the site does not count it as a separate physical executable file.
+
+## Documented purpose and API family
+
+[Apple's WidgetKit documentation](https://developer.apple.com/documentation/widgetkit) describes widgets, Live Activities, and controls that display app content or actions outside the app. The checked framework document has SHA-256 `aedb4f0d606422aa92d968e19726058682a20222746796a279301b96c29e59e9`. [TimelineProvider](https://developer.apple.com/documentation/widgetkit/timelineprovider) is a public protocol for supplying dated widget entries; [WidgetCenter](https://developer.apple.com/documentation/widgetkit/widgetcenter) is the public API for requesting timeline reloads. These are documented API concepts, not a claim that the named symbols below enumerate their implementations in this exact cache image.
+
+## What the exact image exposes to this static pass
+
+The [per-image Objective-C catalog](../../catalog/ios/23A355/objc-image-methods-E032053D-5979-39EB-BD2B-CACAF1DAAE54.json.gz) records **97 classes, two categories, and 152 method entries**. Its raw class dump has SHA-256 `90c23ba20654e29d9a1ad6f9c9f03080454951822af1a8db5ce492b461730739`. The separate [named-symbol coverage note](iOS-Cache-Named-Symbol-Coverage.md) records **323 unique named `__text` rows**, four with the textual shape of an Objective-C method. Its raw symbol output has SHA-256 `e4a4228050402143425178357e63b47cc21d78ef20cf8407a7a62f2bcdfc64c7`. All four Objective-C-shaped symbol rows also occur at the same addresses in the method catalog. The two counts must not be added together; neither is a complete callable surface.
+
+The class dump includes `_TtC9WidgetKit23_WidgetExtensionSession` with `getTimelineFor:into:environment:isPreview:completion:` at `0x191e81b34`, `getControlTemplatesWithRequests:completion:` at `0x191e81948`, and `getAppIntentsXPCListenerEndpointWithCompletion:` at `0x191e81f6c`. `_TtC9WidgetKit24WidgetExtensionXPCServer` has `shouldAcceptConnection:` at `0x191d03690`. `_TtC9WidgetKit15TimelineRequest` has `encodeWithCoder:` and `initWithCoder:` entries. These names and addresses are reproducible metadata, not evidence of how a request is handled or when any method executes. The [methods view](https://xnu.app/ios-atlas/#methods) lets readers search all 152 entries.
+
+## Immediate dependency boundary
+
+This image declares **55 direct Mach-O library loads**: 41 ordinary and 14 weak. The ordinary loads include `ExtensionKit`, `SwiftUI`, `AppIntents`, `ActivityKit`, and the private `ChronoServices` framework. The [dependency catalog](../../catalog/ios/23A355/dyld-dependencies.json) also identifies **46 other cache images** with a direct load declaration naming WidgetKit, including `CalendarWidget`, `ControlCenterUI`, `ChronoCore`, and `WidgetRenderer`. The [image explorer](https://xnu.app/ios-atlas/#images) shows the full outgoing and incoming lists. A declared edge does not prove an image was loaded in a particular process.
+
+None of the 600 distinct stock launchd executables in the [service import catalog](../../catalog/ios/23A355/service-macho.json) directly names WidgetKit. That bounded result says nothing about app extensions, transitive loads, or dynamic loading. This page does not identify a running host process, function bodies, timeline scheduling policy, or a safe tweak hook. Those require a focused exact-image disassembly and a bounded runtime observation before a behavioral claim.

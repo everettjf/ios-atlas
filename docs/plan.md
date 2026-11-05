@@ -1,6 +1,6 @@
 # Research and delivery plan
 
-Status: the first official-firmware catalog and [public explorer](https://xnu.app/ios-atlas/) are implemented, 2026-11-05. The horizontal pass includes 3,363 standalone Mach-O identities, 847,771 Objective-C method entries, 323,061 named `__text` symbol records, and 282,145 Swift dump declaration lines from those files, alongside the cache-image methods. Source-linked introductions now cover 218 of 227 exact top-level iOS framework images. See [the acquisition record](acquisition-23A355.md) for exact coverage.
+Status: the first official-firmware catalog and [public explorer](https://xnu.app/ios-atlas/) are implemented, 2026-11-05. The horizontal pass includes 3,363 standalone Mach-O identities, 847,771 Objective-C method entries, 323,061 named `__text` symbol records, and 282,145 Swift dump declaration lines from those files; all 4,170 iOS cache images also have 3,065,801 Objective-C method entries and 6,585,655 named `__text` symbol records. Source-linked introductions cover 218 of 227 exact top-level iOS framework images, and [WidgetKit](../research/23A355/WidgetKit-Library-Overview.md) is the first compact library overview that puts documented purpose beside exact-image method and dependency evidence. See [the acquisition record](acquisition-23A355.md) for exact coverage.
 
 ## Initial target and known access
 

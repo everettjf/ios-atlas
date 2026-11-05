@@ -14,7 +14,7 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`). Source: official restor
 
 The [Objective-C methods view](https://xnu.app/ios-atlas/#methods) lists indexed images and searches class names there. Choose SpringBoard.framework to search its class names, category labels, selectors, and implementation addresses. For example, [SpringBoard's own methods](https://xnu.app/ios-atlas/#methods/class%3ASpringBoard) show `applicationDidFinishLaunching:` at `0x21d6a1a48`. The [class table](https://xnu.app/ios-atlas/#objc) links its exact `SpringBoard` entry to that filtered list. This supports targeted reverse engineering and candidate discovery; selecting a tweak hook still requires function-body and runtime evidence.
 
-The count is for one cache image in one build. The site also indexes [other image method surfaces](Method-Catalog-Coverage.md), but these catalogs do not cover every class in the 4,170-image iOS cache, categories in other images, dynamically added methods, generated runtime subclasses, or methods whose metadata is unavailable to the dumps. A selector name or IMP address does not prove a method was called on the connected phone.
+The count above is for one cache image in one build. The site separately indexes [method results for all 4,170 iOS cache images](Method-Catalog-Coverage.md), including explicit empty results. Static class dumps do not establish dynamically added methods, generated runtime subclasses, or methods whose metadata is unavailable to the tool. A selector name or IMP address does not prove a method was called on the connected phone.
 
 ## Reproduce
 
