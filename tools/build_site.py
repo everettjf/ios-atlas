@@ -577,6 +577,47 @@ def build() -> None:
             driverkit_info = {"driverkit_image_count": len(driverkit_images),
                               "driverkit_cache_file_count": len(driverkit["files"]),
                               "driverkit_url": f"data/{build}-driverkit.json"}
+            driverkit_functions_path = directory / "driverkit-functions.json.gz"
+            if driverkit_functions_path.exists():
+                functions = load(driverkit_functions_path)
+                expected_names = {image["install_name"]: image["uuid"] for image in driverkit_images}
+                if (functions["schema_version"] != 1 or
+                        functions["kind"] != "driverkit_named_text_functions" or
+                        functions["source"] != "official_ipsw_intact_cache_family" or
+                        functions["build"] != build or
+                        functions["product_type"] != driverkit["product_type"] or
+                        functions["firmware_sha256"] != driverkit["firmware_sha256"] or
+                        functions["cache_uuid"] != driverkit["cache_uuid"] or
+                        functions["cache_files_sha256"] != {
+                            item["name"]: item["sha256"] for item in driverkit["files"]} or
+                        functions["image_count"] != len(driverkit_images) or
+                        len(functions["images"]) != len(driverkit_images) or
+                        {image["install_name"] for image in functions["images"]} != set(expected_names) or
+                        functions["named_function_count"] != sum(
+                            image["named_function_count"] for image in functions["images"])):
+                    raise ValueError("DriverKit function catalog identity or totals differ")
+                for image in functions["images"]:
+                    rows = image["functions"]
+                    start = int(image["text_address"], 16)
+                    end = start + image["text_size"]
+                    if (image["uuid"] != expected_names[image["install_name"]] or
+                            image["named_function_count"] != len(rows) or
+                            image["duplicate_symbol_table_entry_count"] < 0 or
+                            any(not re.fullmatch(r"[0-9a-f]{64}", image[field]) for field in
+                                ("macho_toc_sha256", "symbol_dump_sha256", "class_dump_sha256")) or
+                            (image["class_dump_empty"] and
+                             image["class_dump_sha256"] != hashlib.sha256(b"").hexdigest()) or
+                            any(image["objc_toc"].get(key, 0) != 0 for key in
+                                ("__objc_classlist", "__objc_catlist")) or
+                            len({tuple(row) for row in rows}) != len(rows) or
+                            any(len(row) != 3 or not row[1] or not row[2] or
+                                not re.fullmatch(r"0x[0-9a-f]+", row[0]) or
+                                not start <= int(row[0], 16) < end for row in rows)):
+                        raise ValueError(f"invalid DriverKit function catalog image: {image['install_name']}")
+                function_url = f"data/{build}-driverkit-functions.json.gz"
+                dump(DIST / function_url, functions, compressed=True)
+                driverkit_info.update({"driverkit_function_url": function_url,
+                                       "driverkit_named_function_count": functions["named_function_count"]})
             driverkit_dependency_path = directory / "driverkit-dependencies.json"
             if driverkit_dependency_path.exists():
                 driverkit_info.update(publish_dependencies(driverkit_dependency_path,

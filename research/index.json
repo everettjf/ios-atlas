@@ -23,6 +23,13 @@
     "note": "research/23A355/Method-Catalog-Coverage.md"
   },
   {
+    "id": "driverkit-function-surface",
+    "build": "23A355",
+    "title": "What function names are visible in the DriverKit cache?",
+    "summary": "All 51 DriverKit images yield 65,668 unique named __text symbol records. The ObjC class dumps list no classes or methods; symbols are not a complete function inventory.",
+    "note": "research/23A355/DriverKit-Function-Surface.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",
