@@ -314,6 +314,108 @@ def publish_live_dependencies(build: str, product: str, path: Path,
             "device_macho_redacted_rpath_count": totals["redacted_rpaths"]}
 
 
+def publish_live_symbols(build: str, product: str, path: Path,
+                         macho_path: Path) -> dict:
+    """Publish reviewed per-slice names only for exact verified device files."""
+    data = load(path)
+    macho = load(macho_path)
+    originals = {item["path"]: item for item in macho["records"]}
+    files = data.get("files")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_jailbreak_named_text_symbols" or
+            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(files, list) or len(files) != len(originals) or
+            data.get("macho_file_count") != len(files)):
+        raise ValueError("incomplete live symbol catalog")
+    seen = set()
+    totals = Counter()
+    summaries = []
+    buckets = defaultdict(list)
+    private_name = re.compile(
+        r"/(?:Users|var/mobile|private/var/mobile|private/var/containers)/|"
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+    )
+    for item in files:
+        original = originals.get(item.get("path"))
+        if (original is None or item["path"] in seen or
+                item.get("sha256") != original["sha256"] or
+                item.get("slice_count") != len(original["slices"]) or
+                not isinstance(item.get("slices"), list) or
+                len(item["slices"]) != len(original["slices"])):
+            raise ValueError("live symbol file differs from verified Mach-O")
+        seen.add(item["path"])
+        rows = []
+        totals["slices"] += len(item["slices"])
+        for part, original_part in zip(item["slices"], original["slices"]):
+            sections = part.get("text_sections")
+            names = part.get("symbols")
+            if (part.get("architecture") != original_part["architecture"] or
+                    part.get("uuid") != original_part["uuid"] or
+                    not isinstance(sections, list) or not isinstance(names, list) or
+                    part.get("named_symbol_count") != len(names) or
+                    len({tuple(row) for row in names}) != len(names) or
+                    any(not isinstance(part.get(field), str) or
+                        not re.fullmatch(r"[0-9a-f]{64}", part[field]) for field in
+                        ("macho_loads_sha256", "symbol_dump_sha256")) or
+                    any(not isinstance(part.get(field), int) or part[field] < 0
+                        for field in ("symbol_dump_replacement_char_count",
+                                      "duplicate_symbol_row_count",
+                                      "unnamed_text_row_count", "outside_text_row_count")) or
+                    any(not isinstance(section, list) or len(section) != 3 or
+                        not isinstance(section[0], str) or
+                        not isinstance(section[1], int) or
+                        not isinstance(section[2], int) or section[2] < 0
+                        for section in sections)):
+                raise ValueError("invalid live symbol slice")
+            ranges = defaultdict(list)
+            for segment, address, length in sections:
+                ranges[segment].append((address, address + length))
+            for row in names:
+                if (not isinstance(row, list) or len(row) != 4 or
+                        not isinstance(row[0], str) or
+                        not re.fullmatch(r"0x[0-9a-f]+", row[0]) or
+                        any(not isinstance(value, str) or not value or
+                            has_private_characters(value) or "\ufffd" in value or
+                            private_name.search(value) or PRIVATE_REFERENCE.search(value)
+                            for value in row[1:]) or
+                        row[3] not in ranges or
+                        not any(lo <= int(row[0], 16) < hi
+                                for lo, hi in ranges[row[3]])):
+                    raise ValueError("unsafe or out-of-range live symbol")
+                rows.append([*row, part["architecture"]])
+            totals["named_symbols"] += len(names)
+            totals["duplicate_rows"] += part["duplicate_symbol_row_count"]
+            totals["unnamed_rows"] += part["unnamed_text_row_count"]
+            totals["outside_rows"] += part["outside_text_row_count"]
+            totals["slices_without_names"] += not names
+        totals["files_without_names"] += not rows
+        bucket_id = hashlib.sha256(item["path"].encode()).digest()[0] % 64
+        bucket_url = (f"data/{build}-jailbreak-symbols/{bucket_id:02x}.json.gz"
+                      if rows else None)
+        summaries.append({"path": item["path"], "sha256": item["sha256"],
+                          "named_symbol_count": len(rows),
+                          "slice_count": len(item["slices"]),
+                          "bucket_url": bucket_url})
+        if rows:
+            buckets[bucket_id].append({"path": item["path"], "sha256": item["sha256"],
+                                       "symbols": rows})
+    if (seen != set(originals) or
+            any(data.get("totals", {}).get(key) != value for key, value in totals.items())):
+        raise ValueError("live symbol totals disagree")
+    for bucket_id, entries in buckets.items():
+        dump(DIST / f"data/{build}-jailbreak-symbols/{bucket_id:02x}.json.gz",
+             {"schema_version": 1, "build": build, "files": entries},
+             compressed=True)
+    index_url = f"data/{build}-jailbreak-symbol-index.json.gz"
+    dump(DIST / index_url,
+         {"schema_version": 1, "build": build, "files": summaries,
+          "totals": dict(totals)}, compressed=True)
+    return {"device_macho_symbol_index_url": index_url,
+            "device_macho_named_symbol_count": totals["named_symbols"],
+            "device_macho_symbol_empty_file_count": totals["files_without_names"]}
+
+
 def publish_live_standalone_identity(build: str, product: str, path: Path,
                                      stock_path: Path, device_path: Path) -> dict:
     """Attach firmware analysis only to exact byte-matched device files."""
@@ -1305,6 +1407,13 @@ def build() -> None:
                 raise ValueError("live dependencies require verified Mach-O files")
             device_info.update(publish_live_dependencies(
                 build, dyld["product_type"], live_dependencies_path,
+                live_macho_path))
+        live_symbols_path = directory / "jailbreak-symbols.json.gz"
+        if live_symbols_path.exists():
+            if not live_macho_path.exists():
+                raise ValueError("live symbols require verified Mach-O files")
+            device_info.update(publish_live_symbols(
+                build, dyld["product_type"], live_symbols_path,
                 live_macho_path))
         live_standalone_path = directory / "standalone-live-identity.json.gz"
         if live_standalone_path.exists():

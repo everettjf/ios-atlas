@@ -226,6 +226,54 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_live_symbols_require_verified_slice_and_public_name(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            macho_path = root / "macho.json.gz"
+            symbol_path = root / "symbols.json.gz"
+            original = {"path": "/usr/lib/tool.dylib", "sha256": "a" * 64,
+                        "slices": [{"architecture": "arm64e", "uuid": "UUID"}]}
+            macho_path.write_bytes(gzip.compress(json.dumps({"records": [original]}).encode(), mtime=0))
+            slice_record = {"architecture": "arm64e", "uuid": "UUID",
+                            "macho_loads_sha256": "b" * 64,
+                            "symbol_dump_sha256": "c" * 64,
+                            "symbol_dump_replacement_char_count": 0,
+                            "text_sections": [["__TEXT", 4096, 256]],
+                            "named_symbol_count": 1,
+                            "duplicate_symbol_row_count": 0,
+                            "unnamed_text_row_count": 0,
+                            "outside_text_row_count": 0,
+                            "symbols": [["0x1000", "_public_name", "external", "__TEXT"]]}
+            data = {"schema_version": 1, "kind": "live_jailbreak_named_text_symbols",
+                    "source": "verified_live_device_macho_bytes",
+                    "build": "23A355", "product_type": "iPhone12,1",
+                    "macho_file_count": 1,
+                    "totals": {"slices": 1, "named_symbols": 1, "duplicate_rows": 0,
+                               "unnamed_rows": 0, "outside_rows": 0,
+                               "slices_without_names": 0, "files_without_names": 0},
+                    "files": [{"path": original["path"], "sha256": original["sha256"],
+                               "slice_count": 1, "slices": [slice_record]}]}
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                symbol_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                result = build_site.publish_live_symbols(
+                    "23A355", "iPhone12,1", symbol_path, macho_path)
+                self.assertEqual(result["device_macho_named_symbol_count"], 1)
+                slice_record["symbols"][0][1] = "/Users/person/private"
+                symbol_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_symbols(
+                        "23A355", "iPhone12,1", symbol_path, macho_path)
+                slice_record["symbols"][0][1] = "_public_name"
+                slice_record["symbols"][0][0] = "0x2000"
+                symbol_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_symbols(
+                        "23A355", "iPhone12,1", symbol_path, macho_path)
+            finally:
+                build_site.DIST = old_dist
+
 
 if __name__ == "__main__":
     unittest.main()

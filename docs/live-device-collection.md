@@ -72,3 +72,15 @@ python3 tools/catalog_live_jailbreak_dependencies.py \
 ```
 
 The published catalog covers 463 files, 493 slices, 3,070 direct dylib load commands, and 569 public runpath declarations. Three embedded build-machine user-directory runpaths are counted but withheld. The website shows load names as static declarations; `@rpath` and `@loader_path` names are not claimed as resolved runtime paths.
+
+A separate named-symbol pass checks every acquired file and slice again, then accepts only named records whose addresses lie inside an executable `__text` section:
+
+```sh
+python3 tools/catalog_live_jailbreak_symbols.py \
+  --macho-catalog catalog/ios/23A355/jailbreak-macho.json.gz \
+  --binary-root .local/live-device-23A355/macho-files \
+  --workdir .local/live-device-23A355/symbol-work \
+  --output .local/live-device-23A355/jailbreak-symbols-candidate.json.gz
+```
+
+The public builder checks complete file and slice coverage, exact hashes and UUIDs, code-section address ranges, and private path patterns in symbol names. The [coverage note](../research/23A355/Live-Jailbreak-Symbols.md) records totals and limits.

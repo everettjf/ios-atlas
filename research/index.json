@@ -73,6 +73,13 @@
     "note": "research/23A355/Live-Jailbreak-MachO.md"
   },
   {
+    "id": "live-jailbreak-symbols",
+    "build": "23A355",
+    "title": "Which named code symbols are visible in the jailbreak installation?",
+    "summary": "All 463 published, device-hash-verified Mach-O files were inspected across 493 slices. Their symbol tables yield 181,792 named __text records; 49 files have none.",
+    "note": "research/23A355/Live-Jailbreak-Symbols.md"
+  },
+  {
     "id": "standalone-objc-method-coverage",
     "build": "23A355",
     "title": "What Objective-C methods are visible in standalone Mach-O files?",
