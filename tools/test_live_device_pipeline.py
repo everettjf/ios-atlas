@@ -18,6 +18,10 @@ from export_live_device import export
 
 
 class LiveDevicePipelineTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        PRIVATE_ROOT.mkdir(parents=True, exist_ok=True)
+
     @unittest.skipUnless(sys.platform == "darwin", "Darwin stat protocol")
     def test_scan_keeps_newlines_and_symlink_targets(self) -> None:
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
