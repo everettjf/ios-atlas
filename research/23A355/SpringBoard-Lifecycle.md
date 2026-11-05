@@ -15,7 +15,7 @@ Target: iPhone 11 (`iPhone12,1`), build `23A355`, iOS arm64e dyld cache UUID `C0
 
 The static evidence separates three levels: launchd's program declaration, the disk executable's imported entry point, and lifecycle selectors implemented in the cached framework. The method names suggest useful places to investigate service setup, scene connection, and deferred startup. A selector name is only a lead: the call graph, branch conditions, initialization order, and actual device execution still need function-body analysis or bounded runtime observation. No tweak hook is recommended from names alone.
 
-The 96 MB extracted image was opened in REA/Ghidra, but an analysis request for `_SBSystemAppMain` did not finish within the available tool timeout. This note therefore makes no claim about that function's internal control flow. A focused follow-up should recover its direct calls, then inspect the lifecycle methods above and compare with a read-only trace on the matching device if static evidence leaves ordering uncertain.
+A focused LLVM disassembly now establishes selected direct calls, conditions, and the branch from `_SBSystemAppMain` to `_UIApplicationMain`; see the [startup function note](SpringBoard-Startup.md). It does not establish the internal control flow of the lifecycle selectors listed above or which paths executed on the phone. Their function bodies and a bounded, read-only runtime trace remain follow-up work.
 
 ## Reproduce
 

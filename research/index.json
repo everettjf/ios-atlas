@@ -31,6 +31,14 @@
     "note": "research/23A355/SpringBoard-Lifecycle.md"
   },
   {
+    "id": "springboard-startup",
+    "build": "23A355",
+    "title": "What happens before SpringBoard enters UIKit?",
+    "summary": "Selected instructions in the exact cache image show conditional build and snapshot handling, early initialization, and a direct branch from SBSystemAppMain to UIApplicationMain.",
+    "install_name": "/System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard",
+    "note": "research/23A355/SpringBoard-Startup.md"
+  },
+  {
     "id": "foundation-dependency-reach",
     "build": "23A355",
     "title": "Why does Foundation reach more images with weak loads?",
