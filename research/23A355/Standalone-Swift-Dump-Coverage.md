@@ -1,0 +1,15 @@
+# What Swift metadata is visible in standalone Mach-O files?
+
+Target: all **3,363** physical Mach-O files in the FileSystem, SystemOS, and AppOS images of the official iPhone 11 iOS 26.0.1 (`23A355`) IPSW, SHA-256 `2773217713e94b81fbbaa6ecb6b7e87fb176f58f5edefdb868d8d71ec6547bd2`. The [file inventory](Standalone-MachO-Coverage.md) separates these physical files from images in the dyld shared cache.
+
+An exact-file `ipsw swift-dump` pass reported **282,145 type, protocol, and extension declaration lines** and **294,746 method or protocol-requirement lines**. The latter include **224,323** lines explicitly marked `<stripped>` by the tool. These are dump rows, not reconstructed Swift source or a count of unique in-file definitions. The tool reported no Swift information for 2,068 files. Of the 1,295 files with Swift sections, 1,162 parsed without malformed lines and 133 had partial text parsing. Fifty-one of those 1,162 produced no declaration rows despite having Swift sections.
+
+The partial outputs contain **2,122** omitted lines with unexpected structure or undecodable content; 1,171 Unicode replacement characters appeared across raw dumps. Those files remain labeled `partially_parsed` in the catalog and site. A malformed line can interrupt a larger declaration, so the visible row count for those files is a lower bound on what this tool might recover. A zero row count is not proof of no Swift code or methods. Protocol names can also be references rather than types defined by that file.
+
+Every mounted file was checked against the standalone inventory by size and full SHA-256 before the dump. Its Mach-O UUID was checked against the inventory, and Swift section names, addresses, and sizes were recorded from the load commands. Raw tool output remains local; each public file record includes its SHA-256. The [Standalone Mach-O explorer](https://xnu.app/ios-atlas/#macho) shows the per-file status and loads a compressed type/member bucket only when opened. For example, the physical `Shortcuts` executable has searchable Swift declaration and member lines, while `/usr/lib/dyld` reports no Swift information.
+
+This pass complements the [Objective-C method](Standalone-ObjC-Method-Coverage.md) and [named code symbol](Standalone-Named-Symbol-Coverage.md) indexes. None of the three alone is a complete function inventory, and static metadata does not establish runtime calls, public API, or safe tweak hooks. The iOS cache's [Swift conformance catalog](../../catalog/ios/23A355/swift-conformances/index.json) is a separate source with different records.
+
+The aggregate catalog is [`standalone-swift.json.gz`](../../catalog/ios/23A355/standalone-swift.json.gz). To regenerate it with the exact mounted images:
+
+`python3 tools/catalog_standalone_swift.py --macho-catalog catalog/ios/23A355/standalone-macho.json.gz --filesystem-root .local/mount-fs --systemos-root .local/mount-sys --appos-root .local/mount-app --workdir .local/standalone-swift-work --output catalog/ios/23A355/standalone-swift.json.gz --workers 4`

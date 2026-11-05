@@ -51,6 +51,13 @@
     "note": "research/23A355/Standalone-Named-Symbol-Coverage.md"
   },
   {
+    "id": "standalone-swift-dump-coverage",
+    "build": "23A355",
+    "title": "What Swift metadata is visible in standalone Mach-O files?",
+    "summary": "All 3,363 exact standalone files were checked: 1,295 have Swift sections, yielding 282,145 declaration and 294,746 member or requirement lines. 133 outputs are explicitly partial.",
+    "note": "research/23A355/Standalone-Swift-Dump-Coverage.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",

@@ -886,6 +886,102 @@ def build() -> None:
                                         "standalone_symbol_file_count": len(files),
                                         "standalone_symbol_empty_file_count": totals["files_without_names"],
                                         "standalone_symbol_index_url": index_url})
+            swift_path = directory / "standalone-swift.json.gz"
+            if swift_path.exists():
+                swift = load(swift_path)
+                files = swift["files"]
+                by_file = {(item["volume"], item["path"]): item for item in rows}
+                if (swift["schema_version"] != 1 or
+                        swift["kind"] != "standalone_macho_swift_declarations" or
+                        swift["source"] != "official_ipsw_mounted_images" or
+                        swift["product_type"] != dyld["product_type"] or
+                        swift["build"] != build or
+                        swift["firmware_sha256"] != dyld["firmware_sha256"] or
+                        swift["macho_file_count"] != len(files) or len(files) != len(rows)):
+                    raise ValueError("standalone Swift source mismatch")
+                totals = Counter()
+                summaries = []
+                buckets = defaultdict(list)
+                seen = set()
+                kinds = ("class", "struct", "enum", "protocol", "extension", "actor")
+                for item in files:
+                    key = (item["volume"], item["path"])
+                    original = by_file.get(key)
+                    declarations = item["declarations"]
+                    kind_counts = Counter(entry["kind"] for entry in declarations)
+                    members = sum(len(entry["members"]) for entry in declarations)
+                    stripped = sum("<stripped>" in member[1]
+                                   for entry in declarations for member in entry["members"])
+                    status = item["status"]
+                    if (original is None or key in seen or
+                            item["sha256"] != original["sha256"] or
+                            item["uuid"] != original["slices"][0]["uuid"] or
+                            status not in ("parsed", "partially_parsed", "no_swift_info") or
+                            item["declaration_count"] != len(declarations) or
+                            item["member_count"] != members or
+                            item["stripped_member_count"] != stripped or
+                            any(item["kind_counts"].get(kind) != kind_counts[kind] for kind in kinds) or
+                            any(not re.fullmatch(r"[0-9a-f]{64}", item[field])
+                                for field in ("macho_loads_sha256", "swift_dump_sha256")) or
+                            item["swift_dump_replacement_char_count"] < 0 or
+                            item["unparsed_line_count"] < 0 or
+                            any(len(section) != 4 or not section[1].startswith("__swift5_") or
+                                not isinstance(section[2], int) or
+                                not isinstance(section[3], int) or section[3] < 0
+                                for section in item["swift_sections"]) or
+                            any(entry["kind"] not in kinds or not entry["name"] or
+                                any(ord(char) < 32 or char == "\ufffd" for char in entry["name"]) or
+                                any(len(member) != 2 or member[0] not in
+                                    ("methods", "requirements") or not member[1] or
+                                    any(ord(char) < 32 or char == "\ufffd" for char in member[1])
+                                    for member in entry["members"])
+                                for entry in declarations)):
+                        raise ValueError(f"invalid standalone Swift catalog: {key}")
+                    if ((status == "no_swift_info" and
+                         (declarations or item["swift_sections"] or item["unparsed_line_count"])) or
+                            (status != "no_swift_info" and not item["swift_sections"]) or
+                            (status == "parsed" and item["unparsed_line_count"]) or
+                            (status == "partially_parsed" and not item["unparsed_line_count"])):
+                        raise ValueError(f"standalone Swift status mismatch: {key}")
+                    seen.add(key)
+                    totals[status] += 1
+                    totals["declarations"] += len(declarations)
+                    totals["members"] += members
+                    totals["stripped_members"] += stripped
+                    totals["unparsed_lines"] += item["unparsed_line_count"]
+                    for kind in kinds:
+                        totals[kind] += kind_counts[kind]
+                    bucket_id = hashlib.sha256(f'{key[0]}\0{key[1]}'.encode()).digest()[0] % 64
+                    bucket_url = (f"data/{build}-standalone-swift/{bucket_id:02x}.json.gz"
+                                  if declarations else None)
+                    summaries.append({"volume": key[0], "path": key[1],
+                                      "sha256": item["sha256"], "uuid": item["uuid"],
+                                      "status": status,
+                                      "declaration_count": len(declarations),
+                                      "member_count": members,
+                                      "unparsed_line_count": item["unparsed_line_count"],
+                                      "bucket_url": bucket_url})
+                    if declarations:
+                        buckets[bucket_id].append({"volume": key[0], "path": key[1],
+                                                   "sha256": item["sha256"],
+                                                   "declarations": declarations})
+                if (len(seen) != len(rows) or
+                        any(swift["totals"].get(name) != value for name, value in totals.items())):
+                    raise ValueError("standalone Swift totals disagree")
+                for bucket_id, entries in buckets.items():
+                    dump(DIST / f"data/{build}-standalone-swift/{bucket_id:02x}.json.gz",
+                         {"schema_version": 1, "build": build, "files": entries},
+                         compressed=True)
+                index_url = f"data/{build}-standalone-swift-index.json.gz"
+                dump(DIST / index_url,
+                     {"schema_version": 1, "build": build, "files": summaries,
+                      "totals": swift["totals"]}, compressed=True)
+                standalone_info.update({"standalone_swift_declaration_count": totals["declarations"],
+                                        "standalone_swift_member_count": totals["members"],
+                                        "standalone_swift_file_count": len(files),
+                                        "standalone_swift_no_info_count": totals["no_swift_info"],
+                                        "standalone_swift_partial_count": totals["partially_parsed"],
+                                        "standalone_swift_index_url": index_url})
         device_info = {}
         device_path = directory / "device-rootfs.json.gz"
         if device_path.exists():
