@@ -219,7 +219,7 @@ def build() -> None:
     if DIST.exists():
         shutil.rmtree(DIST)
     DIST.mkdir()
-    for name in ("index.html", "app.js", "styles.css", "reach.mjs"):
+    for name in ("index.html", "app.js", "styles.css", "tree.css", "reach.mjs", "tree.mjs"):
         shutil.copy2(SITE / name, DIST / name)
 
     builds = []
@@ -590,6 +590,7 @@ def build() -> None:
     version = digest.hexdigest()[:12]
     index = (DIST / "index.html").read_text(encoding="utf-8")
     index = index.replace('href="styles.css"', f'href="styles.css?v={version}"')
+    index = index.replace('href="tree.css"', f'href="tree.css?v={version}"')
     index = index.replace('src="app.js"', f'src="app.js?v={version}"')
     (DIST / "index.html").write_text(index, encoding="utf-8")
     print(f"built {DIST} with {len(builds)} build(s)")

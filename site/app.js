@@ -2,11 +2,12 @@ const $ = (selector) => document.querySelector(selector);
 const assetVersion = new URL(import.meta.url).searchParams.get('v') || 'dev';
 const versioned = (url) => `${url}?v=${assetVersion}`;
 const {computeReach, pathTo} = await import(versioned('./reach.mjs'));
+const {directoryChildren, parentDirectory} = await import(versioned('./tree.mjs'));
 const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, swiftImage:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
+const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
 let searchTimer;
 
 async function json(url) {
@@ -52,6 +53,7 @@ function setTab(tab, query = '') {
   state.volume = 'all';
   state.limit = 80;
   state.selected = null;
+  state.browsePath = '/';
   state.swiftImage = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
   history.replaceState(null, '', tab === 'research' && query ? `#research/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
@@ -60,6 +62,7 @@ function setTab(tab, query = '') {
 }
 
 function updateSource() {
+  const files = state.tab === 'files';
   const device = state.tab === 'device';
   const driverkit = state.tab === 'driverkit';
   const archive = state.tab === 'archive';
@@ -81,9 +84,10 @@ function updateSource() {
     : reach ? 'Shortest paths follow exact in-cache install-name matches from static Mach-O load commands. No path proves runtime loading.'
     : research ? 'Author-written analyses connect exact firmware artifacts and explain the boundary between observed bytes, interpretation and unknowns.'
     : archive ? 'All 127 ZIP entries are indexed by path and role. Artifact presence is distinct from mounted filesystem content.'
-    : restore ? 'Erase and Upgrade recovery environments are cataloged separately from the installed iOS filesystem.'
     : kernel ? 'Release and research kernelcaches have distinct UUIDs. Kext metadata and fileset entry counts are separate measurements.'
     : services ? 'Launchd job declarations, executable paths, Mach service names, and events from the stock firmware. A declaration is not proof that a job ran.'
+    : files ? 'Browse observed paths within each IPSW filesystem image. Logical dyld images appear separately in the same directory and never count as physical files.'
+    : restore ? 'Browse paths in the Erase and Upgrade restore RAM disks. These are recovery environments, separate from installed iOS.'
     : 'All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.';
 }
 
@@ -96,7 +100,49 @@ function bindToolbar() {
   const input = $('#catalog-search');
   if (input) input.addEventListener('input', () => { state.query = input.value; state.limit = 80; clearTimeout(searchTimer); searchTimer = setTimeout(renderResults, 180); });
   const filter = $('#volume-filter');
-  if (filter) filter.addEventListener('change', () => { state.volume = filter.value; state.limit = 80; renderResults(); });
+  if (filter) filter.addEventListener('change', () => { state.volume = filter.value; state.limit = 80; state.selected = null; if (filesystemMode(state.tab)) state.browsePath = '/'; renderResults(); });
+}
+
+function browseTo(path) {
+  state.browsePath = path;
+  state.selected = null;
+  state.limit = 80;
+  history.replaceState(null, '', `#${state.tab}/${encodeURIComponent(path)}`);
+  renderResults();
+}
+
+function renderDirectoryResults(mode, data) {
+  const stock = filesystemMode(mode);
+  const selectedVolume = stock && state.volume !== 'all' ? data.volumes.findIndex((item) => item.name === state.volume) : null;
+  const children = directoryChildren(data.entries, state.browsePath, stock ? 1 : 0, stock ? 2 : 1, stock ? 0 : null, selectedVolume);
+  const segments = state.browsePath.split('/').filter(Boolean);
+  let cumulative = '';
+  const crumbs = [{label:'/', path:'/'}].concat(segments.map((part) => ({label:part, path:cumulative += `/${part}`})));
+  const breadcrumbs = `<nav class="folder-breadcrumbs" aria-label="Current directory">${crumbs.map((part, index) => `<button data-browse-path="${escapeHTML(part.path)}" ${index === crumbs.length - 1 ? 'aria-current="location"' : ''}>${escapeHTML(part.label)}</button>`).join('<span aria-hidden="true">/</span>')}</nav>`;
+  const visible = children.slice(0, state.limit);
+  const rows = visible.map((child, index) => {
+    const folder = child.type === 'directory' || child.type === 'virtual directory';
+    const icon = folder ? '▤' : child.type === 'symlink' ? '↗' : '·';
+    const label = child.path.split('/').pop();
+    const source = child.type === 'virtual directory' ? 'PARENT' : stock ? data.volumes[child.volume].name : child.type.toUpperCase();
+    return `<button class="result-row folder-row" data-index="${index}" title="${escapeHTML(child.path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(label)}${folder ? '/' : ''}</span></span><span class="row-sub">${escapeHTML(source)}</span></button>`;
+  }).join('');
+  const cache = mode === 'files' && state.volume === 'all' ? state.datasets.get(`dyld:${state.build}`) : null;
+  const images = cache ? cache.images.filter((item) => parentDirectory(item.install_name) === state.browsePath) : [];
+  const cacheRows = images.length ? `<div class="folder-cache"><div class="folder-cache-heading"><strong>${fmt(images.length)} logical image${images.length === 1 ? '' : 's'} in dyld cache</strong><span>These are cache images, not filesystem entries.</span></div>${images.slice(0, 20).map((image) => `<button class="folder-cache-row" data-linked-tab="images" data-linked-query="${escapeHTML(image.install_name)}"><span>◇ ${escapeHTML(image.install_name.split('/').pop())}</span><small>IN CACHE ↗</small></button>`).join('')}${images.length > 20 ? `<button class="more-button" data-linked-tab="images" data-linked-query="${escapeHTML(state.browsePath + '/')}">Explore all matching images ↗</button>` : ''}</div>` : '';
+  $('#result-count').textContent = `${fmt(children.length)} direct path${children.length === 1 ? '' : 's'}`;
+  $('#results').innerHTML = breadcrumbs + `<div class="result-head"><span>DIRECT CHILD</span><span>${stock ? 'VOLUME' : 'TYPE'}</span></div>${rows || '<p class="empty-state">No direct entries in this scanned source.</p>'}${children.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}` + cacheRows;
+  $('#detail').innerHTML = `<div class="empty-detail">Browse a folder or select a file. Symlinks are not followed. PARENT labels identify unobserved ancestors needed to reach a scanned path.</div>`;
+  for (const button of $('#results').querySelectorAll('[data-browse-path]')) button.addEventListener('click', () => browseTo(button.dataset.browsePath));
+  for (const button of $('#results').querySelectorAll('.folder-row')) button.addEventListener('click', () => {
+    const child = visible[Number(button.dataset.index)];
+    if (child.type === 'directory' || child.type === 'virtual directory') { browseTo(child.path); return; }
+    state.selected = child.row;
+    $('#detail').innerHTML = detailHTML(child.row, mode, data);
+    $('#results').querySelectorAll('.folder-row').forEach((row) => row.classList.toggle('selected', row === button));
+  });
+  $('#results').querySelector('#show-more')?.addEventListener('click', () => { state.limit += 80; renderDirectoryResults(mode, data); });
+  for (const button of $('#results').querySelectorAll('[data-linked-tab]')) button.addEventListener('click', () => setTab(button.dataset.linkedTab, button.dataset.linkedQuery));
 }
 
 function serviceBinary(item, data) {
@@ -190,6 +236,7 @@ function renderResults() {
   if (mode === 'reach') { renderReachResults(); return; }
   const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
   if (!data || !['images','driverkit','objc','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
+  if ((filesystemMode(mode) || mode === 'device') && !state.query.trim()) { renderDirectoryResults(mode, data); return; }
   const query = state.query.trim().toLocaleLowerCase();
   let items;
   if (filesystemMode(mode)) items = data.entries.filter((item) => (state.volume === 'all' || data.volumes[item[0]].name === state.volume) && (!query || item[1].toLocaleLowerCase().includes(query)));
@@ -418,6 +465,7 @@ async function renderExplorer() {
   const [data] = await Promise.all([
     dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
     ...(mode === 'images' && activeBuild().dyld_dependency_url ? [dataset('dependencies')] : []),
+    ...(mode === 'files' ? [dataset('dyld')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : [])
   ]);
   if (state.tab !== mode) return;
@@ -427,7 +475,7 @@ async function renderExplorer() {
   const protocolSummary = mode === 'protocols' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_protocol_entry_count)} PROTOCOL ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_protocol_ambiguous_label_count)} AMBIGUOUS ENTRIES</strong><span>${fmt(activeBuild().objc_protocol_unique_label_count)} entries have a unique image-label match</span></div></div>` : '';
   const prefix = mode === 'driverkit' ? 'driverkit' : 'dyld';
   const dependencySummary = (mode === 'images' || mode === 'driverkit') && activeBuild()[`${prefix}_dependency_url`] ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild()[`${prefix}_direct_import_count`])} DIRECT LIBRARY LOADS</strong><span>From ${fmt(activeBuild()[`${prefix}_dependency_image_count`])} cached images</span></div><div><strong>${fmt(activeBuild()[`${prefix}_exact_cache_match_count`])} EXACT CACHE MATCHES</strong><span>Static install-name matches within this cache family</span></div></div>` : '';
-  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'restore' ? 'Search restore environment paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#detail').addEventListener('click', (event) => {
     const link = event.target.closest('[data-linked-tab]');
@@ -478,12 +526,13 @@ async function start() {
   $('#metric-caches').textContent = fmt(first.cache_file_count);
   $('#metric-build').textContent = first.build;
   $('#build-select').innerHTML = state.manifest.builds.map((item) => `<option value="${escapeHTML(item.build)}">${escapeHTML(item.version)} · ${escapeHTML(item.build)}</option>`).join('');
-  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.swiftImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
+  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
   if (['files','restore','device','images','objc','protocols','swift','reach','driverkit','caches','archive','kernel','services','research','compare'].includes(initial)) state.tab = initial;
   if (initial === 'research' && noteId) state.query = decodeURIComponent(noteId);
   if (initial === 'reach' && noteId) state.reachSource = decodeURIComponent(noteId);
+  if (['files','restore','device'].includes(initial) && noteId) state.browsePath = decodeURIComponent(noteId);
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
   await render();
 }

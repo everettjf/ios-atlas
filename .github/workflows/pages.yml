@@ -25,6 +25,8 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Check dependency path logic
         run: node tools/test_reach.mjs
+      - name: Check directory browse logic
+        run: node tools/test_tree.mjs
       - name: Build static site
         run: python3 tools/build_site.py
       - uses: actions/upload-pages-artifact@v3

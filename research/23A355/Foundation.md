@@ -12,6 +12,8 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`), arm64e.
 
 The framework bundle path and the executable image are different catalog objects. A filesystem-only explorer would show the bundle while missing its executable code; a cache-only explorer would miss the resources in the bundle. The Atlas links both under the same logical install name without inventing an on-disk executable.
 
+The [Foundation.framework directory in the Atlas](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework) shows its observed resource files and the logical Foundation cache image in separate sections.
+
 This is a static observation of the official firmware. It does not establish which Foundation methods a particular process executes at runtime.
 
 ## Reproduce

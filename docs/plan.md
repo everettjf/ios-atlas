@@ -70,6 +70,7 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 - Build a static site with separate **Files**, **Shared-cache images**, **Components**, and **Build comparison** views.
 - A library page shows its logical install name and cache membership, not a fictitious standalone file.
+- Folder browsing now covers the scanned installed, restore, and filtered device paths. The installed-system folder view cross-references cache images as logical entries in a separate section. Missing ancestor paths are presented as virtual navigation parents, never claimed as observed filesystem entries.
 - Include source and coverage badges on every page; generate the site from validated catalog data.
 
 **Done when:** a visitor can find a library absent from the ordinary file tree, see why it is absent, inspect its metadata, and trace the supporting source.
