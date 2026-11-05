@@ -24,7 +24,7 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : await json(info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'device' ? await compressedJSON(info.device_url) : await json(info.dyld_url);
   state.datasets.set(key, result);
   return result;
 }
@@ -39,6 +39,14 @@ function setTab(tab) {
   history.replaceState(null, '', `#${tab}`);
   render().catch(showError);
   document.querySelector('.workspace').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function updateSource() {
+  const device = state.tab === 'device';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : 'Source: official iPhone 11 firmware';
+  $('#source-description').textContent = device
+    ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
+    : 'All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.';
 }
 
 function toolbar({placeholder, volumes = []}) {
@@ -63,15 +71,19 @@ function detailHTML(item, mode, data) {
     const volume = data.volumes[volumeIndex];
     return `<span class="detail-label">FILESYSTEM ENTRY</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>PATH</dt><dd>${escapeHTML(path)}</dd><dt>VOLUME</dt><dd>${escapeHTML(volume.name)}</dd><dt>SOURCE IMAGE</dt><dd>${escapeHTML(volume.image_name)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd><dt>SIZE</dt><dd>${escapeHTML(size(bytes))}</dd>${target ? `<dt>LINK TARGET</dt><dd>${escapeHTML(target)}</dd>` : ''}</dl><p class="explain">Observed in the mounted official firmware image. A file path here does not establish that the same bytes are present on a running device.</p>`;
   }
+  if (mode === 'device') {
+    const [path, type] = item;
+    return `<span class="detail-label">DEVICE SYSTEM PATH</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>PATH IN /ROOTFS</dt><dd>${escapeHTML(path)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd><dt>SOURCE</dt><dd>Read-only device observation, selected Apple system roots</dd></dl><p class="explain">This path was seen in the live RootHide /rootfs view. It is not evidence that the jailbreak created or changed it. User data and the jailbreak namespace are outside this catalog.</p>`;
+  }
   return `<span class="detail-label">CACHE FILE</span><h3>${escapeHTML(item.name)}</h3><dl><dt>FILE SIZE</dt><dd>${escapeHTML(size(item.size))}</dd><dt>SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>CACHE FAMILY UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd></dl><p class="explain">A physical member of the extracted SystemOS dyld cache family. Its contents are not hosted by this site.</p>`;
 }
 
 function renderRows(items, mode, data) {
   const visible = items.slice(0, state.limit);
   const rows = visible.map((item, index) => {
-    const path = mode === 'images' ? item.install_name : mode === 'files' ? item[1] : item.name;
-    const secondary = mode === 'images' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'files' ? data.volumes[item[0]].name : size(item.size);
-    const icon = mode === 'images' ? '◇' : mode === 'files' ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : '◈';
+    const path = mode === 'images' ? item.install_name : mode === 'files' ? item[1] : mode === 'device' ? item[0] : item.name;
+    const secondary = mode === 'images' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : size(item.size);
+    const icon = mode === 'images' ? '◇' : mode === 'files' ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : '◈';
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
   $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
@@ -83,11 +95,12 @@ function renderRows(items, mode, data) {
 
 function renderResults() {
   const mode = state.tab;
-  const data = state.datasets.get(`${mode === 'files' ? 'files' : 'dyld'}:${state.build}`);
-  if (!data || !['images','files','caches'].includes(mode)) return;
+  const data = state.datasets.get(`${mode === 'files' ? 'files' : mode === 'device' ? 'device' : 'dyld'}:${state.build}`);
+  if (!data || !['images','files','device','caches'].includes(mode)) return;
   const query = state.query.trim().toLocaleLowerCase();
   let items;
   if (mode === 'files') items = data.entries.filter((item) => (state.volume === 'all' || data.volumes[item[0]].name === state.volume) && (!query || item[1].toLocaleLowerCase().includes(query)));
+  else if (mode === 'device') items = data.entries.filter((item) => !query || item[0].toLocaleLowerCase().includes(query));
   else if (mode === 'images') items = data.images.filter((item) => !query || item.install_name.toLocaleLowerCase().includes(query));
   else items = data.files.filter((item) => !query || item.name.toLocaleLowerCase().includes(query));
   state.selected = items.includes(state.selected) ? state.selected : null;
@@ -97,16 +110,18 @@ function renderResults() {
 async function renderExplorer() {
   const mode = state.tab;
   const explorer = $('#explorer');
+  updateSource();
   if (mode === 'research') {
     const entries = state.manifest.research.filter((note) => note.build === state.build);
     explorer.innerHTML = `<div class="research-list">${entries.map((note) => `<article class="research-card"><span class="tag">BUILD ${escapeHTML(note.build)} / COMPONENT NOTE</span><h3>${escapeHTML(note.title)}</h3><p>${escapeHTML(note.summary)}</p><a href="https://github.com/everettjf/ios-atlas/blob/main/${encodeURI(note.note)}" target="_blank" rel="noopener">Read evidence note ↗</a></article>`).join('') || '<p class="empty-state">No published research notes for this build yet.</p>'}</div>`;
     return;
   }
   if (mode === 'compare') { await renderCompare(); return; }
+  if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
   explorer.innerHTML = '<p class="loading">Opening source-bound catalog…</p>';
-  const data = await dataset(mode === 'files' ? 'files' : 'dyld');
+  const data = await dataset(mode === 'files' ? 'files' : mode === 'device' ? 'device' : 'dyld');
   if (state.tab !== mode) return;
-  explorer.innerHTML = toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'images' ? 'Search library install names…' : 'Search cache file names…', volumes:mode === 'files' ? data.volumes.map((volume) => volume.name) : []}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'images' ? 'Search library install names…' : 'Search cache file names…', volumes:mode === 'files' ? data.volumes.map((volume) => volume.name) : []}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   renderResults();
 }
@@ -156,7 +171,7 @@ async function start() {
   $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const initial = location.hash.slice(1);
-  if (['files','images','caches','research','compare'].includes(initial)) state.tab = initial;
+  if (['files','device','images','caches','research','compare'].includes(initial)) state.tab = initial;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
   await render();
 }

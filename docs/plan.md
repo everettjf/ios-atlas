@@ -1,12 +1,12 @@
 # Research and delivery plan
 
-Status: the first official-firmware catalog and local explorer are implemented, 2026-11-04. See [the acquisition record](acquisition-23A355.md) for exact coverage.
+Status: the first official-firmware catalog and [public explorer](https://xnu.app/ios-atlas/) are implemented, 2026-11-05. See [the acquisition record](acquisition-23A355.md) for exact coverage.
 
 ## Initial target and known access
 
 The Mac recognized one trusted USB device through `ipsw idev list`: iPhone 11 (`iPhone12,1`, `N104AP`, arm64e), iOS 26.0.1, build `23A355`. A root shell was verified through a locally pinned SSH key over the USB tunnel. The RootHide namespace presents `/rootfs` as the base system view while `/` is remapped for the jailbreak. The exact restore IPSW was downloaded, integrity-checked, and indexed.
 
-The repository was cloned from `everettjf/ios-atlas` and was empty at the time of cloning. The site and catalogs are prepared locally; publication status should be checked separately.
+The repository was cloned from `everettjf/ios-atlas` and was empty at the time of cloning. The first dataset and website are now published through GitHub Pages.
 
 ## Why dyld shared cache changes the catalog
 
@@ -50,9 +50,9 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** a user can search both physical files and logical in-cache images for the exact build, and the coverage report names every image or volume that was processed or skipped.
 
-### 2. Observe the jailbroken device — in progress
+### 2. Observe the jailbroken device — filtered system-path inventory and cache identity completed
 
-- Read only: record mounted volumes, firmlink/symlink boundaries, visible file metadata, cache identity, and the jailbreak prefix.
+- Read only: record mounted volumes, firmlink/symlink boundaries, visible file metadata, cache identity, and the jailbreak prefix. The first published device inventory contains 430,719 paths and types from selected `/rootfs` system roots; all occur with the same type in the official IPSW indexes. File content hashes outside the cache remain pending.
 - Separate Apple system locations, device-generated data, and jailbreak-owned locations. Exclude private user areas from publication.
 - Compare cache identities and selected file hashes to the IPSW where the sources are truly comparable.
 
@@ -66,7 +66,7 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** one complete, reviewable component page has source build, evidence, dependencies, and known gaps.
 
-### 4. Publish the website — local explorer completed; GitHub Pages deployment pending
+### 4. Publish the website — first build completed through GitHub Pages
 
 - Build a static site with separate **Files**, **Shared-cache images**, **Components**, and **Build comparison** views.
 - A library page shows its logical install name and cache membership, not a fictitious standalone file.

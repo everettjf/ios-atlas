@@ -40,10 +40,11 @@
 
     <section class="workspace" aria-labelledby="workspace-title">
       <div class="section-heading"><div><div class="eyebrow">THE CATALOG</div><h2 id="workspace-title">A system you can inspect.</h2></div><div class="build-selector"><label for="build-select">BUILD</label><select id="build-select" aria-label="Select iOS build"></select></div></div>
-      <div class="source-strip"><span class="source-icon">◉</span><div><strong>Source: official iPhone 11 firmware</strong><span>All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.</span></div><a href="https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md" target="_blank" rel="noopener">Method ↗</a></div>
+      <div class="source-strip"><span class="source-icon">◉</span><div><strong id="source-title">Source: official iPhone 11 firmware</strong><span id="source-description">All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.</span></div><a href="https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md" target="_blank" rel="noopener">Method ↗</a></div>
       <div class="tabs" role="tablist" aria-label="Catalog views">
         <button role="tab" data-tab="images" aria-selected="true">Shared-cache images</button>
         <button role="tab" data-tab="files" aria-selected="false">Filesystem</button>
+        <button role="tab" data-tab="device" aria-selected="false">Device system paths</button>
         <button role="tab" data-tab="caches" aria-selected="false">Cache files</button>
         <button role="tab" data-tab="research" aria-selected="false">Research</button>
         <button role="tab" data-tab="compare" aria-selected="false">Compare builds</button>

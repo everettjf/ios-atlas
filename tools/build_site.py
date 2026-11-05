@@ -51,6 +51,7 @@ def build() -> None:
 
         image_names = {image["install_name"] for image in dyld["images"]}
         physical = {}
+        stock_types = {}
         compact_entries = []
         volume_metadata = []
         for volume_index, volume in enumerate(volumes):
@@ -58,6 +59,7 @@ def build() -> None:
                                     "image_name": volume["image_name"],
                                     "count": volume["entry_count"]})
             for item in volume["entries"]:
+                stock_types.setdefault(item["path"], set()).add(item["type"])
                 compact_entries.append([volume_index, item["path"], item["type"],
                                         item.get("size"), item.get("target")])
                 if item["type"] == "file" and item["path"] in image_names:
@@ -71,6 +73,22 @@ def build() -> None:
         dump(DIST / "data" / f"{build}-dyld.json",
              {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
               "files": dyld["files"], "images": images})
+        device_info = {}
+        device_path = directory / "device-rootfs.json.gz"
+        if device_path.exists():
+            device = load(device_path)
+            if (not device["complete"] or device["build"] != build or
+                    device["product_type"] != dyld["product_type"] or
+                    device["kind"] != "device_system_path_observation" or
+                    device["entry_count"] != len(device["entries"])):
+                raise ValueError(f"incomplete or mismatched device catalog in {directory}")
+            if any(path not in stock_types or kind not in stock_types[path]
+                   for path, kind in device["entries"]):
+                raise ValueError("device catalog contains paths or types absent from official IPSW; review before publishing")
+            shutil.copy2(device_path, DIST / "data" / f"{build}-device.json.gz")
+            device_info = {"device_count": device["entry_count"],
+                           "device_url": f"data/{build}-device.json.gz",
+                           "device_observed_at_utc": device["observed_at_utc"]}
         builds.append({"build": build, "version": "26.0.1",
                        "product_type": dyld["product_type"],
                        "firmware_sha256": dyld["firmware_sha256"],
@@ -80,7 +98,7 @@ def build() -> None:
                        "file_count": len(compact_entries),
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
-                       "dyld_url": f"data/{build}-dyld.json"})
+                       "dyld_url": f"data/{build}-dyld.json", **device_info})
 
     if not builds:
         raise ValueError("no complete catalogs found")
