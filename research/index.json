@@ -23,6 +23,13 @@
     "note": "research/23A355/Method-Catalog-Coverage.md"
   },
   {
+    "id": "ios-cache-named-symbol-coverage",
+    "build": "23A355",
+    "title": "Which named code symbols are visible across the iOS cache?",
+    "summary": "All 4,170 exact iOS cache images yield 6,585,655 unique named __text records in 3,798 images; 372 have no matching names. Symbol names complement, but overlap with, Objective-C methods.",
+    "note": "research/23A355/iOS-Cache-Named-Symbol-Coverage.md"
+  },
+  {
     "id": "framework-introduction-coverage",
     "build": "23A355",
     "title": "Which cache frameworks have sourced introductions?",

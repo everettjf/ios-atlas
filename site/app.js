@@ -7,7 +7,7 @@ const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
+const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
 let searchTimer;
 
 async function json(url) {
@@ -29,11 +29,15 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
   if (kind === 'macho_methods_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
   if (kind === 'macho_symbol_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
   if (kind === 'macho_swift_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
+  if (kind === 'ios_symbol_index') {
+    if (result.build !== build || result.cache_uuid !== info.cache_uuid) throw new Error('iOS symbol index identity differs');
+    result.byName = new Map(result.images.map((item) => [item.install_name, item]));
+  }
   if (kind === 'dependencies' || kind === 'driverkit_dependencies') {
     result.byName = new Map(result.images.map((item) => [item.install_name, item]));
     result.importers = new Map();
@@ -61,6 +65,9 @@ function setTab(tab, query = '') {
   state.methodImage = null;
   state.driverkitFunctionQuery = '';
   state.driverkitFunctionLimit = 80;
+  state.iosSymbolQuery = '';
+  state.iosSymbolLimit = 80;
+  state.iosSymbolData = null;
   state.machoMethodQuery = '';
   state.machoMethodLimit = 80;
   state.machoMethodData = null;
@@ -80,6 +87,7 @@ function setTab(tab, query = '') {
 function updateSource() {
   const files = state.tab === 'files';
   const device = state.tab === 'device';
+  const images = state.tab === 'images';
   const driverkit = state.tab === 'driverkit';
   const macho = state.tab === 'macho';
   const archive = state.tab === 'archive';
@@ -93,7 +101,7 @@ function updateSource() {
   const research = state.tab === 'research';
   const observation = state.tab === 'observation';
   const reach = state.tab === 'reach';
-  $('#source-method').href = methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
+  $('#source-method').href = methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : images ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/iOS-Cache-Named-Symbol-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
   $('#source-title').textContent = observation ? 'Sources: official IPSW and filtered live /rootfs' : device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : macho ? 'Source: mounted official IPSW Mach-O files' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
@@ -111,6 +119,7 @@ function updateSource() {
     : services ? 'Launchd job declarations, executable paths, Mach service names, and events from the stock firmware. A declaration is not proof that a job ran.'
     : files ? 'Browse observed paths within each IPSW filesystem image. Logical dyld images appear separately in the same directory and never count as physical files.'
     : restore ? 'Browse paths in the Erase and Upgrade restore RAM disks. These are recovery environments, separate from installed iOS.'
+    : images ? 'Exact iOS cache images with linked framework introductions, Objective-C methods, named code symbols, and direct library loads. Static names and declarations do not establish runtime behavior.'
     : 'All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.';
 }
 
@@ -222,6 +231,34 @@ function machoSymbolResults(data) {
   return `<p class="explain">${fmt(matches.length)} matching named __text symbol records. A symbol name can be private, an alias, or compiler generated; this is not an exhaustive function list.</p><ul>${visible.map((row) => `<li><code>${escapeHTML(row[1])}</code><small>${escapeHTML(row[0])} · ${escapeHTML(row[3])} · ${escapeHTML(row[2])}</small></li>`).join('') || '<li>No matching named symbols</li>'}</ul>${matches.length > visible.length ? '<button id="macho-symbol-more" class="more-button">Show more ↓</button>' : ''}`;
 }
 
+function iosSymbolResults(data) {
+  const query = state.iosSymbolQuery.trim().toLocaleLowerCase();
+  const matches = data.symbols.filter((row) => !query ||
+    `${row[0]} ${row[1]} ${row[2]} ${row[3]}`.toLocaleLowerCase().includes(query));
+  const visible = matches.slice(0, state.iosSymbolLimit);
+  return `<p class="explain">${fmt(matches.length)} matching named __text records. Names include Objective-C methods, aliases, private names, and generated labels; a stripped name is not evidence that code is absent.</p><ul>${visible.map((row) => `<li><code>${escapeHTML(row[1])}</code><small>${escapeHTML(row[0])} · ${escapeHTML(row[3])} · ${escapeHTML(row[2])}</small></li>`).join('') || '<li>No matching named symbols</li>'}</ul>${matches.length > visible.length ? '<button id="ios-symbol-more" class="more-button">Show more ↓</button>' : ''}`;
+}
+
+async function openIosSymbols() {
+  const item = state.selected;
+  const summary = state.datasets.get(`ios_symbol_index:${state.build}`)?.byName.get(item.install_name);
+  if (!summary?.bucket_url) return;
+  const key = `ios_symbols:${state.build}:${summary.bucket_url}`;
+  let bucket = state.datasets.get(key);
+  if (!bucket) {
+    bucket = await compressedJSON(summary.bucket_url);
+    if (bucket.build !== state.build || bucket.cache_uuid !== activeBuild().cache_uuid) throw new Error('iOS symbol bucket identity differs');
+    state.datasets.set(key, bucket);
+  }
+  if (state.tab !== 'images' || state.selected !== item) return;
+  const data = bucket.images.find((entry) => entry.install_name === item.install_name);
+  if (!data || data.uuid !== item.uuid || data.symbols.length !== summary.named_symbol_count) {
+    throw new Error('iOS symbol bucket identity or count differs');
+  }
+  state.iosSymbolData = data;
+  $('#ios-symbols').innerHTML = `<h4>Named __text symbols (${fmt(summary.named_symbol_count)})</h4><label class="searchbox"><span class="sr-only">Search named symbols</span><input id="ios-symbol-search" type="search" placeholder="Search symbol name, address, or visibility…" value="${escapeHTML(state.iosSymbolQuery)}"></label><div id="ios-symbol-results">${iosSymbolResults(data)}</div>`;
+}
+
 async function openMachoSymbols() {
   const item = state.selected;
   const summary = state.datasets.get(`macho_symbol_index:${state.build}`)?.byKey.get(`${item.volume}\0${item.path}`);
@@ -309,16 +346,19 @@ function detailHTML(item, mode, data) {
     const loadRows = imports.map((imp) => `<li>${graph.byName.has(imp.install_name) ? `<button class="inline-link" data-linked-tab="${mode}" data-linked-query="${escapeHTML(imp.install_name)}">${escapeHTML(imp.install_name)} ↗</button>` : escapeHTML(imp.install_name)}<small>${escapeHTML(imp.load_command.replace(/^LC_/, ''))} · ${graph.byName.has(imp.install_name) ? 'IN CACHE' : 'NO EXACT CACHE MATCH'}</small></li>`).join('');
     const importerRows = importers.slice(0, 30).map((entry) => `<li><button class="inline-link" data-linked-tab="${mode}" data-linked-query="${escapeHTML(entry.source)}">${escapeHTML(entry.source)} ↗</button><small>${escapeHTML(entry.load_command.replace(/^LC_/, ''))}</small></li>`).join('');
     const methodImage = mode === 'images' ? state.datasets.get(`methods_index:${state.build}`)?.images.find((entry) => entry.install_name === item.install_name) : null;
+    const iosSymbols = mode === 'images' ? state.datasets.get(`ios_symbol_index:${state.build}`)?.byName.get(item.install_name) : null;
     const driverkitImage = mode === 'driverkit' ? state.datasets.get(`driverkit_functions:${state.build}`)?.images.find((entry) => entry.install_name === item.install_name) : null;
     const kind = item.install_name.includes('/PrivateFrameworks/') ? 'private framework' : item.install_name.includes('/Frameworks/') ? 'system framework' : item.install_name.includes('/usr/lib/') ? 'system library' : 'system component';
     const prominent = methodImage?.groups.filter((group) => group[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map((group) => group[0]) || [];
     const overview = mode === 'images' ? `<p class="explain">This ${kind} is part of the iOS cache. Its class dump lists ${fmt(methodImage?.method_count || 0)} Objective-C methods in ${fmt(methodImage?.class_count || 0)} classes and ${fmt(methodImage?.category_count || 0)} categories.${prominent.length ? ` Prominent method groups: ${prominent.map(escapeHTML).join(', ')}.` : ''} This is a metadata overview; implementation and runtime behavior need separate study.</p>` : mode === 'driverkit' ? `<p class="explain">This ${kind} is in the separate DriverKit cache. Its symbol table names ${fmt(driverkitImage?.named_function_count || 0)} functions in <code>__text</code>; the Objective-C class dump lists no classes or methods. Names may include C++ methods. Implementation and runtime behavior need separate study.</p>` : '';
     const methodRow = methodImage ? `<dt>OBJECTIVE-C METHODS</dt><dd><button class="inline-link" data-linked-tab="methods" data-linked-query="image:${escapeHTML(item.install_name)}">${fmt(methodImage.method_count)} entries ↗</button></dd>` : '';
+    const iosSymbolRow = iosSymbols ? `<dt>NAMED __TEXT SYMBOLS</dt><dd>${fmt(iosSymbols.named_symbol_count)} in code sections${iosSymbols.named_symbol_count ? '' : ' · no names found'}</dd>` : '';
+    const iosSymbolSection = iosSymbols?.bucket_url ? `<div class="direct-imports" id="ios-symbols"><button class="inline-link" id="ios-symbol-open">Browse named __text symbols ↗</button></div>` : '';
     const functionalIntro = item.functional_intro ? `<p class="explain"><strong>${item.functional_intro.verbatim ? 'Apple overview:' : 'Documented role:'}</strong> ${item.functional_intro.verbatim ? `<q>${escapeHTML(item.functional_intro.summary)}</q>` : escapeHTML(item.functional_intro.summary)} <a href="${escapeHTML(item.functional_intro.source_url)}" target="_blank" rel="noopener">${escapeHTML(item.functional_intro.source_label)} ↗</a></p>` : '';
     const driverkitRow = driverkitImage ? `<dt>NAMED __TEXT FUNCTIONS</dt><dd>${fmt(driverkitImage.named_function_count)} symbols below</dd>` : '';
     const driverkitSection = driverkitImage ? `<div class="direct-imports"><h4>Named functions</h4><label class="searchbox"><span class="sr-only">Search named functions</span><input id="driverkit-function-search" type="search" placeholder="Search function names or addresses…" value="${escapeHTML(state.driverkitFunctionQuery)}"></label><div id="driverkit-function-results">${driverkitFunctionResults(item)}</div></div>` : '';
     const graphHTML = graph ? `<div class="direct-imports"><h4>Direct library loads (${fmt(imports.length)})</h4><ul>${loadRows || '<li>None recorded</li>'}</ul></div><div class="direct-imports"><h4>Loaded by cached images (${fmt(importers.length)})</h4><ul>${importerRows || '<li>None recorded</li>'}</ul>${importers.length > 30 ? `<button class="more-button" data-linked-tab="${mode}" data-linked-query="imports:${escapeHTML(item.install_name)}">View all ${fmt(importers.length)} importers ↗</button>` : ''}</div>` : '';
-    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3>${functionalIntro}${overview}<dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd>${methodRow}${driverkitRow}<dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}${item.objc_class_count == null ? '' : `<dt>OBJECTIVE-C CLASS ENTRIES</dt><dd>${fmt(item.objc_class_count)}${item.objc_class_count ? ` <button class="inline-link" data-linked-tab="objc" data-linked-query="image:${escapeHTML(item.install_name)}">View classes ↗</button>` : ''}</dd>`}${item.objc_protocol_entry_count == null ? '' : `<dt>PROTOCOL TABLE ENTRIES WITH UNIQUE IMAGE LABEL</dt><dd>${fmt(item.objc_protocol_entry_count)}${item.objc_protocol_entry_count ? ` <button class="inline-link" data-linked-tab="protocols" data-linked-query="image:${escapeHTML(item.install_name)}">View entries ↗</button>` : ''}</dd>`}${item.swift_conformance_count == null ? '' : `<dt>SWIFT TYPE CONFORMANCES</dt><dd>${fmt(item.swift_conformance_count)}${item.swift_conformance_count ? ` <button class="inline-link" data-linked-tab="swift" data-linked-query="image:${escapeHTML(item.install_name)}">View conformances ↗</button>` : ''}</dd>`}${mode !== 'images' || !graph ? '' : `<dt>TRANSITIVE LOAD PATHS</dt><dd><button class="inline-link" data-linked-tab="reach" data-linked-query="source:${escapeHTML(item.install_name)}">Trace dependency reach ↗</button></dd>`}</dl>${driverkitSection}${graphHTML}<p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Library edges are direct static Mach-O load commands, not runtime calls; weak loads may never resolve.</p>`;
+    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3>${functionalIntro}${overview}<dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd>${methodRow}${iosSymbolRow}${driverkitRow}<dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}${item.objc_class_count == null ? '' : `<dt>OBJECTIVE-C CLASS ENTRIES</dt><dd>${fmt(item.objc_class_count)}${item.objc_class_count ? ` <button class="inline-link" data-linked-tab="objc" data-linked-query="image:${escapeHTML(item.install_name)}">View classes ↗</button>` : ''}</dd>`}${item.objc_protocol_entry_count == null ? '' : `<dt>PROTOCOL TABLE ENTRIES WITH UNIQUE IMAGE LABEL</dt><dd>${fmt(item.objc_protocol_entry_count)}${item.objc_protocol_entry_count ? ` <button class="inline-link" data-linked-tab="protocols" data-linked-query="image:${escapeHTML(item.install_name)}">View entries ↗</button>` : ''}</dd>`}${item.swift_conformance_count == null ? '' : `<dt>SWIFT TYPE CONFORMANCES</dt><dd>${fmt(item.swift_conformance_count)}${item.swift_conformance_count ? ` <button class="inline-link" data-linked-tab="swift" data-linked-query="image:${escapeHTML(item.install_name)}">View conformances ↗</button>` : ''}</dd>`}${mode !== 'images' || !graph ? '' : `<dt>TRANSITIVE LOAD PATHS</dt><dd><button class="inline-link" data-linked-tab="reach" data-linked-query="source:${escapeHTML(item.install_name)}">Trace dependency reach ↗</button></dd>`}</dl>${iosSymbolSection}${driverkitSection}${graphHTML}<p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Library edges are direct static Mach-O load commands, not runtime calls; weak loads may never resolve.</p>`;
   }
   if (mode === 'macho') {
     const slices = item.slices.map((part) => `<li>${escapeHTML(part.architecture)} · ${escapeHTML(part.file_type)} · UUID ${escapeHTML(part.uuid || 'Not present')}</li>`).join('');
@@ -385,7 +425,7 @@ function renderRows(items, mode, data) {
   const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : mode === 'methods' ? 'IMP ADDRESS' : mode === 'objc' || mode === 'protocols' ? 'IMAGE LABEL' : 'SOURCE';
   $('#results').innerHTML = `<div class="result-head"><span>${heading}</span><span>${sourceHeading}</span></div>${rows || '<p class="empty-state">No matching entries in the selected source.</p>'}${items.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
   $('#detail').innerHTML = detailHTML(state.selected, mode, data);
-  for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; state.driverkitFunctionQuery = ''; state.driverkitFunctionLimit = 80; state.machoMethodQuery = ''; state.machoMethodLimit = 80; state.machoMethodData = null; state.machoSymbolQuery = ''; state.machoSymbolLimit = 80; state.machoSymbolData = null; state.machoSwiftQuery = ''; state.machoSwiftTypeLimit = 40; state.machoSwiftMemberLimit = 80; state.machoSwiftData = null; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
+  for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; state.driverkitFunctionQuery = ''; state.driverkitFunctionLimit = 80; state.iosSymbolQuery = ''; state.iosSymbolLimit = 80; state.iosSymbolData = null; state.machoMethodQuery = ''; state.machoMethodLimit = 80; state.machoMethodData = null; state.machoSymbolQuery = ''; state.machoSymbolLimit = 80; state.machoSymbolData = null; state.machoSwiftQuery = ''; state.machoSwiftTypeLimit = 40; state.machoSwiftMemberLimit = 80; state.machoSwiftData = null; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
   $('#show-more')?.addEventListener('click', () => { state.limit += 80; renderRows(items, mode, data); });
 }
 
@@ -724,6 +764,7 @@ async function renderExplorer() {
     dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'macho' ? 'macho' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
     ...(mode === 'images' && activeBuild().dyld_dependency_url ? [dataset('dependencies')] : []),
     ...(mode === 'images' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
+    ...(mode === 'images' && activeBuild().ios_symbol_index_url ? [dataset('ios_symbol_index')] : []),
     ...(mode === 'objc' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
     ...(mode === 'files' ? [dataset('dyld')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : []),
@@ -742,8 +783,9 @@ async function renderExplorer() {
   const introCount = mode === 'images' ? activeBuild().ios_functional_intro_count : mode === 'driverkit' ? activeBuild().driverkit_functional_intro_count : null;
   const introSummary = introCount != null ? `<div class="kernel-summary"><div><strong>${fmt(introCount)} SOURCED INTRODUCTIONS</strong><span>Framework documentation describes an API family, not every behavior of this exact binary. <button class="inline-link" id="intro-filter">Browse introductions ↗</button></span></div></div>` : '';
   const driverkitSummary = mode === 'driverkit' && activeBuild().driverkit_named_function_count != null ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().driverkit_named_function_count)} NAMED FUNCTIONS</strong><span>Symbols in __text across all ${fmt(activeBuild().driverkit_image_count)} DriverKit cache images</span></div></div>` : '';
+  const iosSymbolSummary = mode === 'images' && activeBuild().ios_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().ios_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>From ${fmt(activeBuild().ios_symbol_image_count)} exact iOS cache images</span></div><div><strong>${fmt(activeBuild().ios_symbol_empty_image_count)} IMAGES WITHOUT NAMES</strong><span>Names complement Objective-C methods and do not enumerate every function</span></div></div>` : '';
   const machoSummary = mode === 'macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} PHYSICAL MACH-O FILES</strong><span>Across FileSystem, SystemOS, and AppOS in the official IPSW</span></div><div><strong>${fmt(data.excluded_candidates.length)} MIXED CONTAINERS</strong><span>Metal libraries with non-Mach-O slices are listed in the coverage note</span></div></div>${activeBuild().standalone_objc_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_objc_method_count)} OBJECTIVE-C METHODS</strong><span>Static entries from inspected standalone files</span></div><div><strong>${fmt(activeBuild().standalone_objc_no_info_count)} FILES WITHOUT OBJC INFO</strong><span>A zero ObjC result is not a complete function inventory</span></div></div>` : ''}${activeBuild().standalone_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>Records within code sections of standalone files</span></div><div><strong>${fmt(activeBuild().standalone_symbol_empty_file_count)} FILES WITHOUT NAMES</strong><span>Stripped symbol tables do not imply missing functions</span></div></div>` : ''}${activeBuild().standalone_swift_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_swift_declaration_count)} SWIFT DUMP DECLARATIONS</strong><span>Static type and extension lines across standalone files</span></div><div><strong>${fmt(activeBuild().standalone_swift_partial_count)} PARTIAL OUTPUTS</strong><span>Malformed lines are counted, not silently accepted</span></div></div>` : ''}` : '';
-  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + iosSymbolSummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#intro-filter')?.addEventListener('click', () => { state.query = 'intro:'; state.limit = 80; $('#catalog-search').value = state.query; renderResults(); });
   $('#detail').addEventListener('click', (event) => {
@@ -752,6 +794,11 @@ async function renderExplorer() {
     if (event.target.id === 'driverkit-function-more' && state.selected) {
       state.driverkitFunctionLimit += 80;
       $('#driverkit-function-results').innerHTML = driverkitFunctionResults(state.selected);
+    }
+    if (event.target.id === 'ios-symbol-open' && state.selected) openIosSymbols().catch(showError);
+    if (event.target.id === 'ios-symbol-more' && state.selected && state.iosSymbolData) {
+      state.iosSymbolLimit += 80;
+      $('#ios-symbol-results').innerHTML = iosSymbolResults(state.iosSymbolData);
     }
     if (event.target.id === 'macho-method-open' && state.selected) openMachoMethods().catch(showError);
     if (event.target.id === 'macho-method-more' && state.selected && state.machoMethodData) {
@@ -778,6 +825,11 @@ async function renderExplorer() {
       state.driverkitFunctionQuery = event.target.value;
       state.driverkitFunctionLimit = 80;
       $('#driverkit-function-results').innerHTML = driverkitFunctionResults(state.selected);
+    }
+    if (event.target.id === 'ios-symbol-search' && state.selected && state.iosSymbolData) {
+      state.iosSymbolQuery = event.target.value;
+      state.iosSymbolLimit = 80;
+      $('#ios-symbol-results').innerHTML = iosSymbolResults(state.iosSymbolData);
     }
     if (event.target.id === 'macho-method-search' && state.selected && state.machoMethodData) {
       state.machoMethodQuery = event.target.value;

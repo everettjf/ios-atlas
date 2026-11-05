@@ -16,6 +16,8 @@ The service dependency index now connects 600 distinct launchd executables to 14
 
 The **Shared-cache images** view also indexes all 4,170 iOS cache images and their 90,837 direct Mach-O library loads. The separate **DriverKit images** view covers 51 images and 209 direct loads. Each image shows its outgoing loads and incoming cached-image loads, with weak, upward, and re-export commands identified. These are static declarations, not observed runtime calls.
 
+Each iOS cache image now also shows its named `__text` symbols alongside its Objective-C method count. An exact-cache pass found **6,585,655 unique named records** in 3,798 images; 372 yielded no matching names. The lists load only when opened and can be searched per image. The [symbol coverage note](research/23A355/iOS-Cache-Named-Symbol-Coverage.md) explains why this symbol-table view overlaps the method catalog and does not enumerate every function.
+
 The **Dependency reach** view follows those exact in-cache load declarations from a selected iOS image. It lists reachable images and the shortest declaration chain to each one, with separate views that exclude or include weak loads. For Foundation, the build-specific graph reaches 123 images without weak loads and 1,353 when weak loads are included. These are static graph paths, not proof that a process loaded the images.
 
 The **Objective-C classes** view searches 216,890 class entries from the iOS cache optimization table. It links each entry to an exact in-cache image and lets visitors browse the classes associated with an image. Classes in images with duplicate basenames are resolved using their metadata addresses and Mach-O segment ranges.

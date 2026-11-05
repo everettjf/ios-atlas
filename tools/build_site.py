@@ -556,6 +556,88 @@ def build() -> None:
         dump(DIST / "data" / f"{build}-dyld.json",
              {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
               "files": dyld["files"], "images": images})
+        ios_symbol_info = {}
+        ios_symbol_path = directory / "ios-cache-symbols.json.gz"
+        if ios_symbol_path.exists():
+            symbols = load(ios_symbol_path)
+            expected = {image["install_name"]: image["uuid"] for image in images}
+            if (symbols["schema_version"] != 1 or
+                    symbols["kind"] != "ios_cache_named_text_symbols" or
+                    symbols["source"] != "official_ipsw_intact_cache_family" or
+                    symbols["product_type"] != dyld["product_type"] or
+                    symbols["build"] != build or
+                    symbols["firmware_sha256"] != dyld["firmware_sha256"] or
+                    symbols["cache_uuid"] != dyld["cache_uuid"] or
+                    symbols["cache_files_sha256"] != {item["name"]: item["sha256"] for item in dyld["files"]} or
+                    symbols["image_count"] != len(expected) or
+                    len(symbols["images"]) != len(expected)):
+                raise ValueError("iOS cache symbol source mismatch")
+            totals = Counter()
+            summaries = []
+            buckets = defaultdict(list)
+            seen = set()
+            count_fields = ("named_symbols", "raw_named_rows", "duplicate_rows",
+                            "unnamed_rows", "outside_rows", "replacement_chars",
+                            "objc_method_names")
+            for item in symbols["images"]:
+                name = item["install_name"]
+                rows = item["symbols"]
+                sections = item["text_sections"]
+                if (name not in expected or name in seen or item["uuid"] != expected[name] or
+                        item["named_symbols"] != len(rows) or
+                        item["raw_named_rows"] != len(rows) + item["duplicate_rows"] or
+                        any(not isinstance(item[field], int) or item[field] < 0 for field in count_fields) or
+                        any(not re.fullmatch(r"[0-9a-f]{64}", item[field]) for field in
+                            ("macho_toc_sha256", "symbol_dump_sha256")) or
+                        len({tuple(row) for row in rows}) != len(rows) or
+                        any(len(section) != 3 or not section[0] or
+                            not isinstance(section[1], int) or not isinstance(section[2], int) or
+                            section[2] < 0 for section in sections)):
+                    raise ValueError(f"invalid iOS cache symbol catalog: {name}")
+                ranges = defaultdict(list)
+                for segment, address, length in sections:
+                    ranges[segment].append((address, address + length))
+                if any(len(row) != 4 or not re.fullmatch(r"0x[0-9a-f]+", row[0]) or
+                       not row[1] or not row[2] or row[3] not in ranges or
+                       not any(lo <= int(row[0], 16) < hi for lo, hi in ranges[row[3]])
+                       for row in rows):
+                    raise ValueError(f"iOS cache symbol outside __text: {name}")
+                objc_count = sum(bool(re.fullmatch(r"[+-]\[.+\]", row[1])) for row in rows)
+                if item["objc_method_names"] != objc_count:
+                    raise ValueError(f"iOS cache ObjC symbol count differs: {name}")
+                seen.add(name)
+                for field in count_fields:
+                    totals[field] += item[field]
+                totals["images_with_names"] += bool(rows)
+                totals["images_without_names"] += not bool(rows)
+                bucket_id = hashlib.sha256(name.encode()).digest()[0] % 128
+                bucket_url = f"data/{build}-ios-symbols/{bucket_id:02x}.json.gz" if rows else None
+                summaries.append({"install_name": name, "uuid": item["uuid"],
+                                  "named_symbol_count": len(rows),
+                                  "macho_toc_sha256": item["macho_toc_sha256"],
+                                  "symbol_dump_sha256": item["symbol_dump_sha256"],
+                                  "bucket_url": bucket_url})
+                if rows:
+                    buckets[bucket_id].append({"install_name": name, "uuid": item["uuid"],
+                                               "symbols": rows})
+            if seen != set(expected) or any(symbols["totals"].get(field) != value
+                                            for field, value in totals.items()):
+                raise ValueError("iOS cache symbol totals disagree")
+            for bucket_id, entries in buckets.items():
+                dump(DIST / f"data/{build}-ios-symbols/{bucket_id:02x}.json.gz",
+                     {"schema_version": 1, "build": build,
+                      "cache_uuid": dyld["cache_uuid"], "images": entries},
+                     compressed=True)
+            index_url = f"data/{build}-ios-symbol-index.json.gz"
+            dump(DIST / index_url,
+                 {"schema_version": 1, "build": build,
+                  "cache_uuid": dyld["cache_uuid"], "images": summaries,
+                  "totals": symbols["totals"]}, compressed=True)
+            ios_symbol_info = {"ios_named_symbol_count": totals["named_symbols"],
+                               "ios_symbol_image_count": len(summaries),
+                               "ios_symbol_empty_image_count": totals["images_without_names"],
+                               "ios_symbol_objc_method_name_count": totals["objc_method_names"],
+                               "ios_symbol_index_url": index_url}
         dependency_info = {}
         dependency_path = directory / "dyld-dependencies.json"
         if dependency_path.exists():
@@ -1192,7 +1274,7 @@ def build() -> None:
                        "file_count": len(compact_entries),
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
-                       "dyld_url": f"data/{build}-dyld.json", **dependency_info, **objc_info,
+                       "dyld_url": f"data/{build}-dyld.json", **dependency_info, **ios_symbol_info, **objc_info,
                        **method_info,
                        **protocol_info, **swift_info,
                        **device_info,

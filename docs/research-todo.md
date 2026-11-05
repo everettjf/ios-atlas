@@ -7,6 +7,7 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 - [x] Catalog all files in the official IPSW archive and mounted restore/system images.
 - [x] Catalog all 4,170 logical images in the iOS dyld shared cache, their UUIDs, segments, and direct library loads.
 - [x] Catalog Objective-C class-dump results and method entries for every iOS cache image, including empty outputs and images absent from the optimization class table.
+- [x] Index named `__text` symbol records for every iOS cache image, including zero-name results; keep this symbol-table view separate from Objective-C method entries.
 - [x] Give every iOS cache image a brief source-derived overview and direct link to its method list.
 - [x] Index the cache's ObjC class and protocol tables and Swift type conformances separately.
 - [x] Index named `__text` function symbols for all 51 images in the separate DriverKit cache; verify its ObjC class dumps.
