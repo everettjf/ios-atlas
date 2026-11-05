@@ -124,7 +124,7 @@ def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dic
         raise ValueError(f"incomplete or mismatched {label} dependency catalog in {path.parent}")
     url = f"data/{build}-{label}-dependencies.json.gz"
     dump(DIST / url, {"schema_version": 1, "build": build,
-         "images": [{"install_name": image["install_name"],
+         "images": [{"install_name": image["install_name"], "uuid": image["uuid"],
                      "imports": image["imports"]} for image in dependency_images]},
          compressed=True)
     return {f"{label}_dependency_image_count": len(dependency_images),
@@ -219,7 +219,7 @@ def build() -> None:
     if DIST.exists():
         shutil.rmtree(DIST)
     DIST.mkdir()
-    for name in ("index.html", "app.js", "styles.css"):
+    for name in ("index.html", "app.js", "styles.css", "reach.mjs"):
         shutil.copy2(SITE / name, DIST / name)
 
     builds = []

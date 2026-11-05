@@ -1,11 +1,12 @@
 const $ = (selector) => document.querySelector(selector);
 const assetVersion = new URL(import.meta.url).searchParams.get('v') || 'dev';
 const versioned = (url) => `${url}?v=${assetVersion}`;
+const {computeReach, pathTo} = await import(versioned('./reach.mjs'));
 const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, swiftImage:null, datasets:new Map(), compareOld:null, compareNew:null };
+const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, swiftImage:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
 let searchTimer;
 
 async function json(url) {
@@ -44,13 +45,16 @@ async function dataset(kind, build = state.build) {
 
 function setTab(tab, query = '') {
   state.tab = tab;
-  state.query = query;
+  state.reachSource = tab === 'reach' && query.startsWith('source:') ? query.slice(7) : null;
+  state.reachPaths = null;
+  state.reachWeak = false;
+  state.query = state.reachSource ? '' : query;
   state.volume = 'all';
   state.limit = 80;
   state.selected = null;
   state.swiftImage = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
-  history.replaceState(null, '', tab === 'research' && query ? `#research/${encodeURIComponent(query)}` : `#${tab}`);
+  history.replaceState(null, '', tab === 'research' && query ? `#research/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
   document.querySelector('.workspace').scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -66,13 +70,15 @@ function updateSource() {
   const protocols = state.tab === 'protocols';
   const swift = state.tab === 'swift';
   const research = state.tab === 'research';
-  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
+  const reach = state.tab === 'reach';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. All 3 files matched the connected device by SHA-256.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
     : protocols ? 'Protocol entries come from the intact iOS cache optimization table. Repeated image basenames are kept as ambiguous associations.'
     : swift ? 'Static type-to-protocol conformance records from the intact cache. Addresses resolve to exact Mach-O images; names are raw symbols when available.'
+    : reach ? 'Shortest paths follow exact in-cache install-name matches from static Mach-O load commands. No path proves runtime loading.'
     : research ? 'Author-written analyses connect exact firmware artifacts and explain the boundary between observed bytes, interpretation and unknowns.'
     : archive ? 'All 127 ZIP entries are indexed by path and role. Artifact presence is distinct from mounted filesystem content.'
     : restore ? 'Erase and Upgrade recovery environments are cataloged separately from the installed iOS filesystem.'
@@ -120,7 +126,7 @@ function detailHTML(item, mode, data) {
     const loadRows = imports.map((imp) => `<li>${graph.byName.has(imp.install_name) ? `<button class="inline-link" data-linked-tab="${mode}" data-linked-query="${escapeHTML(imp.install_name)}">${escapeHTML(imp.install_name)} ↗</button>` : escapeHTML(imp.install_name)}<small>${escapeHTML(imp.load_command.replace(/^LC_/, ''))} · ${graph.byName.has(imp.install_name) ? 'IN CACHE' : 'NO EXACT CACHE MATCH'}</small></li>`).join('');
     const importerRows = importers.slice(0, 30).map((entry) => `<li><button class="inline-link" data-linked-tab="${mode}" data-linked-query="${escapeHTML(entry.source)}">${escapeHTML(entry.source)} ↗</button><small>${escapeHTML(entry.load_command.replace(/^LC_/, ''))}</small></li>`).join('');
     const graphHTML = graph ? `<div class="direct-imports"><h4>Direct library loads (${fmt(imports.length)})</h4><ul>${loadRows || '<li>None recorded</li>'}</ul></div><div class="direct-imports"><h4>Loaded by cached images (${fmt(importers.length)})</h4><ul>${importerRows || '<li>None recorded</li>'}</ul>${importers.length > 30 ? `<button class="more-button" data-linked-tab="${mode}" data-linked-query="imports:${escapeHTML(item.install_name)}">View all ${fmt(importers.length)} importers ↗</button>` : ''}</div>` : '';
-    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}${item.objc_class_count == null ? '' : `<dt>OBJECTIVE-C CLASS ENTRIES</dt><dd>${fmt(item.objc_class_count)}${item.objc_class_count ? ` <button class="inline-link" data-linked-tab="objc" data-linked-query="image:${escapeHTML(item.install_name)}">View classes ↗</button>` : ''}</dd>`}${item.objc_protocol_entry_count == null ? '' : `<dt>PROTOCOL TABLE ENTRIES WITH UNIQUE IMAGE LABEL</dt><dd>${fmt(item.objc_protocol_entry_count)}${item.objc_protocol_entry_count ? ` <button class="inline-link" data-linked-tab="protocols" data-linked-query="image:${escapeHTML(item.install_name)}">View entries ↗</button>` : ''}</dd>`}${item.swift_conformance_count == null ? '' : `<dt>SWIFT TYPE CONFORMANCES</dt><dd>${fmt(item.swift_conformance_count)}${item.swift_conformance_count ? ` <button class="inline-link" data-linked-tab="swift" data-linked-query="image:${escapeHTML(item.install_name)}">View conformances ↗</button>` : ''}</dd>`}</dl>${graphHTML}<p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Library edges are direct static Mach-O load commands, not runtime calls; weak loads may never resolve.</p>`;
+    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}${item.objc_class_count == null ? '' : `<dt>OBJECTIVE-C CLASS ENTRIES</dt><dd>${fmt(item.objc_class_count)}${item.objc_class_count ? ` <button class="inline-link" data-linked-tab="objc" data-linked-query="image:${escapeHTML(item.install_name)}">View classes ↗</button>` : ''}</dd>`}${item.objc_protocol_entry_count == null ? '' : `<dt>PROTOCOL TABLE ENTRIES WITH UNIQUE IMAGE LABEL</dt><dd>${fmt(item.objc_protocol_entry_count)}${item.objc_protocol_entry_count ? ` <button class="inline-link" data-linked-tab="protocols" data-linked-query="image:${escapeHTML(item.install_name)}">View entries ↗</button>` : ''}</dd>`}${item.swift_conformance_count == null ? '' : `<dt>SWIFT TYPE CONFORMANCES</dt><dd>${fmt(item.swift_conformance_count)}${item.swift_conformance_count ? ` <button class="inline-link" data-linked-tab="swift" data-linked-query="image:${escapeHTML(item.install_name)}">View conformances ↗</button>` : ''}</dd>`}${mode !== 'images' || !graph ? '' : `<dt>TRANSITIVE LOAD PATHS</dt><dd><button class="inline-link" data-linked-tab="reach" data-linked-query="source:${escapeHTML(item.install_name)}">Trace dependency reach ↗</button></dd>`}</dl>${graphHTML}<p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Library edges are direct static Mach-O load commands, not runtime calls; weak loads may never resolve.</p>`;
   }
   if (filesystemMode(mode)) {
     const [volumeIndex, path, type, bytes, target] = item;
@@ -181,6 +187,7 @@ function renderRows(items, mode, data) {
 function renderResults() {
   const mode = state.tab;
   if (mode === 'swift') { renderSwiftResults(); return; }
+  if (mode === 'reach') { renderReachResults(); return; }
   const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
   if (!data || !['images','driverkit','objc','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
   const query = state.query.trim().toLocaleLowerCase();
@@ -203,6 +210,86 @@ function renderResults() {
   else items = data.files.filter((item) => !query || item.name.toLocaleLowerCase().includes(query));
   state.selected = items.includes(state.selected) ? state.selected : items.length === 1 ? items[0] : null;
   renderRows(items, mode, data);
+}
+
+function reachDetail(graph, paths, target) {
+  if (!target) return '<div class="empty-detail">Select a reachable image to inspect its shortest static load path.</div>';
+  const chain = pathTo(paths.parent, target);
+  const steps = chain.map((step, number) => `<li><span class="reach-step">${number ? escapeHTML(step.incoming.load_command.replace(/^LC_/, '')) : 'SOURCE IMAGE'}</span><button class="inline-link" data-linked-tab="images" data-linked-query="${escapeHTML(step.name)}">${escapeHTML(step.name)} ↗</button></li>`).join('');
+  return `<span class="detail-label">STATIC LOAD PATH</span><h3>${escapeHTML(target.split('/').pop())}</h3><dl><dt>SHORTEST CHAIN</dt><dd>${fmt(chain.length - 1)} direct declaration${chain.length === 2 ? '' : 's'}</dd><dt>TARGET UUID</dt><dd>${escapeHTML(graph.byName.get(target).uuid)}</dd></dl><ol class="reach-path">${steps}</ol><p class="explain">Each step is an exact install-name match within this iOS cache family. The path shows static Mach-O load declarations, not a measured process load or call sequence. Other paths may also exist.</p>`;
+}
+
+function renderReachResults() {
+  const graph = state.datasets.get(`dependencies:${state.build}`);
+  if (!graph || state.tab !== 'reach' || !$('#results')) return;
+  const query = state.query.trim().toLocaleLowerCase();
+  const paths = state.reachPaths && (state.reachWeak ? state.reachPaths.all : state.reachPaths.withoutWeak);
+  const items = state.reachSource
+    ? [...paths.depth.entries()].filter(([name]) => name !== state.reachSource && (!query || name.toLocaleLowerCase().includes(query)))
+      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+    : graph.images.filter((image) => !query || image.install_name.toLocaleLowerCase().includes(query))
+      .sort((a, b) => a.install_name.localeCompare(b.install_name));
+  const names = items.map((item) => state.reachSource ? item[0] : item.install_name);
+  state.selected = names.includes(state.selected) ? state.selected : names.length === 1 ? names[0] : null;
+  const visible = items.slice(0, state.limit);
+  $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
+  $('#results').innerHTML = `<div class="result-head"><span>${state.reachSource ? 'REACHABLE IMAGE' : 'SOURCE IMAGE'}</span><span>${state.reachSource ? 'STEPS' : 'DIRECT LOADS'}</span></div>${visible.map((item, number) => {
+    const name = state.reachSource ? item[0] : item.install_name;
+    const secondary = state.reachSource ? String(item[1]) : fmt(item.imports.length);
+    return `<button class="result-row ${state.selected === name ? 'selected' : ''}" data-index="${number}" title="${escapeHTML(name)}"><span class="row-main"><span class="row-icon">◇</span><span class="row-text">${escapeHTML(name)}</span></span><span class="row-sub">${secondary}</span></button>`;
+  }).join('') || '<p class="empty-state">No matching images in this static graph.</p>'}${items.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
+  $('#detail').innerHTML = state.reachSource ? reachDetail(graph, paths, state.selected) : `<span class="detail-label">SELECT A STARTING IMAGE</span><h3>Trace the cache graph</h3><p class="explain">Choose an image to see every in-cache image reachable through exact Mach-O load declarations. Paths can be viewed with or without weak loads.</p>`;
+  for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => {
+    const item = visible[Number(row.dataset.index)];
+    const name = state.reachSource ? item[0] : item.install_name;
+    if (!state.reachSource) { openReachSource(name).catch(showError); return; }
+    state.selected = name;
+    $('#detail').innerHTML = reachDetail(graph, paths, name);
+    document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row));
+  });
+  $('#show-more')?.addEventListener('click', () => { state.limit += 80; renderReachResults(); });
+}
+
+async function openReachSource(name) {
+  state.reachSource = name;
+  state.reachPaths = null;
+  state.reachWeak = false;
+  state.query = '';
+  state.limit = 80;
+  state.selected = null;
+  history.replaceState(null, '', `#reach/${encodeURIComponent(name)}`);
+  await renderReachExplorer();
+}
+
+async function renderReachExplorer() {
+  const explorer = $('#explorer');
+  explorer.classList.add('reach-mode');
+  if (!activeBuild().dyld_dependency_url) { explorer.innerHTML = '<p class="empty-state">No iOS cache load graph is available for this build.</p>'; return; }
+  const graph = await dataset('dependencies');
+  if (state.tab !== 'reach') return;
+  if (state.reachSource && !graph.byName.has(state.reachSource)) throw new Error('Starting image is absent from this exact cache build');
+  if (state.reachSource && !state.reachPaths) state.reachPaths = {
+    withoutWeak:computeReach(graph.images, state.reachSource, false),
+    all:computeReach(graph.images, state.reachSource, true)
+  };
+  const summary = state.reachSource
+    ? `<div class="kernel-summary"><div><strong>${fmt(state.reachPaths.withoutWeak.parent.size - 1)} WITHOUT WEAK LOADS</strong><span>Exact in-cache matches reachable through ordinary, re-export and upward load declarations</span></div><div><strong>${fmt(state.reachPaths.all.parent.size - 1)} INCLUDING WEAK LOADS</strong><span>Static reachability when weak declarations are also followed</span></div></div><div class="reach-context"><button id="reach-back" class="inline-link">← Choose another image</button><strong>${escapeHTML(state.reachSource)}</strong></div><div class="reach-modes"><button data-reach-mode="without" aria-pressed="${!state.reachWeak}">Without weak loads</button><button data-reach-mode="all" aria-pressed="${state.reachWeak}">Include weak loads</button></div>`
+    : `<div class="kernel-summary"><div><strong>${fmt(graph.images.length)} CACHE IMAGES</strong><span>Pick a source image to follow its exact static Mach-O library loads</span></div><div><strong>${fmt(activeBuild().dyld_direct_import_count)} DIRECT LOADS</strong><span>Only exact matches within this cache family become graph edges</span></div></div>`;
+  explorer.innerHTML = summary + toolbar({placeholder:state.reachSource ? 'Find a reachable library by install name…' : 'Choose a source library by install name…'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  $('#reach-back')?.addEventListener('click', () => { state.reachSource = null; state.reachPaths = null; state.query = ''; state.selected = null; state.limit = 80; history.replaceState(null, '', '#reach'); renderReachExplorer().catch(showError); });
+  for (const button of explorer.querySelectorAll('[data-reach-mode]')) button.addEventListener('click', () => {
+    state.reachWeak = button.dataset.reachMode === 'all';
+    explorer.querySelectorAll('[data-reach-mode]').forEach((item) => item.setAttribute('aria-pressed', item === button ? 'true' : 'false'));
+    state.selected = null;
+    state.limit = 80;
+    renderReachResults();
+  });
+  bindToolbar();
+  $('#detail').addEventListener('click', (event) => {
+    const link = event.target.closest('[data-linked-tab]');
+    if (link) setTab(link.dataset.linkedTab, link.dataset.linkedQuery);
+  });
+  renderReachResults();
 }
 
 async function swiftBucket(index, imageIndex) {
@@ -300,6 +387,7 @@ async function renderExplorer() {
   const explorer = $('#explorer');
   explorer.onclick = null;
   explorer.classList.toggle('swift-mode', mode === 'swift');
+  explorer.classList.toggle('reach-mode', mode === 'reach');
   updateSource();
   if (mode === 'research') {
     const entries = state.manifest.research.filter((note) => note.build === state.build);
@@ -317,6 +405,7 @@ async function renderExplorer() {
   }
   if (mode === 'compare') { await renderCompare(); return; }
   if (mode === 'swift') { await renderSwiftExplorer(); return; }
+  if (mode === 'reach') { await renderReachExplorer(); return; }
   if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
   if (mode === 'driverkit' && !activeBuild().driverkit_url) { explorer.innerHTML = '<p class="empty-state">No DriverKit cache is cataloged for this build.</p>'; return; }
   if (mode === 'objc' && !activeBuild().objc_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C class table is cataloged for this build.</p>'; return; }
@@ -389,11 +478,12 @@ async function start() {
   $('#metric-caches').textContent = fmt(first.cache_file_count);
   $('#metric-build').textContent = first.build;
   $('#build-select').innerHTML = state.manifest.builds.map((item) => `<option value="${escapeHTML(item.build)}">${escapeHTML(item.version)} · ${escapeHTML(item.build)}</option>`).join('');
-  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.swiftImage = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
+  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.swiftImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
-  if (['files','restore','device','images','objc','protocols','swift','driverkit','caches','archive','kernel','services','research','compare'].includes(initial)) state.tab = initial;
+  if (['files','restore','device','images','objc','protocols','swift','reach','driverkit','caches','archive','kernel','services','research','compare'].includes(initial)) state.tab = initial;
   if (initial === 'research' && noteId) state.query = decodeURIComponent(noteId);
+  if (initial === 'reach' && noteId) state.reachSource = decodeURIComponent(noteId);
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
   await render();
 }

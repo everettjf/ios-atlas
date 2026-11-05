@@ -29,5 +29,13 @@
     "summary": "The intact cache identifies SpringBoard's startup selectors, class relationships, and framework dependencies; function ordering remains to be verified.",
     "install_name": "/System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard",
     "note": "research/23A355/SpringBoard-Lifecycle.md"
+  },
+  {
+    "id": "foundation-dependency-reach",
+    "build": "23A355",
+    "title": "Why does Foundation reach more images with weak loads?",
+    "summary": "An exact-cache graph links Foundation to 123 images without weak loads and 1,353 when weak declarations are included.",
+    "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
+    "note": "research/23A355/Foundation-Dependencies.md"
   }
 ]
