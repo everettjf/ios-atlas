@@ -1,0 +1,21 @@
+# Local firmware and device captures
+.local/
+raw/
+*.ipsw
+dyld_shared_cache_*
+*.dmg
+*.img4
+*.im4p
+
+# Generated analysis files
+tmp/
+dist/
+*.i64
+*.idb
+*.ghidra/
+
+# Local credentials and machine configuration
+.env
+.env.*
+*.pem
+*.key

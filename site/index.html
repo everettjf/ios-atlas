@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07131d">
+  <meta name="description" content="A build-specific map of iOS system files and dyld shared-cache images, with evidence and coverage attached.">
+  <title>iOS Atlas — A map of the system</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="#overview" aria-label="iOS Atlas home"><span class="brand-mark">◎</span><span>iOS <strong>ATLAS</strong></span></a>
+    <div class="header-right"><span class="independent">Independent research project</span><a class="github-link" href="https://github.com/everettjf/ios-atlas" target="_blank" rel="noopener">GitHub ↗</a></div>
+  </header>
+
+  <main>
+    <section class="hero" id="overview">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="live-dot"></span> SYSTEM MAP / BUILD SPECIFIC</div>
+        <h1>Explore iOS<br><em>beneath the surface.</em></h1>
+        <p>Follow files, frameworks, and libraries through a real firmware build. Every record names its source; shared-cache images stay distinct from files on disk.</p>
+        <div class="hero-actions"><button class="primary-button" data-tab="images">Explore libraries <span>↗</span></button><button class="text-button" data-tab="files">Browse filesystem <span>→</span></button></div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
+        <div class="visual-center"><span class="center-icon">◈</span><span>23A355</span><small>iOS 26.0.1</small></div>
+        <span class="visual-label label-one">SYSTEMOS</span><span class="visual-label label-two">DYLD CACHE</span><span class="visual-label label-three">APPOS</span>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Catalog summary">
+      <div class="metric"><span class="metric-label">FILESYSTEM ENTRIES</span><strong id="metric-files">—</strong><span class="metric-note">Across three firmware images</span></div>
+      <div class="metric"><span class="metric-label">IN-CACHE IMAGES</span><strong id="metric-images">—</strong><span class="metric-note">Logical library install names</span></div>
+      <div class="metric"><span class="metric-label">CACHE FILES</span><strong id="metric-caches">—</strong><span class="metric-note">Main cache + subcaches</span></div>
+      <div class="metric"><span class="metric-label">FIRST BUILD</span><strong id="metric-build">—</strong><span class="metric-note">iPhone 11 · arm64e</span></div>
+    </section>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><div class="eyebrow">THE CATALOG</div><h2 id="workspace-title">A system you can inspect.</h2></div><div class="build-selector"><label for="build-select">BUILD</label><select id="build-select" aria-label="Select iOS build"></select></div></div>
+      <div class="source-strip"><span class="source-icon">◉</span><div><strong>Source: official iPhone 11 firmware</strong><span>All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.</span></div><a href="https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md" target="_blank" rel="noopener">Method ↗</a></div>
+      <div class="tabs" role="tablist" aria-label="Catalog views">
+        <button role="tab" data-tab="images" aria-selected="true">Shared-cache images</button>
+        <button role="tab" data-tab="files" aria-selected="false">Filesystem</button>
+        <button role="tab" data-tab="caches" aria-selected="false">Cache files</button>
+        <button role="tab" data-tab="research" aria-selected="false">Research</button>
+        <button role="tab" data-tab="compare" aria-selected="false">Compare builds</button>
+      </div>
+      <div id="explorer" class="explorer" aria-live="polite"><p class="loading">Loading catalog…</p></div>
+    </section>
+
+    <section class="method-grid" aria-label="How to read the atlas">
+      <div class="method-card"><span class="method-number">01 / DISK</span><h3>Files as shipped</h3><p>Paths observed in the mounted FileSystem, SystemOS, and AppOS images. Volume boundaries and source build stay visible.</p></div>
+      <div class="method-card"><span class="method-number">02 / CACHE</span><h3>Libraries inside dyld</h3><p>Logical install names extracted from the intact cache family. Missing standalone executables are explained instead of called absent.</p></div>
+      <div class="method-card"><span class="method-number">03 / EVIDENCE</span><h3>Claims with a trail</h3><p>Research notes link back to exact firmware, cache UUIDs, and reproducible inspection commands. Unknowns remain explicit.</p></div>
+    </section>
+  </main>
+  <footer><span>iOS ATLAS <span class="footer-separator">/</span> An independent map of iOS internals.</span><span>Research data for exact builds, never a claim about every device.</span></footer>
+</body>
+</html>
