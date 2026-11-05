@@ -15,7 +15,7 @@ Scope: iPhone 11, iOS 26.0.1 (`23A355`). This list separates the completed horiz
 - [x] Run an exact-file Objective-C class and method pass over all 3,363 standalone Mach-O files; retain inspected zero results.
 - [x] Index named `__text` symbols in all 3,363 standalone Mach-O files, including explicit zero-name results.
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.
-- [ ] Add source-backed functional descriptions to library pages. Apple Developer pages now cover 213 of 227 exact top-level iOS framework images and one DriverKit image; 14 top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
+- [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 218 of 227 exact top-level iOS framework images and one DriverKit image; nine top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
 - [ ] Hash and compare selected live device files outside the cache to the official firmware, with exact namespace and path mapping.
 
 ## Deeper studies, one component at a time

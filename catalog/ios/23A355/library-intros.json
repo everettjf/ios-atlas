@@ -975,6 +975,15 @@
       "source_checked_at": "2026-11-05"
     },
     {
+      "install_name": "/System/Library/Frameworks/IdentityLookupUI.framework/IdentityLookupUI",
+      "summary": "IdentityLookupUI exposes extension UI for gathering information about an unwanted communication report; Apple documents its principal view-controller superclass.",
+      "source_url": "https://developer.apple.com/documentation/identitylookupui/ilclassificationuiextensionviewcontroller",
+      "source_label": "Apple Developer: IdentityLookupUI view controller",
+      "source_document_sha256": "c70518fa7c01cf6608c1d7dfdd5833b922d834cbe5d085c5acee1e8e1275dc9a",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
       "install_name": "/System/Library/Frameworks/ImageCaptureCore.framework/ImageCaptureCore",
       "summary": "Browse for media devices and control them programmatically from your app.",
       "source_url": "https://developer.apple.com/documentation/imagecapturecore",
@@ -1272,6 +1281,15 @@
       "source_checked_at": "2026-11-05"
     },
     {
+      "install_name": "/System/Library/Frameworks/MetricKit.framework/MetricKit",
+      "summary": "MetricKit provides on-device app performance and power metrics plus diagnostic reports from real device use.",
+      "source_url": "https://developer.apple.com/documentation/metrickit",
+      "source_label": "Apple Developer: MetricKit",
+      "source_document_sha256": "fef43f0899eddfe46575c424ec34ee7800e9a25192c2f2f906362603c04cd29a",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
       "install_name": "/System/Library/Frameworks/ModelIO.framework/ModelIO",
       "summary": "Import, export, and manipulate 3D models using a common infrastructure that integrates MetalKit, GLKit, and SceneKit.",
       "source_url": "https://developer.apple.com/documentation/modelio",
@@ -1288,6 +1306,15 @@
       "verbatim": true,
       "source_document_sha256": "3da687461dce69225aac4af9872c0dc900579644d01d5a053bd6f5a585435377",
       "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/MusicKit.framework/MusicKit",
+      "summary": "MusicKit provides Swift models for Apple Music content, playback support, and related interface elements.",
+      "source_url": "https://developer.apple.com/documentation/musickit",
+      "source_label": "Apple Developer: MusicKit",
+      "source_document_sha256": "fbdb786d5360cb8a6d932df9e40059076d08362dbf01f344e02b7460525e1055",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
     },
     {
       "install_name": "/System/Library/Frameworks/NaturalLanguage.framework/NaturalLanguage",
@@ -1342,6 +1369,24 @@
       "verbatim": true,
       "source_document_sha256": "80f4980c31c37113e5c21d6f300e4c512f73ffb40e8fd8604af87f8a8ecb2359",
       "source_checked_at": "2026-11-05"
+    },
+    {
+      "install_name": "/System/Library/Frameworks/OpenAL.framework/OpenAL",
+      "summary": "Apple’s archived iOS Core Audio guide describes OpenAL as a positional audio playback interface built on Core Audio.",
+      "source_url": "https://developer.apple.com/library/archive/documentation/MusicAudio/Conceptual/CoreAudioOverview/CoreAudioEssentials/CoreAudioEssentials.html",
+      "source_label": "Apple Developer archive: Core Audio Essentials",
+      "source_document_sha256": "63ef96d4d5c6093672304bbaf18ed9a8e6ba3447c9aa4a64caa41d54b379a1ad",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
+      "install_name": "/System/Library/Frameworks/OpenGLES.framework/OpenGLES",
+      "summary": "OpenGL ES exposes C-based hardware-accelerated 2D and 3D rendering interfaces, including iOS EAGL graphics contexts.",
+      "source_url": "https://developer.apple.com/documentation/opengles",
+      "source_label": "Apple Developer: OpenGL ES",
+      "source_document_sha256": "11607cd19305042966bebdf4aae7c0f48aa86c04eafaa65a9eb7eb6b032113aa",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
     },
     {
       "install_name": "/System/Library/Frameworks/PDFKit.framework/PDFKit",

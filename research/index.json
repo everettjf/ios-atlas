@@ -33,7 +33,7 @@
     "id": "framework-introduction-coverage",
     "build": "23A355",
     "title": "Which cache frameworks have sourced introductions?",
-    "summary": "Apple framework documentation now supplies linked introductions for 213 of 227 exact top-level framework images. Other cache images retain metadata overviews while functional research continues.",
+    "summary": "Apple Developer sources now supply linked introductions for 218 of 227 exact top-level framework images. Other cache images retain metadata overviews while functional research continues.",
     "note": "research/23A355/Framework-Introduction-Coverage.md"
   },
   {
