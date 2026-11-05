@@ -19,7 +19,7 @@
     "id": "method-catalog-coverage",
     "build": "23A355",
     "title": "What does the per-image Objective-C method catalog cover?",
-    "summary": "Sixty-nine exact cache images yield 1,250,501 method entries. The index preserves three missing selector labels and 58 Swift-marked classes outside the ObjC optimization class table.",
+    "summary": "All 4,170 exact iOS cache images yield 3,065,801 static Objective-C method entries. Empty dumps and unknown selectors remain explicit; the index is a horizontal metadata inventory.",
     "note": "research/23A355/Method-Catalog-Coverage.md"
   },
   {

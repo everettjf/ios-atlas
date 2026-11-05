@@ -12,7 +12,7 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
-SELECTOR_PATTERN = r"(?:[A-Za-z_][A-Za-z_0-9]*:|:)+|\.?[A-Za-z_][A-Za-z_0-9]*"
+SELECTOR_PATTERN = r"(?:[^\W\d]\w*:|:)+|\.?[^\W\d]\w*"
 
 
 def sha256(path: Path) -> str:
@@ -45,7 +45,7 @@ def selector_from_declaration(line: str) -> tuple[str, str | None]:
     if re.fullmatch(SELECTOR_PATTERN, body):
         # Some dumps print only a raw selector, including empty components.
         return line[0], body
-    pieces = re.findall(r"\b([A-Za-z_][A-Za-z_0-9]*:)\s*\(", body)
+    pieces = re.findall(r"\b([^\W\d]\w*:)\s*\(", body)
     selector = "".join(pieces) if pieces else body
     if not re.fullmatch(SELECTOR_PATTERN, selector):
         raise ValueError(f"could not recover selector: {line[:160]}")
@@ -57,6 +57,11 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
                ranges: list[tuple[int, int]], code_range: tuple[int, int]) -> tuple[list[dict], list[list], int, int, int]:
     lines = text.splitlines()
     toc = {}
+    if not lines and not class_table:
+        # ipsw emits an empty, successful dump for some cache images.
+        # Preserve this as an inspected zero-result rather than inventing a TOC.
+        toc = {name: 0 for name in
+               ("__objc_classlist", "__objc_catlist", "__objc_protolist")}
     for line in lines[:15]:
         match = re.fullmatch(r"  (__objc_classlist|__objc_catlist|__objc_protolist)\s+=\s+(\d+)", line)
         if match:
@@ -77,10 +82,13 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
         elif line.startswith("@interface "):
             if current is not None:
                 raise ValueError(f"unterminated interface at line {number + 1}")
-            match = re.match(r"^@interface (\S+)(?: \(([^)]+)\))?.*// (0x[0-9a-f]+)(?: \(([^)]*)\))?$", line)
+            match = re.match(r"^@interface (\S*)(?: \(([^)]+)\))?.*// (0x[0-9a-f]+)(?: \(([^)]*)\))?$", line)
             if not match:
                 raise ValueError(f"unrecognized interface header at line {number + 1}")
             class_name, category_name, address, marker = match.groups()
+            if not class_name and category_name is None:
+                raise ValueError(f"interface lacks both class and category at line {number + 1}")
+            class_name = class_name or None
             if marker not in (None, "Swift"):
                 raise ValueError(f"unrecognized interface marker at line {number + 1}: {marker}")
             metadata = int(address, 16)
@@ -89,7 +97,8 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
             groups.append({
                 "class_name": class_name,
                 "category_name": category_name,
-                "display_name": class_name if category_name is None else f"{class_name} ({category_name})",
+                "display_name": (class_name if category_name is None else
+                                 f"{class_name or '<unknown class>'} ({category_name})"),
                 "metadata_address": address,
                 "is_swift": marker == "Swift",
                 "method_count": 0,
@@ -139,8 +148,13 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--class-dump", required=True, type=Path)
-    parser.add_argument("--image", required=True, type=Path)
-    parser.add_argument("--image-sha256", required=True)
+    parser.add_argument("--image", type=Path,
+                        help="Extracted analysis image for an independently checked UUID")
+    parser.add_argument("--image-sha256")
+    parser.add_argument("--cache-main", type=Path,
+                        help="Main cache file when generating directly from the intact cache")
+    parser.add_argument("--dyld-catalog", type=Path,
+                        help="Cache-file hashes and identity for --cache-main mode")
     parser.add_argument("--install-name", required=True)
     parser.add_argument("--segments", required=True, type=Path)
     parser.add_argument("--objc-classes", required=True, type=Path)
@@ -148,10 +162,12 @@ def main() -> None:
                         help="Optional independently reviewed count for a single-image run")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
+    extracted_mode = args.image is not None and args.image_sha256 is not None
+    cache_mode = args.cache_main is not None and args.dyld_catalog is not None
+    if extracted_mode == cache_mode or bool(args.image) != bool(args.image_sha256) or \
+            bool(args.cache_main) != bool(args.dyld_catalog):
+        parser.error("choose --image with --image-sha256 or --cache-main with --dyld-catalog")
 
-    image_hash = sha256(args.image)
-    if image_hash != args.image_sha256.lower():
-        raise ValueError(f"extracted image SHA-256 mismatch: {image_hash}")
     segments = json.loads(args.segments.read_text())
     classes = json.loads(args.objc_classes.read_text())
     images = [image for image in segments["images"]
@@ -163,10 +179,29 @@ def main() -> None:
                 ("product_type", "build", "firmware_sha256", "cache_uuid"))):
         raise ValueError("source catalogs are incomplete or mismatched")
     image = images[0]
-    uuid_output = subprocess.run(("xcrun", "dwarfdump", "--uuid", str(args.image)),
-                                 check=True, capture_output=True, text=True).stdout
-    if image["uuid"] not in uuid_output:
-        raise ValueError("extracted image UUID differs from intact cache")
+    image_hash = None
+    cache_main_hash = None
+    if extracted_mode:
+        image_hash = sha256(args.image)
+        if image_hash != args.image_sha256.lower():
+            raise ValueError(f"extracted image SHA-256 mismatch: {image_hash}")
+        uuid_output = subprocess.run(("xcrun", "dwarfdump", "--uuid", str(args.image)),
+                                     check=True, capture_output=True, text=True).stdout
+        if image["uuid"] not in uuid_output:
+            raise ValueError("extracted image UUID differs from intact cache")
+    else:
+        dyld = json.loads(args.dyld_catalog.read_text())
+        if (dyld["source"] != "official_ipsw_systemos" or
+                dyld["kind"] != "dyld_shared_cache" or
+                any(dyld[key] != segments[key] for key in
+                    ("product_type", "build", "firmware_sha256", "cache_uuid"))):
+            raise ValueError("dyld cache catalog identity differs from source catalogs")
+        matches = [item for item in dyld["files"] if item["name"] == args.cache_main.name]
+        if len(matches) != 1 or args.cache_main.stat().st_size != matches[0]["size"]:
+            raise ValueError("main cache file is absent or has the wrong size")
+        cache_main_hash = sha256(args.cache_main)
+        if cache_main_hash != matches[0]["sha256"]:
+            raise ValueError("main cache hash differs from exact firmware catalog")
     text_parts = [part for part in image["segments"] if part["name"] == "__TEXT"]
     if len(text_parts) != 1:
         raise ValueError("defining image has no unique __TEXT segment")
@@ -195,12 +230,16 @@ def main() -> None:
         "install_name": args.install_name,
         "image_uuid": image["uuid"],
         "extracted_image_sha256": image_hash,
+        "cache_main_sha256": cache_main_hash,
         "class_dump_sha256": sha256(args.class_dump),
+        "class_dump_empty": not bool(dump_text),
         "class_dump_replacement_char_count": dump_text.count("\ufffd"),
         "class_count": sum(group["category_name"] is None for group in groups),
         "toc_class_count": len(class_table),
         "unlisted_swift_class_count": extra_swift_classes,
         "category_count": sum(group["category_name"] is not None for group in groups),
+        "unknown_category_class_count": sum(group["category_name"] is not None and
+                                            group["class_name"] is None for group in groups),
         "rendered_protocol_count": rendered_protocols,
         "toc_protocol_count": toc_protocols,
         "method_count": len(records),

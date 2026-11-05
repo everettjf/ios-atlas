@@ -382,8 +382,14 @@ def build() -> None:
                     segment_catalog["firmware_sha256"] != dyld["firmware_sha256"]):
                 raise ValueError("method catalogs require matching Mach-O segments")
             segments_by_name = {item["install_name"]: item for item in segment_catalog["images"]}
+            main_cache_files = [item for item in dyld["files"]
+                                if item["name"] == f"dyld_shared_cache_{dyld['architecture']}"]
+            if len(main_cache_files) != 1:
+                raise ValueError("method catalogs require one identified main cache file")
+            main_cache_hash = main_cache_files[0]["sha256"]
             method_images = []
             seen_images = set()
+            method_uuid_counts = Counter(image["uuid"] for image in segment_catalog["images"])
             totals = Counter()
             for path in method_paths:
                 source = load(path)
@@ -418,14 +424,23 @@ def build() -> None:
                         any(not group["is_swift"] for group in class_groups
                             if (group["class_name"], group["metadata_address"]) in extra_classes) or
                         source["category_count"] != len(category_groups) or
+                        source.get("unknown_category_class_count", 0) != sum(
+                            group["class_name"] is None for group in category_groups) or
                         source["method_count"] != len(rows) or
                         not isinstance(source["class_dump_replacement_char_count"], int) or
                         source["class_dump_replacement_char_count"] < 0 or
                         not 0 <= source["rendered_protocol_count"] <= source["toc_protocol_count"] or
                         len({group["display_name"] for group in groups}) != len(groups) or
                         len({tuple(row) for row in rows}) != len(rows) or
-                        any(not re.fullmatch(r"[0-9a-f]{64}", source[field])
-                            for field in ("extracted_image_sha256", "class_dump_sha256"))):
+                        not re.fullmatch(r"[0-9a-f]{64}", source["class_dump_sha256"]) or
+                        (source.get("class_dump_empty", False) and
+                         (source["class_dump_sha256"] != hashlib.sha256(b"").hexdigest() or
+                          groups or rows or source["rendered_protocol_count"] or
+                          source["toc_protocol_count"])) or
+                        (source["extracted_image_sha256"] is None and
+                         source.get("cache_main_sha256") != main_cache_hash) or
+                        (source["extracted_image_sha256"] is not None and
+                         not re.fullmatch(r"[0-9a-f]{64}", source["extracted_image_sha256"]))):
                     raise ValueError(f"incomplete or mismatched method catalog: {path}")
                 start = text_segments[0]["addr"]
                 end = start + text_segments[0]["memsz"]
@@ -434,7 +449,7 @@ def build() -> None:
                 if any(len(row) != 4 or not isinstance(row[0], int) or
                        not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
                        (row[2] is not None and
-                        not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:|:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2])) or
+                        not re.fullmatch(r"(?:[^\W\d]\w*:|:)+|\.?[^\W\d]\w*", row[2])) or
                        not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
                        not start <= int(row[3], 16) < end for row in rows):
                     raise ValueError(f"invalid method selector or address: {path}")
@@ -442,7 +457,7 @@ def build() -> None:
                 if (any(group["method_count"] != group_counts[index] or
                         not any(lo <= int(group["metadata_address"], 16) < hi for lo, hi in ranges) or
                         group["display_name"] != (group["class_name"] if group["category_name"] is None
-                                                  else f"{group['class_name']} ({group['category_name']})")
+                                                  else f"{group['class_name'] or '<unknown class>'} ({group['category_name']})")
                         for index, group in enumerate(groups))):
                     raise ValueError(f"method group counts or addresses disagree: {path}")
                 duplicate_groups = Counter((row[0], row[1], row[2]) for row in rows if row[2] is not None)
@@ -457,12 +472,15 @@ def build() -> None:
                 totals["unlisted_swift_class"] += source["unlisted_swift_class_count"]
                 classes = [{**group, "install_name": install_name, "image_uuid": image["uuid"],
                             "extracted_image_sha256": source["extracted_image_sha256"],
+                            "cache_main_sha256": source.get("cache_main_sha256"),
                             "class_dump_sha256": source["class_dump_sha256"]}
                            for group in groups]
                 method_rows = [[groups[row[0]]["display_name"], install_name,
                                 row[1], row[2], row[3]] for row in rows]
                 method_rows.sort(key=lambda row: (row[0].casefold(), (row[3] or "").casefold(), row[2], row[4]))
-                url = f"data/{build}-objc-methods/{image['uuid']}.json.gz"
+                suffix = ("-" + hashlib.sha256(install_name.encode()).hexdigest()[:12]
+                          if method_uuid_counts[image["uuid"]] > 1 else "")
+                url = f"data/{build}-objc-methods/{image['uuid']}{suffix}.json.gz"
                 target = DIST / url
                 dump(target, {"schema_version": 1, "build": build,
                               "install_name": install_name, "classes": classes,
