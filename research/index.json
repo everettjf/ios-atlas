@@ -37,5 +37,12 @@
     "summary": "An exact-cache graph links Foundation to 123 images without weak loads and 1,353 when weak declarations are included.",
     "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
     "note": "research/23A355/Foundation-Dependencies.md"
+  },
+  {
+    "id": "stock-device-boundary",
+    "build": "23A355",
+    "title": "What does stock versus device actually compare?",
+    "summary": "All 430,719 published device path/type pairs match the official FileSystem image; 4,133 paths from separate stock images have no same-path record in the filtered /rootfs view.",
+    "note": "research/23A355/Stock-Device-Boundary.md"
   }
 ]

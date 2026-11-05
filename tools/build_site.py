@@ -18,6 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "catalog" / "ios"
 SITE = ROOT / "site"
 DIST = ROOT / "dist"
+DEVICE_SYSTEM_ROOTS = (
+    "/Applications", "/Library", "/System", "/bin", "/sbin", "/usr",
+    "/private/etc",
+)
 
 
 def render_note(markdown: str, note_path: str) -> str:
@@ -97,6 +101,75 @@ def dump(path: Path, value: object, compressed: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     content = json.dumps(value, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode() + b"\n"
     path.write_bytes(gzip.compress(content, mtime=0) if compressed else content)
+
+
+def publish_device_comparison(build: str, device: dict, device_path: Path,
+                              stock_entries: list, volume_metadata: list,
+                              firmware_sha256: str) -> dict:
+    """Compare exact path/type pairs only inside the published /rootfs scan scope."""
+    roots = device["scanned_roots"]
+    if roots != list(DEVICE_SYSTEM_ROOTS):
+        raise ValueError("unexpected device scan roots; review privacy boundary")
+
+    def in_scope(path: str) -> bool:
+        return any(path == root or path.startswith(root + "/") for root in roots)
+
+    observed = [tuple(row) for row in device["entries"]]
+    observed_set = set(observed)
+    if (len(observed_set) != len(observed) or
+            any(len(row) != 2 or not in_scope(row[0]) for row in observed)):
+        raise ValueError("duplicate or out-of-scope device path")
+    stock_sources = defaultdict(set)
+    per_volume = [set() for _ in volume_metadata]
+    for volume_index, path, kind, _, _ in stock_entries:
+        if in_scope(path):
+            pair = (path, kind)
+            stock_sources[pair].add(volume_index)
+            per_volume[volume_index].add(pair)
+    stock_set = set(stock_sources)
+    if not observed_set <= stock_set:
+        raise ValueError("device path outside official same-path/type index")
+    stock_only = sorted(stock_set - observed_set)
+    url = f"data/{build}-stock-device.json.gz"
+    payload = {
+        "schema_version": 1, "kind": "stock_distribution_vs_filtered_device_paths",
+        "build": build, "product_type": device["product_type"],
+        "firmware_sha256": firmware_sha256,
+        "device_catalog_sha256": hashlib.sha256(device_path.read_bytes()).hexdigest(),
+        "device_observed_at_utc": device["observed_at_utc"],
+        "device_namespace": device["device_namespace"],
+        "scanned_roots": roots,
+        "unique_stock_pair_count": len(stock_set),
+        "observed_pair_count": len(observed_set),
+        "same_path_type_count": len(stock_set & observed_set),
+        "stock_only_pair_count": len(stock_only),
+        "device_only_pair_count": len(observed_set - stock_set),
+        "volumes": [{"name": volume_metadata[index]["name"],
+                     "stock_pair_count": len(pairs),
+                     "same_path_type_count": len(pairs & observed_set),
+                     "stock_only_pair_count": len(pairs - observed_set)}
+                    for index, pairs in enumerate(per_volume)],
+        "roots": [{"path": root,
+                   "stock_pair_count": sum(path == root or path.startswith(root + "/")
+                                           for path, _ in stock_set),
+                   "observed_pair_count": sum(path == root or path.startswith(root + "/")
+                                              for path, _ in observed_set),
+                   "stock_only_pair_count": sum(path == root or path.startswith(root + "/")
+                                                for path, _ in stock_only)} for root in roots],
+        "stock_only": [[path, kind,
+                        sorted(volume_metadata[index]["name"]
+                               for index in stock_sources[(path, kind)])]
+                       for path, kind in stock_only],
+    }
+    if (payload["same_path_type_count"] != payload["observed_pair_count"] or
+            payload["same_path_type_count"] + payload["stock_only_pair_count"] !=
+            payload["unique_stock_pair_count"] or
+            sum(row["stock_only_pair_count"] for row in payload["roots"]) !=
+            len(stock_only)):
+        raise ValueError("device comparison count mismatch")
+    dump(DIST / url, payload, compressed=True)
+    return {"stock_device_url": url, "stock_device_unique_stock_count": len(stock_set),
+            "stock_device_only_count": len(stock_only)}
 
 
 def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dict:
@@ -219,7 +292,7 @@ def build() -> None:
     if DIST.exists():
         shutil.rmtree(DIST)
     DIST.mkdir()
-    for name in ("index.html", "app.js", "styles.css", "tree.css", "reach.mjs", "tree.mjs"):
+    for name in ("index.html", "app.js", "styles.css", "tree.css", "observation.css", "reach.mjs", "tree.mjs"):
         shutil.copy2(SITE / name, DIST / name)
 
     builds = []
@@ -378,6 +451,7 @@ def build() -> None:
             if (not device["complete"] or device["build"] != build or
                     device["product_type"] != dyld["product_type"] or
                     device["kind"] != "device_system_path_observation" or
+                    device["device_namespace"] != "/rootfs" or
                     device["entry_count"] != len(device["entries"])):
                 raise ValueError(f"incomplete or mismatched device catalog in {directory}")
             if any(path not in stock_types or kind not in stock_types[path]
@@ -386,7 +460,10 @@ def build() -> None:
             shutil.copy2(device_path, DIST / "data" / f"{build}-device.json.gz")
             device_info = {"device_count": device["entry_count"],
                            "device_url": f"data/{build}-device.json.gz",
-                           "device_observed_at_utc": device["observed_at_utc"]}
+                           "device_observed_at_utc": device["observed_at_utc"],
+                           **publish_device_comparison(build, device, device_path,
+                                                       compact_entries, volume_metadata,
+                                                       dyld["firmware_sha256"])}
         archive_info = {}
         archive_path = directory / "firmware-archive.json"
         kernel_path = directory / "kernel.json"
@@ -591,6 +668,7 @@ def build() -> None:
     index = (DIST / "index.html").read_text(encoding="utf-8")
     index = index.replace('href="styles.css"', f'href="styles.css?v={version}"')
     index = index.replace('href="tree.css"', f'href="tree.css?v={version}"')
+    index = index.replace('href="observation.css"', f'href="observation.css?v={version}"')
     index = index.replace('src="app.js"', f'src="app.js?v={version}"')
     (DIST / "index.html").write_text(index, encoding="utf-8")
     print(f"built {DIST} with {len(builds)} build(s)")

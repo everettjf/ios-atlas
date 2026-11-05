@@ -54,6 +54,7 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 - Read only: record mounted volumes, firmlink/symlink boundaries, visible file metadata, cache identity, and the jailbreak prefix. The first published device inventory contains 430,719 paths and types from selected `/rootfs` system roots; all occur with the same type in the official IPSW indexes. File content hashes outside the cache remain pending.
 - Separate Apple system locations, device-generated data, and jailbreak-owned locations. Exclude private user areas from publication.
+- The published Stock ↔ device view now compares exact path/type pairs only within the seven reviewed `/rootfs` roots. It records 4,133 stock image paths without a same-path device record, preserving their SystemOS/AppOS provenance and avoiding any claim of jailbreak removal. A bounded jailbreak-owned inventory and per-file hash comparisons remain pending.
 - Compare cache identities and selected file hashes to the IPSW where the sources are truly comparable.
 
 **Done when:** each displayed difference says what was compared and whether its origin is established or merely suspected.
