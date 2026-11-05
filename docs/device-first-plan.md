@@ -11,9 +11,9 @@ Keep a full local metadata inventory for the owner's review. The public site con
 ## Current evidence
 
 - The official `23A355` firmware has 452,096 entries across FileSystem, SystemOS, and AppOS; 4,170 iOS cache images; 51 DriverKit images; and 3,363 standalone Mach-O files. The cache method and named-symbol indexes already cover every exact iOS cache image. See [acquisition](acquisition-23A355.md).
-- The first published device catalog contained **only** 430,719 paths beneath seven `/rootfs` system roots. The newer private scan visited 12 views and found 531,311 path observations; two data-volume views were partial because of protected directories. Its privacy-reviewed public export contains 439,366 distinct system and jailbreak installation paths. See [boundary note](../research/23A355/Stock-Device-Boundary.md) and [collection procedure](live-device-collection.md).
+- The first published device catalog contained **only** 430,719 paths beneath seven `/rootfs` system roots. The newer private scan visited 12 views and found 531,311 path observations; two data-volume views were partial because of protected directories. Its privacy-reviewed public export contains 439,365 distinct system and jailbreak installation paths; one randomized device-specific filename is withheld. See [boundary note](../research/23A355/Stock-Device-Boundary.md) and [collection procedure](live-device-collection.md).
 - All 80 iOS and three DriverKit physical cache files were previously checked against the device by SHA-256. This proves those cache bytes at that observation time, not that every other firmware file matches the running phone.
-- The site now opens with device files and no longer exposes a `Compare builds` tab. It labels the first published catalog as partial while the whole-device scan is prepared.
+- The site now opens with device files and no longer exposes a `Compare builds` tab. It marks the two data-volume roots as partial and lists the completed roots explicitly.
 - On 2026-11-05, CopyApp's saved device-specific SSH profile authenticated this exact phone as both `mobile` and `root`. A private mount discovery found 11 kernel mount targets plus the RootHide jailbreak namespace. The first `/rootfs/System/Developer` pilot recorded 177 entries without errors.
 
 ## Work order and acceptance gates

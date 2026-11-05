@@ -33,3 +33,30 @@ python3 tools/export_live_device.py --manifest .local/live-device/manifest.json 
 Review the candidate's paths and counts, then copy only that reviewed file to `catalog/ios/23A355/device-live.json.gz`. `tools/build_site.py` independently revalidates every public path against the reviewed prefixes before copying it into `dist`. The website labels published scope and the number of completed snapshot roots; it must never imply that unpublished user/app paths are absent from the device.
 
 Tests: `python3 tools/test_live_device_pipeline.py` checks NUL-safe filenames, exact symlink targets, rejection of private prefixes, and the site builder's second privacy gate.
+
+## First live code pass
+
+The complete jailbreak-root scan found 6,449 regular files. A device-side GNU `file -0 -0` pass identified 464 Mach-O candidates. A separate `sha256sum -z` pass hashed those exact paths. A private tar transfer acquired those files; every local copy matched its device-side hash. The reproducible header catalog is generated with:
+
+```sh
+python3 tools/catalog_live_jailbreak_macho.py \
+  --manifest .local/live-device/manifest.json \
+  --file-types .local/live-device/jailbreak-file-types.nul \
+  --hashes .local/live-device/jailbreak-macho-sha256.nul \
+  --binary-root .local/live-device/macho-files \
+  --output .local/live-device/jailbreak-macho-candidate.json.gz
+```
+
+The private file-type, hash, and acquired-byte inputs are excluded from Git. All 464 acquired files were verified; the public catalog includes 463 reviewed jailbreak paths and their derived Mach-O metadata. One filename with a device-specific RootHide random suffix is withheld. `tools/build_site.py` checks that each published path and size also appears as a public live-device file. A header or UUID is identity evidence, not a method list or proof of runtime loading.
+
+The read-only method pass uses `ipsw class-dump --re -V` on each of the 463 published files, with `--arch` selected for universal binaries. It checkpoints against the acquired file hash and checks method IMPs against Mach-O code ranges:
+
+```sh
+python3 tools/catalog_live_jailbreak_objc.py \
+  --macho-catalog catalog/ios/23A355/jailbreak-macho.json.gz \
+  --binary-root .local/live-device/macho-files \
+  --workdir .local/live-device/objc-work \
+  --output .local/live-device/jailbreak-objc-candidate.json.gz
+```
+
+The result covers all 463 published files: 61 have 4,781 parsed Objective-C method entries, while 402 explicitly report no ObjC information. Empty ObjC output is not evidence that a file has no code or callable functions.

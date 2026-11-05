@@ -14,6 +14,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 from export_live_device import KINDS as LIVE_DEVICE_KINDS
+from export_live_device import DEVICE_SPECIFIC_PATH
 from export_live_device import check_prefix as check_live_prefix
 from export_live_device import has_private_characters, inside
 
@@ -127,6 +128,7 @@ def publish_live_device(build: str, product: str, path: Path) -> dict:
                 not isinstance(row[0], str) or not row[0].startswith("/") or
                 any(part in ("", ".", "..") for part in row[0][1:].split("/")) or
                 has_private_characters(row[0]) or
+                DEVICE_SPECIFIC_PATH.fullmatch(row[0]) or
                 not any(inside(row[0], prefix) for prefix in prefixes) or
                 row[1] not in LIVE_DEVICE_KINDS or row[1] == "unknown" or
                 (row[1] == "file" and (not isinstance(row[2], int) or row[2] < 0)) or
@@ -149,6 +151,102 @@ def publish_live_device(build: str, product: str, path: Path) -> dict:
             "device_scope": "reviewed_live", "device_snapshot_root_count": data["snapshot_root_count"],
             "device_complete_root_count": data["complete_root_count"],
             "device_unpublished_entry_count": data["unpublished_entry_count"]}
+
+
+def publish_live_macho(build: str, product: str, path: Path, device_path: Path) -> dict:
+    """Publish verified live Mach-O metadata only for reviewed device file paths."""
+    data = load(path)
+    device = load(device_path)
+    files = {row[0]: row[2] for row in device["entries"] if row[1] == "file"}
+    records = data.get("records")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_jailbreak_macho_inventory" or
+            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(records, list) or data.get("macho_file_count") != len(records) or
+            data.get("failed_count") != len(data.get("failures", [])) or
+            data.get("failed_count") != 0):
+        raise ValueError("incomplete or mismatched live Mach-O catalog")
+    seen = set()
+    for record in records:
+        item_path = record.get("path")
+        if (not isinstance(item_path, str) or item_path.startswith("/rootfs/") or
+                item_path not in files or files[item_path] != record.get("size") or
+                item_path in seen or has_private_characters(item_path) or
+                DEVICE_SPECIFIC_PATH.fullmatch(item_path) or
+                not re.fullmatch(r"[0-9a-f]{64}", record.get("sha256", "")) or
+                not isinstance(record.get("slices"), list) or not record["slices"] or
+                any(not isinstance(part.get("architecture"), str) or
+                    not isinstance(part.get("file_type"), str) or
+                    (part.get("uuid") is not None and
+                     not re.fullmatch(r"[0-9A-F-]{36}", part["uuid"]))
+                    for part in record["slices"])):
+            raise ValueError("unsafe or unreviewed live Mach-O record")
+        seen.add(item_path)
+    url = f"data/{build}-jailbreak-macho.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"device_macho_url": url, "device_macho_count": len(records)}
+
+
+def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) -> dict:
+    """Validate per-file ObjC metadata against the exact acquired Mach-O index."""
+    data = load(path)
+    macho = load(macho_path)
+    originals = {item["path"]: item for item in macho["records"]}
+    files = data.get("files")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_jailbreak_objc_methods" or
+            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(files, list) or len(files) != len(originals) or
+            data.get("macho_file_count") != len(files)):
+        raise ValueError("incomplete live Objective-C method catalog")
+    seen = set()
+    totals = Counter()
+    for item in files:
+        original = originals.get(item.get("path"))
+        groups = item.get("groups")
+        methods = item.get("records")
+        if (original is None or item["path"] in seen or
+                item.get("volume") != "Jailbreak" or
+                item.get("sha256") != original["sha256"] or
+                item.get("uuid") != original["slices"][0]["uuid"] or
+                item.get("status") not in ("parsed", "no_objc_info") or
+                not isinstance(groups, list) or not isinstance(methods, list) or
+                item.get("method_count") != len(methods) or
+                item.get("class_count") != sum(group["category_name"] is None
+                                               for group in groups) or
+                item.get("category_count") != sum(group["category_name"] is not None
+                                                  for group in groups)):
+            raise ValueError("live Objective-C record differs from verified Mach-O")
+        if item["status"] == "no_objc_info" and (groups or methods):
+            raise ValueError("no-ObjC record contains methods")
+        if item["status"] == "parsed":
+            start = int(item["text_address"], 16)
+            end = start + item["text_size"]
+            if any(not isinstance(row, list) or len(row) != 4 or
+                   not isinstance(row[0], int) or not 0 <= row[0] < len(groups) or
+                   row[1] not in ("+", "-") or
+                   (row[2] is not None and not isinstance(row[2], str)) or
+                   not isinstance(row[3], str) or
+                   not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
+                   not start <= int(row[3], 16) < end for row in methods):
+                raise ValueError("live Objective-C method address or group mismatch")
+        seen.add(item["path"])
+        totals[item["status"]] += 1
+        for key, field in (("classes", "class_count"), ("categories", "category_count"),
+                           ("methods", "method_count"),
+                           ("unknown_selectors", "unknown_selector_count")):
+            totals[key] += item[field]
+    if seen != set(originals) or any(data["totals"].get(key) != value
+                                     for key, value in totals.items()):
+        raise ValueError("live Objective-C totals disagree")
+    url = f"data/{build}-jailbreak-objc-methods.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"device_macho_objc_url": url,
+            "device_macho_objc_method_count": totals["methods"],
+            "device_macho_objc_parsed_count": totals["parsed"],
+            "device_macho_objc_no_info_count": totals["no_objc_info"]}
 
 
 def publish_device_comparison(build: str, device: dict, device_path: Path,
@@ -1150,6 +1248,18 @@ def build() -> None:
         live_device_path = directory / "device-live.json.gz"
         if live_device_path.exists():
             device_info.update(publish_live_device(build, dyld["product_type"], live_device_path))
+        live_macho_path = directory / "jailbreak-macho.json.gz"
+        if live_macho_path.exists():
+            if not live_device_path.exists():
+                raise ValueError("live Mach-O catalog requires the reviewed live path catalog")
+            device_info.update(publish_live_macho(build, dyld["product_type"],
+                                                  live_macho_path, live_device_path))
+        live_objc_path = directory / "jailbreak-objc-methods.json.gz"
+        if live_objc_path.exists():
+            if not live_macho_path.exists():
+                raise ValueError("live Objective-C methods require verified Mach-O files")
+            device_info.update(publish_live_objc(build, dyld["product_type"],
+                                                 live_objc_path, live_macho_path))
         archive_info = {}
         archive_path = directory / "firmware-archive.json"
         kernel_path = directory / "kernel.json"

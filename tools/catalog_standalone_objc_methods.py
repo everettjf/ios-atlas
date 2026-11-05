@@ -54,7 +54,10 @@ def inspect(item: dict, roots: dict[str, Path], checkpoint_dir: Path) -> dict:
         return saved
     if not path.is_file() or path.stat().st_size != item['size'] or sha256(path) != item['sha256']:
         raise ValueError(f'mounted file differs from exact inventory: {volume}:{item["path"]}')
-    result = run('ipsw', 'class-dump', str(path), '--re', '-V', '--no-color')
+    arch_flags = (('--arch', item['slices'][0]['architecture'])
+                  if len(item['slices']) > 1 else ())
+    result = run('ipsw', 'class-dump', str(path), '--re', '-V', '--no-color',
+                 *arch_flags)
     source_hash = hashlib.sha256(result.stdout).hexdigest()
     record = {'volume': volume, 'path': item['path'], 'sha256': item['sha256'],
               'uuid': item['slices'][0]['uuid'], 'class_dump_sha256': source_hash,
@@ -71,7 +74,8 @@ def inspect(item: dict, roots: dict[str, Path], checkpoint_dir: Path) -> dict:
     else:
         text = result.stdout.decode('utf-8', errors='replace')
         record['class_dump_replacement_char_count'] = text.count('\ufffd')
-        macho = run('ipsw', 'macho', 'info', str(path), '--json', '--loads', '--no-color')
+        macho = run('ipsw', 'macho', 'info', str(path), '--json', '--loads',
+                    '--no-color', *arch_flags)
         if macho.returncode:
             raise RuntimeError(f'Mach-O load parse failed for {volume}:{item["path"]}: '
                                f'{macho.stderr.decode(errors="replace")[-400:]}')

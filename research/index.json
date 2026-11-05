@@ -59,6 +59,13 @@
     "note": "research/23A355/Standalone-MachO-Coverage.md"
   },
   {
+    "id": "live-jailbreak-macho",
+    "build": "23A355",
+    "title": "Which Mach-O files are installed in the live jailbreak tree?",
+    "summary": "A read-only device pass verified 464 Mach-O files in the jailbreak installation namespace. The public index covers 463 files and 4,781 static Objective-C methods; one randomized filename is withheld.",
+    "note": "research/23A355/Live-Jailbreak-MachO.md"
+  },
+  {
     "id": "standalone-objc-method-coverage",
     "build": "23A355",
     "title": "What Objective-C methods are visible in standalone Mach-O files?",

@@ -102,6 +102,45 @@ class LiveDevicePipelineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "incomplete mount coverage"):
                 export(root / "manifest.json", root / "allowlist.json")
 
+    def test_live_macho_requires_a_reviewed_device_file(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            device = root / "device.json.gz"
+            device.write_bytes(gzip.compress(json.dumps({
+                "entries": [["/usr/bin/tool", "file", 4]]
+            }).encode(), mtime=0))
+            record = {"path": "/usr/bin/tool", "size": 4, "sha256": "a" * 64,
+                      "slices": [{"architecture": "arm64", "file_type": "executable",
+                                  "uuid": None}]}
+            macho = {"schema_version": 1, "kind": "live_jailbreak_macho_inventory",
+                     "source": "verified_live_device_macho_bytes", "build": "23A355",
+                     "product_type": "iPhone12,1", "macho_file_count": 1,
+                     "failed_count": 0, "failures": [], "records": [record]}
+            candidate = root / "macho.json.gz"
+            candidate.write_bytes(gzip.compress(json.dumps(macho).encode(), mtime=0))
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                info = build_site.publish_live_macho("23A355", "iPhone12,1",
+                                                     candidate, device)
+                self.assertEqual(info["device_macho_count"], 1)
+                record["path"] = "/private/var/mobile/secret"
+                candidate.write_bytes(gzip.compress(json.dumps(macho).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_macho("23A355", "iPhone12,1",
+                                                  candidate, device)
+                record["path"] = "/basebin/systemhook-0123456789ABCDEF.dylib"
+                device.write_bytes(gzip.compress(json.dumps({
+                    "entries": [[record["path"], "file", 4]]
+                }).encode(), mtime=0))
+                candidate.write_bytes(gzip.compress(json.dumps(macho).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_macho("23A355", "iPhone12,1",
+                                                  candidate, device)
+            finally:
+                build_site.DIST = old_dist
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,7 +7,7 @@ const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'device', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map() };
+const state = { manifest:null, build:null, tab:'device', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, liveMethodPath:null, liveMethodQuery:'', liveMethodLimit:80, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map() };
 let searchTimer;
 
 async function json(url) {
@@ -29,7 +29,9 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'device_macho' ? await compressedJSON(info.device_macho_url) : kind === 'device_macho_objc' ? await compressedJSON(info.device_macho_objc_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  if (kind === 'device_macho') result.byPath = new Map(result.records.map((item) => [item.path, item]));
+  if (kind === 'device_macho_objc') result.byPath = new Map(result.files.map((item) => [item.path, item]));
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
   if (kind === 'macho_methods_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
   if (kind === 'macho_symbol_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
@@ -78,6 +80,9 @@ function setTab(tab, query = '') {
   state.machoSwiftTypeLimit = 40;
   state.machoSwiftMemberLimit = 80;
   state.machoSwiftData = null;
+  state.liveMethodQuery = '';
+  state.liveMethodLimit = 80;
+  state.liveMethodPath = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
   history.replaceState(null, '', (tab === 'research' || tab === 'methods') && query ? `#${tab}/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
@@ -87,6 +92,7 @@ function setTab(tab, query = '') {
 function updateSource() {
   const files = state.tab === 'files';
   const device = state.tab === 'device';
+  const deviceMacho = state.tab === 'device_macho';
   const images = state.tab === 'images';
   const driverkit = state.tab === 'driverkit';
   const macho = state.tab === 'macho';
@@ -100,12 +106,13 @@ function updateSource() {
   const swift = state.tab === 'swift';
   const research = state.tab === 'research';
   const reach = state.tab === 'reach';
-  $('#source-method').href = device ? 'https://github.com/everettjf/ios-atlas/blob/main/docs/device-first-plan.md' : methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : images ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/iOS-Cache-Named-Symbol-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
-  $('#source-title').textContent = device ? 'Source: live iPhone 11 file paths' : driverkit ? 'Source: official DriverKit cache' : macho ? 'Source: mounted official IPSW Mach-O files' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
+  $('#source-method').href = device || deviceMacho ? 'https://github.com/everettjf/ios-atlas/blob/main/docs/live-device-collection.md' : methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Method-Catalog-Coverage.md' : images ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/iOS-Cache-Named-Symbol-Coverage.md' : driverkit ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/DriverKit-Function-Surface.md' : macho ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Standalone-ObjC-Method-Coverage.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 file paths' : deviceMacho ? 'Source: verified jailbreak Mach-O files' : driverkit ? 'Source: official DriverKit cache' : macho ? 'Source: mounted official IPSW Mach-O files' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? activeBuild().device_scope === 'reviewed_live'
       ? `Privacy-reviewed live snapshot: ${fmt(activeBuild().device_count)} published paths from ${fmt(activeBuild().device_complete_root_count)} of ${fmt(activeBuild().device_snapshot_root_count)} scanned roots. User and app data paths are withheld.`
       : 'Read-only /rootfs observation of seven Apple system roots. The jailbreak namespace, preboot, and user data are not yet in the public catalog.'
+    : deviceMacho ? `${fmt(activeBuild().device_macho_count)} privacy-reviewed Mach-O files from the live jailbreak installation tree matched device-side SHA-256 hashes. ${fmt(activeBuild().device_macho_objc_method_count || 0)} Objective-C method entries are indexed; static metadata does not establish runtime loading.`
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. Named __text symbols are searchable per image; they are not a complete function inventory.'
     : macho ? 'Regular Mach-O files in three official firmware images, with hashes, UUIDs, Objective-C methods, named __text symbols, and Swift dump declarations. These are distinct from dyld cache images; metadata is not a complete function list.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
@@ -319,6 +326,25 @@ async function openMachoSwift() {
   state.machoSwiftData = data;
 }
 
+function liveMethodList(objc) {
+  const query = state.liveMethodQuery.trim().toLocaleLowerCase();
+  const matches = objc.records.filter((row) => !query ||
+    `${objc.groups[row[0]].display_name} ${row[2] || ''}`.toLocaleLowerCase().includes(query));
+  const visible = matches.slice(0, state.liveMethodLimit);
+  return `<p class="explain">${fmt(matches.length)} matching static Objective-C methods. This is a class-dump result, not a runtime call trace.</p><ul>${visible.map((row) => `<li><code>${escapeHTML(`${row[1]}[${objc.groups[row[0]].display_name} ${row[2] ?? 'selector unavailable'}]`)}</code><small>IMP ${escapeHTML(row[3])}</small></li>`).join('') || '<li>No matching methods</li>'}</ul>${matches.length > visible.length ? '<button id="live-method-more" class="more-button">Show more ↓</button>' : ''}`;
+}
+
+function liveMethodSection(item, objc) {
+  if (state.liveMethodPath !== item.path) {
+    state.liveMethodPath = item.path;
+    state.liveMethodQuery = '';
+    state.liveMethodLimit = 80;
+  }
+  if (!objc) return '<div class="direct-imports"><h4>Objective-C methods</h4><p class="explain">This file has not been indexed for Objective-C methods.</p></div>';
+  if (objc.status === 'no_objc_info') return '<div class="direct-imports"><h4>Objective-C methods</h4><p class="explain">The exact-file class dump reported no Objective-C information. Other callable code may still be present.</p></div>';
+  return `<div class="direct-imports"><h4>Objective-C methods (${fmt(objc.method_count)})</h4><label class="searchbox"><span class="sr-only">Search live methods</span><input id="live-method-search" type="search" placeholder="Search classes or selectors…" value="${escapeHTML(state.liveMethodQuery)}"></label><div id="live-method-results">${liveMethodList(objc)}</div></div>`;
+}
+
 function detailHTML(item, mode, data) {
   if (!item) return `<div class="empty-detail">Select a row to inspect its source and metadata.</div>`;
   if (mode === 'objc') {
@@ -379,10 +405,16 @@ function detailHTML(item, mode, data) {
     const volume = data.volumes[volumeIndex];
     return `<span class="detail-label">${mode === 'restore' ? 'RESTORE RAMDISK ENTRY' : 'FILESYSTEM ENTRY'}</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>PATH</dt><dd>${escapeHTML(path)}</dd><dt>VOLUME</dt><dd>${escapeHTML(volume.name)}</dd><dt>SOURCE IMAGE</dt><dd>${escapeHTML(volume.image_name)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd><dt>SIZE</dt><dd>${escapeHTML(size(bytes))}</dd>${target ? `<dt>LINK TARGET</dt><dd>${escapeHTML(target)}</dd>` : ''}</dl><p class="explain">${mode === 'restore' ? 'Observed in a mounted IPSW restore environment. This is not the normal running iOS root filesystem.' : 'Observed in the mounted official firmware image. A file path here does not establish that the same bytes are present on a running device.'}</p>`;
   }
+  if (mode === 'device_macho') {
+    const slices = item.slices.map((part) => `<li>${escapeHTML(part.architecture)} · ${escapeHTML(part.file_type)} · UUID ${escapeHTML(part.uuid || 'Not present')}</li>`).join('');
+    const objc = state.datasets.get(`device_macho_objc:${state.build}`)?.byPath.get(item.path);
+    return `<span class="detail-label">LIVE JAILBREAK MACH-O</span><h3>${escapeHTML(item.path.split('/').pop())}</h3><dl><dt>DEVICE PATH</dt><dd>${escapeHTML(item.path)}</dd><dt>FILE SIZE</dt><dd>${size(item.size)}</dd><dt>DEVICE SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>ARCHITECTURES AND FILE TYPES</dt><dd><ul>${slices}</ul></dd>${objc ? `<dt>OBJECTIVE-C METHODS</dt><dd>${fmt(objc.method_count)} · ${fmt(objc.class_count)} classes · ${fmt(objc.category_count)} categories</dd>` : ''}<dt>DEVICE FILE RECORD</dt><dd><button class="inline-link" data-linked-tab="device" data-linked-query="${escapeHTML(item.path)}">Inspect path ↗</button></dd></dl>${liveMethodSection(item, objc)}<p class="explain">The bytes were acquired from this iPhone and matched a device-side SHA-256 pass. Mach-O headers and method names are static metadata; they do not prove a process loaded it or that a hook is safe.</p>`;
+  }
   if (mode === 'device') {
     const [path, type, bytes] = item;
     const broad = data.kind === 'live_device_public_paths';
-    return `<span class="detail-label">OBSERVED DEVICE PATH</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>LIVE PATH</dt><dd>${escapeHTML(path)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd>${bytes == null ? '' : `<dt>SIZE AT SCAN</dt><dd>${escapeHTML(size(bytes))}</dd>`}<dt>SOURCE</dt><dd>${broad ? 'Privacy-reviewed live device snapshot' : 'Read-only scan of seven /rootfs system roots'}</dd></dl><p class="explain">${broad ? 'This path was observed in a reviewed live scan. Other paths, including user and app data, are withheld from the public catalog.' : 'This path was observed in the RootHide /rootfs view. The public scan does not yet cover the jailbreak namespace, preboot, or user data.'} A path record alone does not prove file contents or runtime use.</p>`;
+    const liveMacho = state.datasets.get(`device_macho:${state.build}`)?.byPath.get(path);
+    return `<span class="detail-label">OBSERVED DEVICE PATH</span><h3>${escapeHTML(path.split('/').pop())}</h3><dl><dt>LIVE PATH</dt><dd>${escapeHTML(path)}</dd><dt>TYPE</dt><dd>${escapeHTML(type)}</dd>${bytes == null ? '' : `<dt>SIZE AT SCAN</dt><dd>${escapeHTML(size(bytes))}</dd>`}${liveMacho ? `<dt>MACH-O</dt><dd>${escapeHTML(liveMacho.slices.map((part) => `${part.architecture} ${part.file_type}`).join(', '))} · <button class="inline-link" data-linked-tab="device_macho" data-linked-query="${escapeHTML(path)}">Verified file details ↗</button></dd>` : ''}<dt>SOURCE</dt><dd>${broad ? 'Privacy-reviewed live device snapshot' : 'Read-only scan of seven /rootfs system roots'}</dd></dl><p class="explain">${broad ? 'This path was observed in a reviewed live scan. Other paths, including user and app data, are withheld from the public catalog.' : 'This path was observed in the RootHide /rootfs view. The public scan does not yet cover the jailbreak namespace, preboot, or user data.'} A path record alone does not prove file contents or runtime use.</p>`;
   }
   if (mode === 'archive') {
     const roles = [...new Set(item.manifest_roles.map((pair) => pair[1]))].join(', ') || 'No BuildManifest role';
@@ -417,14 +449,14 @@ function detailHTML(item, mode, data) {
 function renderRows(items, mode, data) {
   const visible = items.slice(0, state.limit);
   const rows = visible.map((item, index) => {
-    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : mode === 'methods' ? `${item[2]}[${item[0]} ${item[3] ?? 'selector unavailable'}]` : mode === 'objc' || mode === 'protocols' ? item[0] : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' || mode === 'macho' ? item.path : mode === 'kernel' ? item.id : mode === 'services' ? item.label || item.plist_path : item.name;
-    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'methods' ? item[4] : mode === 'objc' || mode === 'protocols' ? item[2] : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'macho' ? `${item.volume} · ${item.slices[0].file_type}` : mode === 'kernel' ? item.variant.toUpperCase() : mode === 'services' ? item.executable.status.toUpperCase() : size(item.size);
-    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : mode === 'objc' || mode === 'protocols' || mode === 'methods' ? '◌' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' || mode === 'macho' ? '▧' : mode === 'kernel' ? '✳' : mode === 'services' ? '◉' : '◈';
+    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : mode === 'methods' ? `${item[2]}[${item[0]} ${item[3] ?? 'selector unavailable'}]` : mode === 'objc' || mode === 'protocols' ? item[0] : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' || mode === 'macho' || mode === 'device_macho' ? item.path : mode === 'kernel' ? item.id : mode === 'services' ? item.label || item.plist_path : item.name;
+    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'methods' ? item[4] : mode === 'objc' || mode === 'protocols' ? item[2] : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'macho' ? `${item.volume} · ${item.slices[0].file_type}` : mode === 'device_macho' ? item.slices.map((part) => part.file_type).join(', ') : mode === 'kernel' ? item.variant.toUpperCase() : mode === 'services' ? item.executable.status.toUpperCase() : size(item.size);
+    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : mode === 'objc' || mode === 'protocols' || mode === 'methods' ? '◌' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' || mode === 'macho' || mode === 'device_macho' ? '▧' : mode === 'kernel' ? '✳' : mode === 'services' ? '◉' : '◈';
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
   $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
-  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'macho' ? 'FILE PATH' : mode === 'services' ? 'SERVICE LABEL' : mode === 'methods' ? 'METHOD' : mode === 'objc' ? 'CLASS NAME' : mode === 'protocols' ? 'PROTOCOL NAME' : 'PATH / INSTALL NAME';
-  const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : mode === 'methods' ? 'IMP ADDRESS' : mode === 'objc' || mode === 'protocols' ? 'IMAGE LABEL' : 'SOURCE';
+  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'macho' || mode === 'device_macho' ? 'FILE PATH' : mode === 'services' ? 'SERVICE LABEL' : mode === 'methods' ? 'METHOD' : mode === 'objc' ? 'CLASS NAME' : mode === 'protocols' ? 'PROTOCOL NAME' : 'PATH / INSTALL NAME';
+  const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'device_macho' ? 'FILE TYPE' : mode === 'services' ? 'EXECUTABLE' : mode === 'methods' ? 'IMP ADDRESS' : mode === 'objc' || mode === 'protocols' ? 'IMAGE LABEL' : 'SOURCE';
   $('#results').innerHTML = `<div class="result-head"><span>${heading}</span><span>${sourceHeading}</span></div>${rows || '<p class="empty-state">No matching entries in the selected source.</p>'}${items.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
   $('#detail').innerHTML = detailHTML(state.selected, mode, data);
   for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; state.driverkitFunctionQuery = ''; state.driverkitFunctionLimit = 80; state.iosSymbolQuery = ''; state.iosSymbolLimit = 80; state.iosSymbolData = null; state.machoMethodQuery = ''; state.machoMethodLimit = 80; state.machoMethodData = null; state.machoSymbolQuery = ''; state.machoSymbolLimit = 80; state.machoSymbolData = null; state.machoSwiftQuery = ''; state.machoSwiftTypeLimit = 40; state.machoSwiftMemberLimit = 80; state.machoSwiftData = null; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
@@ -436,8 +468,8 @@ function renderResults() {
   if (mode === 'swift') { renderSwiftResults(); return; }
   if (mode === 'reach') { renderReachResults(); return; }
   if (mode === 'methods' && !state.methodImage) { renderMethodsIndexResults(); return; }
-  const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'methods' ? 'methods' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'macho' ? 'macho' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
-  if (!data || !['images','driverkit','macho','objc','methods','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
+  const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'device_macho' ? 'device_macho' : mode === 'objc' ? 'objc' : mode === 'methods' ? 'methods' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'macho' ? 'macho' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
+  if (!data || !['images','driverkit','macho','device_macho','objc','methods','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
   if ((filesystemMode(mode) || mode === 'device') && !state.query.trim()) { renderDirectoryResults(mode, data); return; }
   const query = state.query.trim().toLocaleLowerCase();
   let items;
@@ -463,6 +495,7 @@ function renderResults() {
   }
   else if (mode === 'images' || mode === 'driverkit') items = data.images.filter((item) => !query || item.install_name.toLocaleLowerCase().includes(query));
   else if (mode === 'macho') items = data.records.filter((item) => (state.volume === 'all' || item.volume === state.volume) && (!query || `${item.path} ${item.volume} ${item.sha256} ${item.slices.map((part) => `${part.architecture} ${part.file_type} ${part.uuid || ''}`).join(' ')}`.toLocaleLowerCase().includes(query)));
+  else if (mode === 'device_macho') items = data.records.filter((item) => !query || `${item.path} ${item.sha256} ${item.slices.map((part) => `${part.architecture} ${part.file_type} ${part.uuid || ''}`).join(' ')}`.toLocaleLowerCase().includes(query));
   else if (mode === 'archive') items = data.entries.filter((item) => !query || item.path.toLocaleLowerCase().includes(query));
   else if (mode === 'kernel') items = data.kexts.filter((item) => (state.volume === 'all' || item.variant === state.volume) && (!query || `${item.id} ${item.name} ${item.bundle_path}`.toLocaleLowerCase().includes(query)));
   else if (mode === 'services') items = data.records.filter((item) => (state.volume === 'all' || item.executable.status === state.volume) && (!query || `${item.label} ${item.plist_path} ${item.program} ${item.mach_services.join(' ')} ${item.launch_events.join(' ')} ${serviceBinary(item, data)?.imports.map((imp) => imp.install_name).join(' ') || ''}`.toLocaleLowerCase().includes(query)));
@@ -752,6 +785,7 @@ async function renderExplorer() {
   if (mode === 'reach') { await renderReachExplorer(); return; }
   if (mode === 'methods') { await renderMethodsExplorer(); return; }
   if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
+  if (mode === 'device_macho' && !activeBuild().device_macho_url) { explorer.innerHTML = '<p class="empty-state">No verified jailbreak Mach-O inventory is published for this build.</p>'; return; }
   if (mode === 'driverkit' && !activeBuild().driverkit_url) { explorer.innerHTML = '<p class="empty-state">No DriverKit cache is cataloged for this build.</p>'; return; }
   if (mode === 'macho' && !activeBuild().standalone_macho_url) { explorer.innerHTML = '<p class="empty-state">No standalone Mach-O inventory is cataloged for this build.</p>'; return; }
   if (mode === 'objc' && !activeBuild().objc_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C class table is cataloged for this build.</p>'; return; }
@@ -762,12 +796,14 @@ async function renderExplorer() {
   if (mode === 'services' && !activeBuild().service_url) { explorer.innerHTML = '<p class="empty-state">No official launchd service catalog is available for this build.</p>'; return; }
   explorer.innerHTML = '<p class="loading">Opening source-bound catalog…</p>';
   const [data] = await Promise.all([
-    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'macho' ? 'macho' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
+    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'device_macho' ? 'device_macho' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'macho' ? 'macho' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
     ...(mode === 'images' && activeBuild().dyld_dependency_url ? [dataset('dependencies')] : []),
     ...(mode === 'images' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
     ...(mode === 'images' && activeBuild().ios_symbol_index_url ? [dataset('ios_symbol_index')] : []),
     ...(mode === 'objc' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
     ...(mode === 'files' || mode === 'device' ? [dataset('dyld')] : []),
+    ...(mode === 'device' && activeBuild().device_macho_url ? [dataset('device_macho')] : []),
+    ...(mode === 'device_macho' && activeBuild().device_macho_objc_url ? [dataset('device_macho_objc')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_function_url ? [dataset('driverkit_functions')] : []),
     ...(mode === 'macho' && activeBuild().standalone_objc_index_url ? [dataset('macho_methods_index')] : []),
@@ -776,7 +812,7 @@ async function renderExplorer() {
   ]);
   if (state.tab !== mode) return;
   const deviceSummary = mode === 'device' ? data.kind === 'live_device_public_paths'
-    ? `<div class="kernel-summary"><div><strong>${fmt(data.entry_count)} PUBLISHED PATHS</strong><span>Reviewed system and jailbreak paths only</span></div><div><strong>${fmt(data.complete_root_count)} / ${fmt(data.snapshot_root_count)} ROOTS COMPLETE</strong><span>Private snapshot coverage; user and app path names withheld</span></div><div><strong>${fmt(data.unpublished_entry_count)} PRIVATE PATH RECORDS</strong><span>Counts only; no names or content published</span></div></div>`
+    ? `<div class="kernel-summary"><div><strong>${fmt(data.entry_count)} PUBLISHED PATHS</strong><span>Reviewed system and jailbreak paths only</span></div><div><strong>${fmt(data.complete_root_count)} / ${fmt(data.snapshot_root_count)} ROOTS COMPLETE</strong><span>Private snapshot coverage; user and app path names withheld</span></div><div><strong>${fmt(data.unpublished_entry_count)} WITHHELD OBSERVATIONS</strong><span>May overlap across mounts; no names or contents published</span></div></div>`
     : `<div class="kernel-summary"><div><strong>${fmt(data.entry_count)} OBSERVED PATHS</strong><span>Seven selected /rootfs system roots</span></div><div><strong>PARTIAL DEVICE COVERAGE</strong><span>Jailbreak, preboot and data-volume paths are not yet published</span></div></div>` : '';
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
   const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div>${activeBuild().service_direct_import_count == null ? '' : `<div><strong>${fmt(activeBuild().service_direct_import_count)} DIRECT LOADS</strong><span>From ${fmt(activeBuild().service_executable_count)} service executables; ${fmt(activeBuild().service_cache_matched_import_count)} match cache images</span></div>`}</div>` : '';
@@ -789,7 +825,8 @@ async function renderExplorer() {
   const driverkitSummary = mode === 'driverkit' && activeBuild().driverkit_named_function_count != null ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().driverkit_named_function_count)} NAMED FUNCTIONS</strong><span>Symbols in __text across all ${fmt(activeBuild().driverkit_image_count)} DriverKit cache images</span></div></div>` : '';
   const iosSymbolSummary = mode === 'images' && activeBuild().ios_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().ios_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>From ${fmt(activeBuild().ios_symbol_image_count)} exact iOS cache images</span></div><div><strong>${fmt(activeBuild().ios_symbol_empty_image_count)} IMAGES WITHOUT NAMES</strong><span>Names complement Objective-C methods and do not enumerate every function</span></div></div>` : '';
   const machoSummary = mode === 'macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} PHYSICAL MACH-O FILES</strong><span>Across FileSystem, SystemOS, and AppOS in the official IPSW</span></div><div><strong>${fmt(data.excluded_candidates.length)} MIXED CONTAINERS</strong><span>Metal libraries with non-Mach-O slices are listed in the coverage note</span></div></div>${activeBuild().standalone_objc_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_objc_method_count)} OBJECTIVE-C METHODS</strong><span>Static entries from inspected standalone files</span></div><div><strong>${fmt(activeBuild().standalone_objc_no_info_count)} FILES WITHOUT OBJC INFO</strong><span>A zero ObjC result is not a complete function inventory</span></div></div>` : ''}${activeBuild().standalone_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>Records within code sections of standalone files</span></div><div><strong>${fmt(activeBuild().standalone_symbol_empty_file_count)} FILES WITHOUT NAMES</strong><span>Stripped symbol tables do not imply missing functions</span></div></div>` : ''}${activeBuild().standalone_swift_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_swift_declaration_count)} SWIFT DUMP DECLARATIONS</strong><span>Static type and extension lines across standalone files</span></div><div><strong>${fmt(activeBuild().standalone_swift_partial_count)} PARTIAL OUTPUTS</strong><span>Malformed lines are counted, not silently accepted</span></div></div>` : ''}` : '';
-  explorer.innerHTML = deviceSummary + kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + iosSymbolSummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search published live paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  const deviceMachoSummary = mode === 'device_macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} VERIFIED DEVICE FILES</strong><span>From the jailbreak installation namespace</span></div><div><strong>${fmt(data.records.reduce((count, item) => count + item.slices.length, 0))} MACH-O SLICES</strong><span>Architectures, file types, and UUIDs from acquired bytes</span></div>${activeBuild().device_macho_objc_url ? `<div><strong>${fmt(activeBuild().device_macho_objc_method_count)} OBJECTIVE-C METHODS</strong><span>${fmt(activeBuild().device_macho_objc_parsed_count)} files parsed · ${fmt(activeBuild().device_macho_objc_no_info_count)} without ObjC information</span></div>` : ''}</div>` : '';
+  explorer.innerHTML = deviceSummary + deviceMachoSummary + kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + iosSymbolSummary + driverkitSummary + machoSummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search published live paths…' : mode === 'device_macho' ? 'Search live paths, file types, UUIDs, hashes…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#intro-filter')?.addEventListener('click', () => { state.query = 'intro:'; state.limit = 80; $('#catalog-search').value = state.query; renderResults(); });
   $('#detail').addEventListener('click', (event) => {
@@ -808,6 +845,13 @@ async function renderExplorer() {
     if (event.target.id === 'macho-method-more' && state.selected && state.machoMethodData) {
       state.machoMethodLimit += 80;
       $('#macho-method-results').innerHTML = machoMethodResults(state.selected, state.machoMethodData);
+    }
+    if (event.target.id === 'live-method-more' && state.selected) {
+      const objc = state.datasets.get(`device_macho_objc:${state.build}`)?.byPath.get(state.selected.path);
+      if (objc) {
+        state.liveMethodLimit += 80;
+        $('#live-method-results').innerHTML = liveMethodList(objc);
+      }
     }
     if (event.target.id === 'macho-symbol-open' && state.selected) openMachoSymbols().catch(showError);
     if (event.target.id === 'macho-symbol-more' && state.selected && state.machoSymbolData) {
@@ -839,6 +883,14 @@ async function renderExplorer() {
       state.machoMethodQuery = event.target.value;
       state.machoMethodLimit = 80;
       $('#macho-method-results').innerHTML = machoMethodResults(state.selected, state.machoMethodData);
+    }
+    if (event.target.id === 'live-method-search' && state.selected) {
+      const objc = state.datasets.get(`device_macho_objc:${state.build}`)?.byPath.get(state.selected.path);
+      if (objc) {
+        state.liveMethodQuery = event.target.value;
+        state.liveMethodLimit = 80;
+        $('#live-method-results').innerHTML = liveMethodList(objc);
+      }
     }
     if (event.target.id === 'macho-symbol-search' && state.selected && state.machoSymbolData) {
       state.machoSymbolQuery = event.target.value;
@@ -914,7 +966,7 @@ async function start() {
   $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.methodImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = build.device_count == null ? '—' : fmt(build.device_count); $('#metric-files-note').textContent = build.device_scope === 'reviewed_live' ? 'Privacy-reviewed live snapshot' : 'Seven selected /rootfs roots'; $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
-  if (['files','restore','device','images','objc','methods','protocols','swift','reach','driverkit','macho','caches','archive','kernel','services','research'].includes(initial)) state.tab = initial;
+  if (['files','restore','device','device_macho','images','objc','methods','protocols','swift','reach','driverkit','macho','caches','archive','kernel','services','research'].includes(initial)) state.tab = initial;
   if (initial === 'research' && noteId) state.query = decodeURIComponent(noteId);
   if (initial === 'methods' && noteId) state.query = decodeURIComponent(noteId);
   if (initial === 'reach' && noteId) state.reachSource = decodeURIComponent(noteId);

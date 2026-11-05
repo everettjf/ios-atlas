@@ -12,6 +12,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -26,6 +27,7 @@ SAFE_PREFIXES = (
 )
 KINDS = {"file", "directory", "symlink", "character_device", "block_device",
          "socket", "fifo", "unknown"}
+DEVICE_SPECIFIC_PATH = re.compile(r"^/basebin/systemhook-[0-9A-Fa-f]{16}\.dylib$")
 
 
 def inside(path: str, prefix: str) -> bool:
@@ -103,6 +105,9 @@ def export(manifest_path: Path, allowlist_path: Path) -> dict:
                     raise ValueError("scan path outside recorded root")
                 count += 1
                 if not any(inside(path, prefix) for prefix in prefixes):
+                    unpublished_entry_count += 1
+                    continue
+                if DEVICE_SPECIFIC_PATH.fullmatch(path):
                     unpublished_entry_count += 1
                     continue
                 if has_private_characters(path) or kind == "unknown":

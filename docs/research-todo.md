@@ -19,8 +19,11 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [ ] Verify selected live device files outside the cache against the exact-build firmware, with exact namespace and path mapping.
 - [x] Record all live mounts and RootHide namespaces; capture a private, resumable metadata snapshot with per-root completeness and error counts. Ten roots completed; two data-volume roots have protected-directory errors.
 - [x] Publish a privacy-reviewed catalog of live system and jailbreak installation paths, including paths absent from the stock IPSW; keep user and app data path names private.
+- [x] Identify, acquire, hash, and parse Mach-O headers for all 464 files found in the jailbreak installation tree; publish 463 after withholding one randomized filename.
+- [x] Run an exact-file Objective-C method pass over all 463 published jailbreak Mach-O files; retain 402 explicit no-info results and 4,781 parsed methods.
 - [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
-- [ ] Analyze live standalone executables, dylibs, frameworks, extensions, and tweak components; link firmware analysis only to verified matching binaries.
+- [ ] Run named symbol, Swift, direct dependency, and code-signing passes over the verified live Mach-O files; keep zero and unsupported results explicit.
+- [ ] Verify base-system standalone executables, dylibs, frameworks, and extensions against the exact-build IPSW before reusing firmware analysis.
 - [x] Make live device files the primary website view, show scan-root coverage, and remove cross-version comparison navigation.
 - [ ] Add live standalone Mach-O and library analysis coverage by mount, including unsupported and failed states.
 
