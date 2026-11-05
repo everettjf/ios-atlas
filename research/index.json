@@ -39,6 +39,14 @@
     "note": "research/23A355/SpringBoard-Startup.md"
   },
   {
+    "id": "springboard-method-surface",
+    "build": "23A355",
+    "title": "How much of SpringBoard.framework's method surface is indexed?",
+    "summary": "An exact-cache class dump yields 52,025 Objective-C method entries across 2,633 classes and 108 categories, with all IMP addresses checked against the image's code segment.",
+    "install_name": "/System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard",
+    "note": "research/23A355/SpringBoard-Method-Surface.md"
+  },
+  {
     "id": "foundation-dependency-reach",
     "build": "23A355",
     "title": "Why does Foundation reach more images with weak loads?",

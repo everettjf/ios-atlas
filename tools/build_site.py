@@ -371,7 +371,7 @@ def build() -> None:
                          "objc_unresolved_count": resolution_counts["unresolved"],
                          "objc_url": f"data/{build}-objc.json.gz"}
         method_info = {}
-        method_paths = sorted(directory.glob("objc-methods-*.json"))
+        method_paths = sorted(directory.glob("objc-image-methods-*.json.gz"))
         if method_paths:
             if not objc_path.exists():
                 raise ValueError("method catalogs require the Objective-C class catalog")
@@ -382,55 +382,78 @@ def build() -> None:
                     segment_catalog["firmware_sha256"] != dyld["firmware_sha256"]):
                 raise ValueError("method catalogs require matching Mach-O segments")
             segments_by_name = {item["install_name"]: item for item in segment_catalog["images"]}
-            class_keys = {(row[0], row[3]) for row in objc["records"] if row[3]}
             classes = []
             method_rows = []
-            seen_classes = set()
+            seen_images = set()
+            totals = Counter()
             for path in method_paths:
                 source = load(path)
-                name = source["class_name"]
                 install_name = source["install_name"]
-                key = (name, install_name)
                 image = segments_by_name.get(install_name)
                 if not image:
                     raise ValueError(f"method image absent from segment catalog: {path}")
                 text_segments = [part for part in image["segments"] if part["name"] == "__TEXT"]
-                rows = source["methods"]
+                groups = source["groups"]
+                rows = source["records"]
+                class_table = {(row[0], row[1]) for row in objc["records"] if row[3] == install_name}
+                class_groups = [group for group in groups if group["category_name"] is None]
+                category_groups = [group for group in groups if group["category_name"] is not None]
                 if (source["schema_version"] != 1 or
-                        source["kind"] != "selected_objc_class_methods" or
+                        source["kind"] != "dyld_objc_image_methods" or
                         source["source"] != "official_ipsw_intact_cache_family" or
                         source["build"] != build or
                         source["product_type"] != dyld["product_type"] or
                         source["firmware_sha256"] != dyld["firmware_sha256"] or
                         source["cache_uuid"] != dyld["cache_uuid"] or
                         source["image_uuid"] != image["uuid"] or
-                        key not in class_keys or key in seen_classes or
+                        install_name in seen_images or
                         len(text_segments) != 1 or
+                        source["class_count"] != len(class_groups) or
+                        source["category_count"] != len(category_groups) or
                         source["method_count"] != len(rows) or
-                        source["class_method_count"] != sum(row[0] == "+" for row in rows) or
-                        source["instance_method_count"] != sum(row[0] == "-" for row in rows) or
-                        len({(row[0], row[1]) for row in rows}) != len(rows) or
+                        {(group["class_name"], group["metadata_address"])
+                         for group in class_groups} != class_table or
+                        len({group["display_name"] for group in groups}) != len(groups) or
+                        len({tuple(row) for row in rows}) != len(rows) or
                         any(not re.fullmatch(r"[0-9a-f]{64}", source[field])
                             for field in ("extracted_image_sha256", "class_dump_sha256"))):
                     raise ValueError(f"incomplete or mismatched method catalog: {path}")
                 start = text_segments[0]["addr"]
                 end = start + text_segments[0]["memsz"]
-                if any(len(row) != 3 or row[0] not in ("+", "-") or
-                       not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[1]) or
-                       not re.fullmatch(r"0x[0-9a-f]+", row[2]) or
-                       not start <= int(row[2], 16) < end for row in rows):
+                ranges = [(part["addr"], part["addr"] + part["memsz"])
+                          for part in image["segments"] if part["name"] != "__LINKEDIT"]
+                group_counts = Counter(row[0] for row in rows)
+                if (any(group["method_count"] != group_counts[index] or
+                        not any(lo <= int(group["metadata_address"], 16) < hi for lo, hi in ranges) or
+                        group["display_name"] != (group["class_name"] if group["category_name"] is None
+                                                  else f"{group['class_name']} ({group['category_name']})")
+                        for index, group in enumerate(groups)) or
+                    any(len(row) != 4 or not isinstance(row[0], int) or
+                        not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
+                        not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2]) or
+                        not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
+                        not start <= int(row[3], 16) < end for row in rows)):
                     raise ValueError(f"invalid method selector or address: {path}")
-                seen_classes.add(key)
-                classes.append({field: source[field] for field in
-                                ("class_name", "install_name", "image_uuid", "extracted_image_sha256",
-                                 "class_dump_sha256", "method_count", "class_method_count",
-                                 "instance_method_count")})
-                method_rows.extend([[name, install_name, *row] for row in rows])
+                duplicate_groups = Counter((row[0], row[1], row[2]) for row in rows)
+                if source["duplicate_selector_group_count"] != sum(count > 1 for count in duplicate_groups.values()):
+                    raise ValueError(f"duplicate selector count mismatch: {path}")
+                seen_images.add(install_name)
+                totals["class"] += len(class_groups)
+                totals["category"] += len(category_groups)
+                classes.extend([{**group, "install_name": install_name, "image_uuid": image["uuid"],
+                                 "extracted_image_sha256": source["extracted_image_sha256"],
+                                 "class_dump_sha256": source["class_dump_sha256"]}
+                                for group in groups])
+                method_rows.extend([[groups[row[0]]["display_name"], install_name,
+                                     row[1], row[2], row[3]] for row in rows])
+            method_rows.sort(key=lambda row: (row[0].casefold(), row[1], row[3].casefold(), row[2], row[4]))
             dump(DIST / "data" / f"{build}-objc-methods.json.gz",
                  {"schema_version": 1, "build": build, "classes": classes,
                   "records": method_rows}, compressed=True)
             method_info = {"objc_method_count": len(method_rows),
-                           "objc_method_class_count": len(classes),
+                           "objc_method_class_count": totals["class"],
+                           "objc_method_category_count": totals["category"],
+                           "objc_method_image_count": len(seen_images),
                            "objc_methods_url": f"data/{build}-objc-methods.json.gz"}
         protocol_info = {}
         protocol_path = directory / "objc-protocols.json"
