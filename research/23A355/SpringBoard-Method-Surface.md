@@ -12,9 +12,9 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`). Source: official restor
 
 ## How to use it
 
-The [Objective-C methods view](https://xnu.app/ios-atlas/#methods) searches class names, category labels, selectors, image paths, and implementation addresses. For example, [SpringBoard's own methods](https://xnu.app/ios-atlas/#methods/class%3ASpringBoard) show `applicationDidFinishLaunching:` at `0x21d6a1a48`. The [class table](https://xnu.app/ios-atlas/#objc) links its exact `SpringBoard` entry to that filtered list. This supports targeted reverse engineering and candidate discovery; selecting a tweak hook still requires function-body and runtime evidence.
+The [Objective-C methods view](https://xnu.app/ios-atlas/#methods) lists indexed images and searches class names there. Choose SpringBoard.framework to search its class names, category labels, selectors, and implementation addresses. For example, [SpringBoard's own methods](https://xnu.app/ios-atlas/#methods/class%3ASpringBoard) show `applicationDidFinishLaunching:` at `0x21d6a1a48`. The [class table](https://xnu.app/ios-atlas/#objc) links its exact `SpringBoard` entry to that filtered list. This supports targeted reverse engineering and candidate discovery; selecting a tweak hook still requires function-body and runtime evidence.
 
-The count is for one cache image in one build. It does not cover every class in the 4,170-image iOS cache, categories in other images, dynamically added methods, generated runtime subclasses, or methods whose metadata is unavailable to this dump. A selector name or IMP address does not prove a method was called on the connected phone.
+The count is for one cache image in one build. The site also indexes [Foundation's method surface](Foundation-Method-Surface.md), but neither catalog covers every class in the 4,170-image iOS cache, categories in other images, dynamically added methods, generated runtime subclasses, or methods whose metadata is unavailable to these dumps. A selector name or IMP address does not prove a method was called on the connected phone.
 
 ## Reproduce
 

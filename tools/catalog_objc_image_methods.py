@@ -35,7 +35,7 @@ def selector_from_declaration(line: str) -> tuple[str, str]:
 
 
 def parse_dump(text: str, class_table: set[tuple[str, str]],
-               ranges: list[tuple[int, int]], code_range: tuple[int, int]) -> tuple[list[dict], list[list]]:
+               ranges: list[tuple[int, int]], code_range: tuple[int, int]) -> tuple[list[dict], list[list], int, int]:
     lines = text.splitlines()
     toc = {}
     for line in lines[:15]:
@@ -58,7 +58,7 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
         elif line.startswith("@interface "):
             if current is not None:
                 raise ValueError(f"unterminated interface at line {number + 1}")
-            match = re.match(r"^@interface (\S+)(?: \(([^)]+)\))?.*// (0x[0-9a-f]+)$", line)
+            match = re.match(r"^@interface (\S+)(?: \(([^)]+)\))?.*// (0x[0-9a-f]+)(?: \([^)]*\))?$", line)
             if not match:
                 raise ValueError(f"unrecognized interface header at line {number + 1}")
             class_name, category_name, address = match.groups()
@@ -91,13 +91,13 @@ def parse_dump(text: str, class_table: set[tuple[str, str]],
     category_groups = [group for group in groups if group["category_name"] is not None]
     if (len(class_groups) != toc["__objc_classlist"] or
             len(category_groups) != toc["__objc_catlist"] or
-            protocol_count != toc["__objc_protolist"] or
+            protocol_count > toc["__objc_protolist"] or
             {(group["class_name"], group["metadata_address"]) for group in class_groups} != class_table or
             len({group["display_name"] for group in groups}) != len(groups) or
             len({tuple(row) for row in records}) != len(records) or
             sum(group["method_count"] for group in groups) != len(records)):
         raise ValueError("class, category, protocol, or method counts disagree with source metadata")
-    return groups, records
+    return groups, records, protocol_count, toc["__objc_protolist"]
 
 
 def main() -> None:
@@ -138,8 +138,8 @@ def main() -> None:
               for part in image["segments"] if part["name"] != "__LINKEDIT"]
     class_table = {(row[0], row[1]) for row in classes["records"]
                    if row[3] == args.install_name}
-    groups, records = parse_dump(args.class_dump.read_text(encoding="utf-8"),
-                                 class_table, ranges, code_range)
+    groups, records, rendered_protocols, toc_protocols = parse_dump(
+        args.class_dump.read_text(encoding="utf-8"), class_table, ranges, code_range)
     if len(records) != args.expected_method_count:
         raise ValueError(f"expected {args.expected_method_count} methods, found {len(records)}")
     selector_counts = Counter((row[0], row[1], row[2]) for row in records)
@@ -158,6 +158,8 @@ def main() -> None:
         "class_dump_sha256": sha256(args.class_dump),
         "class_count": sum(group["category_name"] is None for group in groups),
         "category_count": sum(group["category_name"] is not None for group in groups),
+        "rendered_protocol_count": rendered_protocols,
+        "toc_protocol_count": toc_protocols,
         "method_count": len(records),
         "duplicate_selector_group_count": sum(count > 1 for count in selector_counts.values()),
         "groups": groups,

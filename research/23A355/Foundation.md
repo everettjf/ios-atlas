@@ -14,6 +14,8 @@ The framework bundle path and the executable image are different catalog objects
 
 The [Foundation.framework directory in the Atlas](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework) shows its observed resource files and the logical Foundation cache image in separate sections.
 
+The [Foundation method-surface note](Foundation-Method-Surface.md) traces 11,045 Objective-C method entries back to this same cache image and its exact build.
+
 This is a static observation of the official firmware. It does not establish which Foundation methods a particular process executes at runtime.
 
 ## Reproduce

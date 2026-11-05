@@ -382,8 +382,7 @@ def build() -> None:
                     segment_catalog["firmware_sha256"] != dyld["firmware_sha256"]):
                 raise ValueError("method catalogs require matching Mach-O segments")
             segments_by_name = {item["install_name"]: item for item in segment_catalog["images"]}
-            classes = []
-            method_rows = []
+            method_images = []
             seen_images = set()
             totals = Counter()
             for path in method_paths:
@@ -411,6 +410,7 @@ def build() -> None:
                         source["class_count"] != len(class_groups) or
                         source["category_count"] != len(category_groups) or
                         source["method_count"] != len(rows) or
+                        not 0 <= source["rendered_protocol_count"] <= source["toc_protocol_count"] or
                         {(group["class_name"], group["metadata_address"])
                          for group in class_groups} != class_table or
                         len({group["display_name"] for group in groups}) != len(groups) or
@@ -422,39 +422,56 @@ def build() -> None:
                 end = start + text_segments[0]["memsz"]
                 ranges = [(part["addr"], part["addr"] + part["memsz"])
                           for part in image["segments"] if part["name"] != "__LINKEDIT"]
+                if any(len(row) != 4 or not isinstance(row[0], int) or
+                       not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
+                       not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2]) or
+                       not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
+                       not start <= int(row[3], 16) < end for row in rows):
+                    raise ValueError(f"invalid method selector or address: {path}")
                 group_counts = Counter(row[0] for row in rows)
                 if (any(group["method_count"] != group_counts[index] or
                         not any(lo <= int(group["metadata_address"], 16) < hi for lo, hi in ranges) or
                         group["display_name"] != (group["class_name"] if group["category_name"] is None
                                                   else f"{group['class_name']} ({group['category_name']})")
-                        for index, group in enumerate(groups)) or
-                    any(len(row) != 4 or not isinstance(row[0], int) or
-                        not 0 <= row[0] < len(groups) or row[1] not in ("+", "-") or
-                        not re.fullmatch(r"(?:[A-Za-z_][A-Za-z_0-9]*:)+|\.?[A-Za-z_][A-Za-z_0-9]*", row[2]) or
-                        not re.fullmatch(r"0x[0-9a-f]+", row[3]) or
-                        not start <= int(row[3], 16) < end for row in rows)):
-                    raise ValueError(f"invalid method selector or address: {path}")
+                        for index, group in enumerate(groups))):
+                    raise ValueError(f"method group counts or addresses disagree: {path}")
                 duplicate_groups = Counter((row[0], row[1], row[2]) for row in rows)
                 if source["duplicate_selector_group_count"] != sum(count > 1 for count in duplicate_groups.values()):
                     raise ValueError(f"duplicate selector count mismatch: {path}")
                 seen_images.add(install_name)
                 totals["class"] += len(class_groups)
                 totals["category"] += len(category_groups)
-                classes.extend([{**group, "install_name": install_name, "image_uuid": image["uuid"],
-                                 "extracted_image_sha256": source["extracted_image_sha256"],
-                                 "class_dump_sha256": source["class_dump_sha256"]}
-                                for group in groups])
-                method_rows.extend([[groups[row[0]]["display_name"], install_name,
-                                     row[1], row[2], row[3]] for row in rows])
-            method_rows.sort(key=lambda row: (row[0].casefold(), row[1], row[3].casefold(), row[2], row[4]))
-            dump(DIST / "data" / f"{build}-objc-methods.json.gz",
-                 {"schema_version": 1, "build": build, "classes": classes,
-                  "records": method_rows}, compressed=True)
-            method_info = {"objc_method_count": len(method_rows),
+                totals["method"] += len(rows)
+                classes = [{**group, "install_name": install_name, "image_uuid": image["uuid"],
+                            "extracted_image_sha256": source["extracted_image_sha256"],
+                            "class_dump_sha256": source["class_dump_sha256"]}
+                           for group in groups]
+                method_rows = [[groups[row[0]]["display_name"], install_name,
+                                row[1], row[2], row[3]] for row in rows]
+                method_rows.sort(key=lambda row: (row[0].casefold(), row[3].casefold(), row[2], row[4]))
+                url = f"data/{build}-objc-methods/{image['uuid']}.json.gz"
+                target = DIST / url
+                dump(target, {"schema_version": 1, "build": build,
+                              "install_name": install_name, "classes": classes,
+                              "records": method_rows}, compressed=True)
+                blob = target.read_bytes()
+                method_images.append({"install_name": install_name, "uuid": image["uuid"],
+                                      "class_count": len(class_groups),
+                                      "category_count": len(category_groups),
+                                      "method_count": len(rows),
+                                      "groups": [[group["display_name"], group["method_count"]]
+                                                 for group in groups],
+                                      "url": url, "size": len(blob),
+                                      "sha256": hashlib.sha256(blob).hexdigest()})
+            method_images.sort(key=lambda item: item["install_name"])
+            dump(DIST / "data" / f"{build}-objc-method-index.json.gz",
+                 {"schema_version": 1, "build": build, "images": method_images},
+                 compressed=True)
+            method_info = {"objc_method_count": totals["method"],
                            "objc_method_class_count": totals["class"],
                            "objc_method_category_count": totals["category"],
                            "objc_method_image_count": len(seen_images),
-                           "objc_methods_url": f"data/{build}-objc-methods.json.gz"}
+                           "objc_method_index_url": f"data/{build}-objc-method-index.json.gz"}
         protocol_info = {}
         protocol_path = directory / "objc-protocols.json"
         if protocol_path.exists():

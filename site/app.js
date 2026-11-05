@@ -7,7 +7,7 @@ const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
+const state = { manifest:null, build:null, tab:'images', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map(), compareOld:null, compareNew:null };
 let searchTimer;
 
 async function json(url) {
@@ -29,7 +29,7 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods' ? await compressedJSON(info.objc_methods_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
   if (kind === 'dependencies' || kind === 'driverkit_dependencies') {
     result.byName = new Map(result.images.map((item) => [item.install_name, item]));
@@ -55,6 +55,7 @@ function setTab(tab, query = '') {
   state.selected = null;
   state.browsePath = '/';
   state.swiftImage = null;
+  state.methodImage = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
   history.replaceState(null, '', (tab === 'research' || tab === 'methods') && query ? `#${tab}/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
@@ -76,14 +77,14 @@ function updateSource() {
   const research = state.tab === 'research';
   const observation = state.tab === 'observation';
   const reach = state.tab === 'reach';
-  $('#source-method').href = methods ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
+  $('#source-method').href = methods && state.methodImage?.endsWith('/SpringBoard.framework/SpringBoard') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/SpringBoard-Method-Surface.md' : methods && state.methodImage?.endsWith('/Foundation.framework/Foundation') ? 'https://github.com/everettjf/ios-atlas/blob/main/research/23A355/Foundation-Method-Surface.md' : 'https://github.com/everettjf/ios-atlas/blob/main/docs/acquisition-23A355.md';
   $('#source-title').textContent = observation ? 'Sources: official IPSW and filtered live /rootfs' : device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : methods ? 'Source: exact iOS cache image class dumps' : objc || protocols ? 'Source: official iOS dyld cache Objective-C table' : swift ? 'Source: official iOS dyld cache Swift metadata' : reach ? 'Source: official iOS cache Mach-O load commands' : research ? 'Source: build-specific research notes' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
     : observation ? 'Exact path/type pairs within seven scanned roots only. IPSW image paths and the live RootHide namespace can differ; this is not a jailbreak before/after comparison.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. All 3 files matched the connected device by SHA-256.'
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
-    : methods ? 'Method selectors and IMP addresses cover all classes and categories in the selected cache image. These are static metadata, not observed calls or recommended tweak hooks.'
+    : methods ? 'Method selectors and IMP addresses cover all classes and categories in each indexed cache image. Select an image to search its methods; these are static metadata, not observed calls.'
     : protocols ? 'Protocol entries come from the intact iOS cache optimization table. Repeated image basenames are kept as ambiguous associations.'
     : swift ? 'Static type-to-protocol conformance records from the intact cache. Addresses resolve to exact Mach-O images; names are raw symbols when available.'
     : reach ? 'Shortest paths follow exact in-cache install-name matches from static Mach-O load commands. No path proves runtime loading.'
@@ -160,8 +161,8 @@ function detailHTML(item, mode, data) {
   if (mode === 'objc') {
     const [name, address, label, installName, resolution] = item;
     const imageLink = installName ? `<button class="inline-link" data-linked-tab="images" data-linked-query="${escapeHTML(installName)}">${escapeHTML(installName)} ↗</button>` : 'Unresolved';
-    const methods = state.datasets.get(`methods:${state.build}`)?.classes.find((entry) => entry.class_name === name && entry.category_name == null && entry.install_name === installName);
-    return `<span class="detail-label">OBJECTIVE-C CLASS ENTRY</span><h3>${escapeHTML(name)}</h3><dl><dt>CLASS METADATA ADDRESS</dt><dd>${escapeHTML(address)}</dd><dt>CACHE IMAGE LABEL</dt><dd>${escapeHTML(label)}</dd><dt>DEFINING CACHE IMAGE</dt><dd>${imageLink}</dd><dt>IMAGE RESOLUTION</dt><dd>${resolution === 'segment_address' ? 'Class address within a Mach-O segment of one matching image' : resolution === 'unique_label' ? 'Unique image basename in this cache' : 'No unique image established'}</dd>${methods ? `<dt>INDEXED METHODS</dt><dd><button class="inline-link" data-linked-tab="methods" data-linked-query="class:${escapeHTML(name)}">${fmt(methods.method_count)} selectors ↗</button></dd>` : ''}</dl><p class="explain">This is an entry in the dyld cache Objective-C optimization table. Names and addresses describe static metadata in the official firmware, not live objects or method calls. Multiple entries may share a class name.</p>`;
+    const methods = state.datasets.get(`methods_index:${state.build}`)?.images.find((image) => image.install_name === installName)?.groups.find((group) => group[0] === name);
+    return `<span class="detail-label">OBJECTIVE-C CLASS ENTRY</span><h3>${escapeHTML(name)}</h3><dl><dt>CLASS METADATA ADDRESS</dt><dd>${escapeHTML(address)}</dd><dt>CACHE IMAGE LABEL</dt><dd>${escapeHTML(label)}</dd><dt>DEFINING CACHE IMAGE</dt><dd>${imageLink}</dd><dt>IMAGE RESOLUTION</dt><dd>${resolution === 'segment_address' ? 'Class address within a Mach-O segment of one matching image' : resolution === 'unique_label' ? 'Unique image basename in this cache' : 'No unique image established'}</dd>${methods ? `<dt>INDEXED METHODS</dt><dd><button class="inline-link" data-linked-tab="methods" data-linked-query="class:${escapeHTML(name)}">${fmt(methods[1])} entries ↗</button></dd>` : ''}</dl><p class="explain">This is an entry in the dyld cache Objective-C optimization table. Names and addresses describe static metadata in the official firmware, not live objects or method calls. Multiple entries may share a class name.</p>`;
   }
   if (mode === 'methods') {
     const [className, installName, kind, selector, address] = item;
@@ -245,6 +246,7 @@ function renderResults() {
   const mode = state.tab;
   if (mode === 'swift') { renderSwiftResults(); return; }
   if (mode === 'reach') { renderReachResults(); return; }
+  if (mode === 'methods' && !state.methodImage) { renderMethodsIndexResults(); return; }
   const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'methods' ? 'methods' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
   if (!data || !['images','driverkit','objc','methods','protocols','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
   if ((filesystemMode(mode) || mode === 'device') && !state.query.trim()) { renderDirectoryResults(mode, data); return; }
@@ -272,6 +274,89 @@ function renderResults() {
   else items = data.files.filter((item) => !query || item.name.toLocaleLowerCase().includes(query));
   state.selected = items.includes(state.selected) ? state.selected : items.length === 1 ? items[0] : null;
   renderRows(items, mode, data);
+}
+
+function renderMethodsIndexResults() {
+  const index = state.datasets.get(`methods_index:${state.build}`);
+  if (!index || state.tab !== 'methods' || state.methodImage || !$('#results')) return;
+  const query = state.query.trim().toLocaleLowerCase();
+  const className = query.startsWith('class:') ? state.query.trim().slice(6) : null;
+  const images = index.images.filter((image) => className
+    ? image.groups.some((group) => group[0] === className)
+    : !query || image.install_name.toLocaleLowerCase().includes(query) ||
+      image.groups.some((group) => group[0].toLocaleLowerCase().includes(query)));
+  const visible = images.slice(0, state.limit);
+  $('#result-count').textContent = `${fmt(images.length)} indexed image${images.length === 1 ? '' : 's'}`;
+  $('#results').innerHTML = `<div class="result-head"><span>CACHE IMAGE</span><span>METHODS</span></div>${visible.map((image, number) => `<button class="result-row" data-index="${number}" title="${escapeHTML(image.install_name)}"><span class="row-main"><span class="row-icon">◇</span><span class="row-text">${escapeHTML(image.install_name)}</span></span><span class="row-sub">${fmt(image.method_count)}</span></button>`).join('') || '<p class="empty-state">No indexed image matches this search.</p>'}${images.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
+  $('#detail').innerHTML = '<div class="empty-detail">Select an indexed cache image to search its class and category methods. Images without an indexed method catalog are outside this view.</div>';
+  for (const button of $('#results').querySelectorAll('.result-row')) button.addEventListener('click', () => {
+    const image = visible[Number(button.dataset.index)];
+    state.methodImage = image.install_name;
+    if (!state.query.startsWith('class:')) state.query = '';
+    state.limit = 80;
+    state.selected = null;
+    history.replaceState(null, '', `#methods/${encodeURIComponent(`image:${image.install_name}`)}`);
+    renderMethodsExplorer().catch(showError);
+  });
+  $('#show-more')?.addEventListener('click', () => { state.limit += 80; renderMethodsIndexResults(); });
+}
+
+async function renderMethodsExplorer() {
+  const explorer = $('#explorer');
+  if (!activeBuild().objc_method_index_url) {
+    explorer.innerHTML = '<p class="empty-state">No cache image method catalogs are published for this build.</p>';
+    return;
+  }
+  explorer.innerHTML = '<p class="loading">Opening method index…</p>';
+  const index = await dataset('methods_index');
+  if (state.tab !== 'methods') return;
+  if (!state.methodImage && state.query.startsWith('image:')) {
+    state.methodImage = state.query.slice(6);
+    state.query = '';
+  }
+  if (!state.methodImage && state.query.startsWith('class:')) {
+    const name = state.query.slice(6);
+    const matches = index.images.filter((image) => image.groups.some((group) => group[0] === name));
+    if (matches.length === 1) state.methodImage = matches[0].install_name;
+  }
+  const image = state.methodImage ? index.images.find((item) => item.install_name === state.methodImage) : null;
+  if (state.methodImage && !image) throw new Error('Selected image is absent from this build method index');
+  updateSource();
+  const summary = `<div class="kernel-summary"><div><strong>${fmt(image?.method_count ?? activeBuild().objc_method_count)} METHODS</strong><span>${image ? 'Class and category entries in this image' : 'Entries across indexed cache images'}</span></div><div><strong>${fmt(image?.class_count ?? activeBuild().objc_method_class_count)} CLASSES</strong><span>${fmt(image?.category_count ?? activeBuild().objc_method_category_count)} categories · ${fmt(activeBuild().objc_method_image_count)} indexed image${activeBuild().objc_method_image_count === 1 ? '' : 's'}</span></div></div>`;
+  if (!image) {
+    state.datasets.delete(`methods:${state.build}`);
+    explorer.innerHTML = summary + toolbar({placeholder:'Search indexed cache images or class names…'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+    bindToolbar();
+    renderMethodsIndexResults();
+    return;
+  }
+  const key = `methods:${state.build}:${image.uuid}`;
+  let data = state.datasets.get(key);
+  if (!data) {
+    data = await compressedJSON(image.url);
+    if (data.build !== state.build || data.install_name !== image.install_name ||
+        data.records.length !== image.method_count || data.classes.length !== image.groups.length) {
+      throw new Error('Method bucket identity or count differs from its index');
+    }
+    state.datasets.set(key, data);
+  }
+  if (state.tab !== 'methods' || state.methodImage !== image.install_name) return;
+  state.datasets.set(`methods:${state.build}`, data);
+  explorer.innerHTML = summary + `<div class="reach-context"><button id="methods-back" class="inline-link">← All indexed images</button><strong>${escapeHTML(image.install_name)}</strong></div>` + toolbar({placeholder:'Search class, category, selector, or IMP address…'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  $('#methods-back').addEventListener('click', () => {
+    state.methodImage = null;
+    state.query = '';
+    state.limit = 80;
+    state.selected = null;
+    history.replaceState(null, '', '#methods');
+    renderMethodsExplorer().catch(showError);
+  });
+  bindToolbar();
+  $('#detail').addEventListener('click', (event) => {
+    const link = event.target.closest('[data-linked-tab]');
+    if (link) setTab(link.dataset.linkedTab, link.dataset.linkedQuery);
+  });
+  renderResults();
 }
 
 function reachDetail(graph, paths, target) {
@@ -469,10 +554,10 @@ async function renderExplorer() {
   if (mode === 'observation') { await renderObservation(); return; }
   if (mode === 'swift') { await renderSwiftExplorer(); return; }
   if (mode === 'reach') { await renderReachExplorer(); return; }
+  if (mode === 'methods') { await renderMethodsExplorer(); return; }
   if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
   if (mode === 'driverkit' && !activeBuild().driverkit_url) { explorer.innerHTML = '<p class="empty-state">No DriverKit cache is cataloged for this build.</p>'; return; }
   if (mode === 'objc' && !activeBuild().objc_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C class table is cataloged for this build.</p>'; return; }
-  if (mode === 'methods' && !activeBuild().objc_methods_url) { explorer.innerHTML = '<p class="empty-state">No cache image method catalogs are published for this build.</p>'; return; }
   if (mode === 'protocols' && !activeBuild().objc_protocol_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C protocol table is cataloged for this build.</p>'; return; }
   if (mode === 'archive' && !activeBuild().archive_url) { explorer.innerHTML = '<p class="empty-state">No restore archive is cataloged for this build.</p>'; return; }
   if (mode === 'restore' && !activeBuild().restore_url) { explorer.innerHTML = '<p class="empty-state">No restore RAM disks are cataloged for this build.</p>'; return; }
@@ -480,9 +565,9 @@ async function renderExplorer() {
   if (mode === 'services' && !activeBuild().service_url) { explorer.innerHTML = '<p class="empty-state">No official launchd service catalog is available for this build.</p>'; return; }
   explorer.innerHTML = '<p class="loading">Opening source-bound catalog…</p>';
   const [data] = await Promise.all([
-    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'methods' ? 'methods' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
+    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'protocols' ? 'protocols' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
     ...(mode === 'images' && activeBuild().dyld_dependency_url ? [dataset('dependencies')] : []),
-    ...(mode === 'objc' && activeBuild().objc_methods_url ? [dataset('methods')] : []),
+    ...(mode === 'objc' && activeBuild().objc_method_index_url ? [dataset('methods_index')] : []),
     ...(mode === 'files' ? [dataset('dyld')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : [])
   ]);
@@ -490,11 +575,10 @@ async function renderExplorer() {
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
   const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div>${activeBuild().service_direct_import_count == null ? '' : `<div><strong>${fmt(activeBuild().service_direct_import_count)} DIRECT LOADS</strong><span>From ${fmt(activeBuild().service_executable_count)} service executables; ${fmt(activeBuild().service_cache_matched_import_count)} match cache images</span></div>`}</div>` : '';
   const objcSummary = mode === 'objc' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_class_count)} CLASS ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_image_count)} CACHE IMAGES</strong><span>${fmt(activeBuild().objc_unresolved_count)} class entries without an exact image</span></div></div>` : '';
-  const methodSummary = mode === 'methods' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_method_count)} METHODS</strong><span>Class and category selector entries with IMP addresses</span></div><div><strong>${fmt(activeBuild().objc_method_class_count)} CLASSES</strong><span>${fmt(activeBuild().objc_method_category_count)} categories across ${fmt(activeBuild().objc_method_image_count)} selected cache image${activeBuild().objc_method_image_count === 1 ? '' : 's'}</span></div></div>` : '';
   const protocolSummary = mode === 'protocols' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_protocol_entry_count)} PROTOCOL ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_protocol_ambiguous_label_count)} AMBIGUOUS ENTRIES</strong><span>${fmt(activeBuild().objc_protocol_unique_label_count)} entries have a unique image-label match</span></div></div>` : '';
   const prefix = mode === 'driverkit' ? 'driverkit' : 'dyld';
   const dependencySummary = (mode === 'images' || mode === 'driverkit') && activeBuild()[`${prefix}_dependency_url`] ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild()[`${prefix}_direct_import_count`])} DIRECT LIBRARY LOADS</strong><span>From ${fmt(activeBuild()[`${prefix}_dependency_image_count`])} cached images</span></div><div><strong>${fmt(activeBuild()[`${prefix}_exact_cache_match_count`])} EXACT CACHE MATCHES</strong><span>Static install-name matches within this cache family</span></div></div>` : '';
-  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + methodSummary + protocolSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'methods' ? 'Search class, category, selector, or IMP address…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search all live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#detail').addEventListener('click', (event) => {
     const link = event.target.closest('[data-linked-tab]');
@@ -588,7 +672,7 @@ async function start() {
   $('#metric-caches').textContent = fmt(first.cache_file_count);
   $('#metric-build').textContent = first.build;
   $('#build-select').innerHTML = state.manifest.builds.map((item) => `<option value="${escapeHTML(item.build)}">${escapeHTML(item.version)} · ${escapeHTML(item.build)}</option>`).join('');
-  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
+  $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.browsePath = '/'; state.swiftImage = null; state.methodImage = null; state.reachSource = null; state.reachPaths = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
   if (['files','restore','device','images','objc','methods','protocols','swift','reach','driverkit','caches','archive','kernel','services','research','observation','compare'].includes(initial)) state.tab = initial;

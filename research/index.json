@@ -8,6 +8,14 @@
     "note": "research/23A355/Foundation.md"
   },
   {
+    "id": "foundation-method-surface",
+    "build": "23A355",
+    "title": "How much of Foundation's method surface is indexed?",
+    "summary": "An exact-cache class dump yields 11,045 Objective-C method entries across 720 classes and 53 categories, with all IMP addresses checked against the image's code segment.",
+    "install_name": "/System/Library/Frameworks/Foundation.framework/Foundation",
+    "note": "research/23A355/Foundation-Method-Surface.md"
+  },
+  {
     "id": "kernelcache-variants",
     "build": "23A355",
     "title": "What is inside the two kernelcaches?",
