@@ -125,8 +125,8 @@ def build_filesystem(args: argparse.Namespace) -> None:
 def build_dyld(args: argparse.Namespace) -> None:
     with args.info.open(encoding="utf-8") as stream:
         raw = json.load(stream)
-    if raw.get("platform") != "iOS" or "arm64e" not in raw.get("magic", ""):
-        raise ValueError("cache platform or architecture does not match iOS arm64e")
+    if raw.get("platform") != args.platform or "arm64e" not in raw.get("magic", ""):
+        raise ValueError("cache platform or architecture does not match requested arm64e target")
     images = []
     seen = set()
     for item in raw["dylibs"]:
@@ -189,6 +189,7 @@ def main() -> None:
             command.add_argument("--info", required=True, type=Path)
             command.add_argument("--cache-dir", required=True, type=Path)
             command.add_argument("--tool", required=True)
+            command.add_argument("--platform", choices=["iOS", "Driverkit"], default="iOS")
             command.set_defaults(run=build_dyld)
     args = parser.parse_args()
     args.run(args)

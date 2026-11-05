@@ -50,6 +50,9 @@ def build() -> None:
             raise ValueError(f"incomplete or mismatched filesystem catalog in {directory}")
 
         image_names = {image["install_name"] for image in dyld["images"]}
+        driverkit_path = directory / "driverkit-dyld.json"
+        if driverkit_path.exists():
+            image_names.update(image["install_name"] for image in load(driverkit_path)["images"])
         physical = {}
         stock_types = {}
         compact_entries = []
@@ -73,6 +76,23 @@ def build() -> None:
         dump(DIST / "data" / f"{build}-dyld.json",
              {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
               "files": dyld["files"], "images": images})
+        driverkit_info = {}
+        if driverkit_path.exists():
+            driverkit = load(driverkit_path)
+            if (driverkit["build"] != build or driverkit["product_type"] != dyld["product_type"] or
+                    driverkit["firmware_sha256"] != dyld["firmware_sha256"] or
+                    driverkit["platform"] != "Driverkit" or
+                    driverkit["file_count"] != len(driverkit["files"]) or
+                    driverkit["image_count"] != len(driverkit["images"])):
+                raise ValueError(f"incomplete or mismatched DriverKit cache catalog in {directory}")
+            driverkit_images = [{**image, "physical_volumes": physical.get(image["install_name"], [])}
+                                for image in driverkit["images"]]
+            dump(DIST / "data" / f"{build}-driverkit.json",
+                 {"schema_version": 1, "build": build, "cache_uuid": driverkit["cache_uuid"],
+                  "files": driverkit["files"], "images": driverkit_images})
+            driverkit_info = {"driverkit_image_count": len(driverkit_images),
+                              "driverkit_cache_file_count": len(driverkit["files"]),
+                              "driverkit_url": f"data/{build}-driverkit.json"}
         device_info = {}
         device_path = directory / "device-rootfs.json.gz"
         if device_path.exists():
@@ -98,7 +118,7 @@ def build() -> None:
                        "file_count": len(compact_entries),
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
-                       "dyld_url": f"data/{build}-dyld.json", **device_info})
+                       "dyld_url": f"data/{build}-dyld.json", **device_info, **driverkit_info})
 
     if not builds:
         raise ValueError("no complete catalogs found")

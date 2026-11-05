@@ -24,7 +24,7 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'device' ? await compressedJSON(info.device_url) : await json(info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'device' ? await compressedJSON(info.device_url) : await json(kind === 'driverkit' ? info.driverkit_url : info.dyld_url);
   state.datasets.set(key, result);
   return result;
 }
@@ -43,9 +43,11 @@ function setTab(tab) {
 
 function updateSource() {
   const device = state.tab === 'device';
-  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : 'Source: official iPhone 11 firmware';
+  const driverkit = state.tab === 'driverkit';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
+    : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. All 3 files matched the connected device by SHA-256.'
     : 'All 80 cache files matched the connected device by SHA-256. An in-cache image is not counted as an on-disk executable.';
 }
 
@@ -62,9 +64,9 @@ function bindToolbar() {
 
 function detailHTML(item, mode, data) {
   if (!item) return `<div class="empty-detail">Select a row to inspect its source and metadata.</div>`;
-  if (mode === 'images') {
+  if (mode === 'images' || mode === 'driverkit') {
     const present = item.physical_volumes.length > 0;
-    return `<span class="detail-label">IN-CACHE IMAGE</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd></dl><p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'}</p>`;
+    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd></dl><p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'}</p>`;
   }
   if (mode === 'files') {
     const [volumeIndex, path, type, bytes, target] = item;
@@ -81,9 +83,9 @@ function detailHTML(item, mode, data) {
 function renderRows(items, mode, data) {
   const visible = items.slice(0, state.limit);
   const rows = visible.map((item, index) => {
-    const path = mode === 'images' ? item.install_name : mode === 'files' ? item[1] : mode === 'device' ? item[0] : item.name;
-    const secondary = mode === 'images' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : size(item.size);
-    const icon = mode === 'images' ? '◇' : mode === 'files' ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : '◈';
+    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : mode === 'files' ? item[1] : mode === 'device' ? item[0] : item.name;
+    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : size(item.size);
+    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : mode === 'files' ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : '◈';
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
   $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
@@ -95,13 +97,13 @@ function renderRows(items, mode, data) {
 
 function renderResults() {
   const mode = state.tab;
-  const data = state.datasets.get(`${mode === 'files' ? 'files' : mode === 'device' ? 'device' : 'dyld'}:${state.build}`);
-  if (!data || !['images','files','device','caches'].includes(mode)) return;
+  const data = state.datasets.get(`${mode === 'files' ? 'files' : mode === 'device' ? 'device' : mode === 'driverkit' ? 'driverkit' : 'dyld'}:${state.build}`);
+  if (!data || !['images','driverkit','files','device','caches'].includes(mode)) return;
   const query = state.query.trim().toLocaleLowerCase();
   let items;
   if (mode === 'files') items = data.entries.filter((item) => (state.volume === 'all' || data.volumes[item[0]].name === state.volume) && (!query || item[1].toLocaleLowerCase().includes(query)));
   else if (mode === 'device') items = data.entries.filter((item) => !query || item[0].toLocaleLowerCase().includes(query));
-  else if (mode === 'images') items = data.images.filter((item) => !query || item.install_name.toLocaleLowerCase().includes(query));
+  else if (mode === 'images' || mode === 'driverkit') items = data.images.filter((item) => !query || item.install_name.toLocaleLowerCase().includes(query));
   else items = data.files.filter((item) => !query || item.name.toLocaleLowerCase().includes(query));
   state.selected = items.includes(state.selected) ? state.selected : null;
   renderRows(items, mode, data);
@@ -118,10 +120,11 @@ async function renderExplorer() {
   }
   if (mode === 'compare') { await renderCompare(); return; }
   if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
+  if (mode === 'driverkit' && !activeBuild().driverkit_url) { explorer.innerHTML = '<p class="empty-state">No DriverKit cache is cataloged for this build.</p>'; return; }
   explorer.innerHTML = '<p class="loading">Opening source-bound catalog…</p>';
-  const data = await dataset(mode === 'files' ? 'files' : mode === 'device' ? 'device' : 'dyld');
+  const data = await dataset(mode === 'files' ? 'files' : mode === 'device' ? 'device' : mode === 'driverkit' ? 'driverkit' : 'dyld');
   if (state.tab !== mode) return;
-  explorer.innerHTML = toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'images' ? 'Search library install names…' : 'Search cache file names…', volumes:mode === 'files' ? data.volumes.map((volume) => volume.name) : []}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : 'Search cache file names…', volumes:mode === 'files' ? data.volumes.map((volume) => volume.name) : []}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   renderResults();
 }
@@ -171,7 +174,7 @@ async function start() {
   $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const initial = location.hash.slice(1);
-  if (['files','device','images','caches','research','compare'].includes(initial)) state.tab = initial;
+  if (['files','device','images','driverkit','caches','research','compare'].includes(initial)) state.tab = initial;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
   await render();
 }

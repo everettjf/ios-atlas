@@ -46,7 +46,7 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 - Acquire the exact `iPhone12,1` / `23A355` restore image and verify its download hash against the distributor's metadata when available.
 - Inventory the relevant filesystem images and their mount or extraction boundaries. Preserve symlinks and file types; do not follow links in a way that double-counts entries.
 - Extract the complete arm64e dyld cache family. Record every cache/subcache file, then enumerate in-cache images directly from the intact cache.
-- Capture the kernelcache, DriverKit cache and other firmware components as separately typed artifacts; these remain future coverage and are not ordinary root filesystem files.
+- Capture the kernelcache and other firmware components as separately typed artifacts; these remain future coverage and are not ordinary root filesystem files.
 
 **Done when:** a user can search both physical files and logical in-cache images for the exact build, and the coverage report names every image or volume that was processed or skipped.
 
@@ -87,4 +87,4 @@ ipsw class-dump <MAIN_DSC> <FULL_INSTALL_NAME>
 
 `ipsw dyld extract` is reserved for a selected image when another analysis tool needs a standalone Mach-O; the primary inventory comes from the intact cache. `ipsw idev fsyms` can retrieve device linker/cache files if firmware and live cache identity need reconciliation, but this may transfer a large amount of data and has not been run.
 
-The first spike validated the cache parser against the intact 80-file arm64e cache family and inspected Foundation's Mach-O metadata. The built site compares physical file presence against logical install names. Additional samples and runtime investigations are future research.
+The first spike validated the cache parser against the intact 80-file iOS and 3-file DriverKit arm64e cache families and inspected Foundation's Mach-O metadata. The built site compares physical file presence against logical install names. Additional samples and runtime investigations are future research.
