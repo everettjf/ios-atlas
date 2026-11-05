@@ -102,7 +102,7 @@ function renderRows(items, mode, data) {
   const visible = items.slice(0, state.limit);
   const rows = visible.map((item, index) => {
     const path = mode === 'images' || mode === 'driverkit' ? item.install_name : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' ? item.path : mode === 'kernel' ? item.id : item.name;
-    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : filesystemMode(mode) ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'kernel' ? item.variant.toUpperCase() : size(item.size);
+    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'kernel' ? item.variant.toUpperCase() : size(item.size);
     const icon = mode === 'images' || mode === 'driverkit' ? '◇' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' ? '▧' : mode === 'kernel' ? '✳' : '◈';
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
