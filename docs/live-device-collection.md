@@ -84,3 +84,15 @@ python3 tools/catalog_live_jailbreak_symbols.py \
 ```
 
 The public builder checks complete file and slice coverage, exact hashes and UUIDs, code-section address ranges, and private path patterns in symbol names. The [coverage note](../research/23A355/Live-Jailbreak-Symbols.md) records totals and limits.
+
+A Swift dump pass uses the same exact acquired file bytes and per-slice UUID checks:
+
+```sh
+python3 tools/catalog_live_jailbreak_swift.py \
+  --macho-catalog catalog/ios/23A355/jailbreak-macho.json.gz \
+  --binary-root .local/live-device-23A355/macho-files \
+  --workdir .local/live-device-23A355/swift-work \
+  --output .local/live-device-23A355/jailbreak-swift-candidate.json.gz
+```
+
+The builder checks parsed declaration and member counts, explicit no-info and partial statuses, and private path patterns before exposing per-file results. See [Swift coverage](../research/23A355/Live-Jailbreak-Swift.md).

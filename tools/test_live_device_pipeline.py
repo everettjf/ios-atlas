@@ -274,6 +274,55 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_live_swift_requires_verified_slice_and_public_lines(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            macho_path = root / "macho.json.gz"
+            swift_path = root / "swift.json.gz"
+            original = {"path": "/usr/lib/tool.dylib", "sha256": "a" * 64,
+                        "slices": [{"architecture": "arm64e", "uuid": "UUID"}]}
+            macho_path.write_bytes(gzip.compress(json.dumps({"records": [original]}).encode(), mtime=0))
+            declaration = {"kind": "class", "name": "Tool.Class",
+                           "members": [["methods", "func run() -> ()"]]}
+            part = {"architecture": "arm64e", "uuid": "UUID", "status": "parsed",
+                    "macho_loads_sha256": "b" * 64, "swift_dump_sha256": "c" * 64,
+                    "swift_dump_replacement_char_count": 0,
+                    "swift_sections": [["__TEXT", "__swift5_types", 4096, 64]],
+                    "declaration_count": 1, "member_count": 1,
+                    "stripped_member_count": 0, "unparsed_line_count": 0,
+                    "kind_counts": {"class": 1, "struct": 0, "enum": 0,
+                                    "protocol": 0, "extension": 0, "actor": 0},
+                    "declarations": [declaration]}
+            totals = {"slices": 1, "parsed": 1, "declarations": 1, "members": 1,
+                      "stripped_members": 0, "unparsed_lines": 0,
+                      "files_without_declarations": 0, **part["kind_counts"]}
+            data = {"schema_version": 1, "kind": "live_jailbreak_swift_declarations",
+                    "source": "verified_live_device_macho_bytes", "build": "23A355",
+                    "product_type": "iPhone12,1", "macho_file_count": 1,
+                    "totals": totals,
+                    "files": [{"path": original["path"], "sha256": original["sha256"],
+                               "slice_count": 1, "slices": [part]}]}
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                swift_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                result = build_site.publish_live_swift(
+                    "23A355", "iPhone12,1", swift_path, macho_path)
+                self.assertEqual(result["device_macho_swift_declaration_count"], 1)
+                declaration["members"][0][1] = "/Users/person/private"
+                swift_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_swift(
+                        "23A355", "iPhone12,1", swift_path, macho_path)
+                declaration["members"][0][1] = "func run() -> ()"
+                part["uuid"] = "WRONG"
+                swift_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_swift(
+                        "23A355", "iPhone12,1", swift_path, macho_path)
+            finally:
+                build_site.DIST = old_dist
+
 
 if __name__ == "__main__":
     unittest.main()

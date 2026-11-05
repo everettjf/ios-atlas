@@ -15,6 +15,7 @@ Keep a full local metadata inventory for the owner's review. The public site con
 - All 80 iOS and three DriverKit physical cache files were previously checked against the device by SHA-256. This proves those cache bytes at that observation time, not that every other firmware file matches the running phone.
 - A read-only SHA-256 pass matched all 3,157 standalone firmware Mach-O files observed at mapped device paths; 206 firmware staging paths had no same-path file record. See [identity note](../research/23A355/Live-Standalone-Identity.md).
 - The 463 public, device-hash-verified jailbreak Mach-O files now have a per-slice named `__text` index: 181,792 records across 493 slices, with 49 files lacking names. See [symbol coverage](../research/23A355/Live-Jailbreak-Symbols.md).
+- Swift dumps now cover all 493 slices of those same verified files, yielding 15,772 parsed declarations and 8,062 member or requirement lines; 456 slices have no Swift info and eight outputs are partial. See [Swift coverage](../research/23A355/Live-Jailbreak-Swift.md).
 - The site now opens with device files and no longer exposes a `Compare builds` tab. It marks the two data-volume roots as partial and lists the completed roots explicitly.
 - On 2026-11-05, CopyApp's saved device-specific SSH profile authenticated this exact phone as both `mobile` and `root`. A private mount discovery found 11 kernel mount targets plus the RootHide jailbreak namespace. The first `/rootfs/System/Developer` pilot recorded 177 entries without errors.
 

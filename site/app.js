@@ -7,7 +7,7 @@ const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 const filesystemMode = (mode) => mode === 'files' || mode === 'restore';
-const state = { manifest:null, build:null, tab:'device', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, liveMethodPath:null, liveMethodQuery:'', liveMethodLimit:80, liveSymbolQuery:'', liveSymbolLimit:80, liveSymbolData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map() };
+const state = { manifest:null, build:null, tab:'device', query:'', volume:'all', limit:80, selected:null, browsePath:'/', swiftImage:null, methodImage:null, driverkitFunctionQuery:'', driverkitFunctionLimit:80, iosSymbolQuery:'', iosSymbolLimit:80, iosSymbolData:null, machoMethodQuery:'', machoMethodLimit:80, machoMethodData:null, machoSymbolQuery:'', machoSymbolLimit:80, machoSymbolData:null, machoSwiftQuery:'', machoSwiftTypeLimit:40, machoSwiftMemberLimit:80, machoSwiftData:null, liveMethodPath:null, liveMethodQuery:'', liveMethodLimit:80, liveSymbolQuery:'', liveSymbolLimit:80, liveSymbolData:null, liveSwiftQuery:'', liveSwiftTypeLimit:40, liveSwiftMemberLimit:80, liveSwiftData:null, reachSource:null, reachWeak:false, reachPaths:null, datasets:new Map() };
 let searchTimer;
 
 async function json(url) {
@@ -29,10 +29,11 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'device_macho' ? await compressedJSON(info.device_macho_url) : kind === 'device_macho_objc' ? await compressedJSON(info.device_macho_objc_url) : kind === 'device_macho_dependencies' ? await compressedJSON(info.device_macho_dependency_url) : kind === 'device_macho_symbols' ? await compressedJSON(info.device_macho_symbol_index_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_identity' ? await compressedJSON(info.live_standalone_identity_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'device_macho' ? await compressedJSON(info.device_macho_url) : kind === 'device_macho_objc' ? await compressedJSON(info.device_macho_objc_url) : kind === 'device_macho_dependencies' ? await compressedJSON(info.device_macho_dependency_url) : kind === 'device_macho_symbols' ? await compressedJSON(info.device_macho_symbol_index_url) : kind === 'device_macho_swift' ? await compressedJSON(info.device_macho_swift_index_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_identity' ? await compressedJSON(info.live_standalone_identity_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'device_macho') result.byPath = new Map(result.records.map((item) => [item.path, item]));
   if (kind === 'device_macho_objc' || kind === 'device_macho_dependencies') result.byPath = new Map(result.files.map((item) => [item.path, item]));
   if (kind === 'device_macho_symbols') result.byPath = new Map(result.files.map((item) => [item.path, item]));
+  if (kind === 'device_macho_swift') result.byPath = new Map(result.files.map((item) => [item.path, item]));
   if (kind === 'macho_identity') {
     result.byKey = new Map(result.records.map((item) => [`${item.volume}\0${item.path}`, item]));
     result.byDevicePath = new Map(result.records.filter((item) => item.status === 'matched').map((item) => [item.device_path, item]));
@@ -91,6 +92,10 @@ function setTab(tab, query = '') {
   state.liveSymbolQuery = '';
   state.liveSymbolLimit = 80;
   state.liveSymbolData = null;
+  state.liveSwiftQuery = '';
+  state.liveSwiftTypeLimit = 40;
+  state.liveSwiftMemberLimit = 80;
+  state.liveSwiftData = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
   history.replaceState(null, '', (tab === 'research' || tab === 'methods') && query ? `#${tab}/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
@@ -120,7 +125,7 @@ function updateSource() {
     ? activeBuild().device_scope === 'reviewed_live'
       ? `Privacy-reviewed live snapshot: ${fmt(activeBuild().device_count)} published paths from ${fmt(activeBuild().device_complete_root_count)} of ${fmt(activeBuild().device_snapshot_root_count)} scanned roots. User and app data paths are withheld.`
       : 'Read-only /rootfs observation of seven Apple system roots. The jailbreak namespace, preboot, and user data are not yet in the public catalog.'
-    : deviceMacho ? `${fmt(activeBuild().device_macho_count)} privacy-reviewed Mach-O files from the live jailbreak installation tree matched device-side SHA-256 hashes. ${fmt(activeBuild().device_macho_objc_method_count || 0)} Objective-C method entries, ${fmt(activeBuild().device_macho_named_symbol_count || 0)} named __text symbol records, and ${fmt(activeBuild().device_macho_direct_load_count || 0)} direct library loads are indexed; static metadata does not establish runtime loading.`
+    : deviceMacho ? `${fmt(activeBuild().device_macho_count)} privacy-reviewed Mach-O files from the live jailbreak installation tree matched device-side SHA-256 hashes. ${fmt(activeBuild().device_macho_objc_method_count || 0)} Objective-C method entries, ${fmt(activeBuild().device_macho_named_symbol_count || 0)} named __text symbol records, ${fmt(activeBuild().device_macho_swift_declaration_count || 0)} Swift dump declarations, and ${fmt(activeBuild().device_macho_direct_load_count || 0)} direct library loads are indexed; static metadata does not establish runtime loading.`
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. Named __text symbols are searchable per image; they are not a complete function inventory.'
     : macho ? `Regular Mach-O files in three official firmware images, with hashes, UUIDs, Objective-C methods, named __text symbols, and Swift dump declarations. ${fmt(activeBuild().live_standalone_matched_count || 0)} files also matched this iPhone by SHA-256; metadata is not a complete function list.`
     : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
@@ -276,6 +281,51 @@ async function openLiveSymbols() {
   }
   state.liveSymbolData = data;
   $('#live-symbols').innerHTML = `<h4>Named __text symbols (${fmt(summary.named_symbol_count)})</h4><label class="searchbox"><span class="sr-only">Search live named symbols</span><input id="live-symbol-search" type="search" placeholder="Search name, architecture, address…" value="${escapeHTML(state.liveSymbolQuery)}"></label><div id="live-symbol-results">${liveSymbolResults(data)}</div>`;
+}
+
+function liveSwiftResults(data) {
+  const query = state.liveSwiftQuery.trim().toLocaleLowerCase();
+  const types = [];
+  const members = [];
+  for (const declaration of data.declarations) {
+    const label = `${declaration.architecture} ${declaration.kind} ${declaration.name}`;
+    if (!query || label.toLocaleLowerCase().includes(query)) types.push(declaration);
+    for (const [section, line] of declaration.members) {
+      if (!query || `${label} ${section} ${line}`.toLocaleLowerCase().includes(query)) {
+        members.push([declaration.architecture, declaration.name, section, line]);
+      }
+    }
+  }
+  const visibleTypes = types.slice(0, state.liveSwiftTypeLimit);
+  const visibleMembers = members.slice(0, state.liveSwiftMemberLimit);
+  return `<h4>Types and extensions (${fmt(types.length)})</h4><ul>${visibleTypes.map((row) => `<li><code>${escapeHTML(row.name)}</code><small>${escapeHTML(row.architecture)} · ${escapeHTML(row.kind)} · ${fmt(row.members.length)} member / requirement lines</small></li>`).join('') || '<li>No matching declarations</li>'}</ul>${types.length > visibleTypes.length ? '<button id="live-swift-type-more" class="more-button">Show more types ↓</button>' : ''}<h4>Methods and requirements (${fmt(members.length)})</h4><ul>${visibleMembers.map(([arch, name, section, line]) => `<li><code>${escapeHTML(line)}</code><small>${escapeHTML(arch)} · ${escapeHTML(name)} · ${escapeHTML(section)}</small></li>`).join('') || '<li>No matching member lines</li>'}</ul>${members.length > visibleMembers.length ? '<button id="live-swift-member-more" class="more-button">Show more members ↓</button>' : ''}`;
+}
+
+async function openLiveSwift() {
+  const item = state.selected;
+  if (state.liveSwiftData?.path !== item.path) {
+    state.liveSwiftQuery = '';
+    state.liveSwiftTypeLimit = 40;
+    state.liveSwiftMemberLimit = 80;
+  }
+  const summary = state.datasets.get(`device_macho_swift:${state.build}`)?.byPath.get(item.path);
+  if (!summary?.bucket_url) return;
+  const key = `live_swift:${state.build}:${summary.bucket_url}`;
+  let bucket = state.datasets.get(key);
+  if (!bucket) {
+    bucket = await compressedJSON(summary.bucket_url);
+    if (bucket.build !== state.build) throw new Error('Live Swift bucket build differs');
+    state.datasets.set(key, bucket);
+  }
+  if (state.tab !== 'device_macho' || state.selected !== item) return;
+  const data = bucket.files.find((entry) => entry.path === item.path);
+  if (!data || data.sha256 !== item.sha256 ||
+      data.declarations.length !== summary.declaration_count ||
+      data.declarations.reduce((count, row) => count + row.members.length, 0) !== summary.member_count) {
+    throw new Error('Live Swift bucket identity or count differs');
+  }
+  state.liveSwiftData = data;
+  $('#live-swift').innerHTML = `<h4>Swift dump</h4><p class="explain">Static tool-reported lines from verified file bytes. They do not prove public API or runtime use.${summary.unparsed_line_count ? ` ${fmt(summary.unparsed_line_count)} malformed output lines were omitted.` : ''}</p><label class="searchbox"><span class="sr-only">Search live Swift metadata</span><input id="live-swift-search" type="search" placeholder="Search types, methods, or requirements…" value="${escapeHTML(state.liveSwiftQuery)}"></label><div id="live-swift-results">${liveSwiftResults(data)}</div>`;
 }
 
 function iosSymbolResults(data) {
@@ -465,7 +515,11 @@ function detailHTML(item, mode, data) {
     const symbols = state.datasets.get(`device_macho_symbols:${state.build}`)?.byPath.get(item.path);
     const symbolRow = symbols ? `<dt>NAMED __TEXT SYMBOLS</dt><dd>${fmt(symbols.named_symbol_count)} across ${fmt(symbols.slice_count)} slice(s)${symbols.named_symbol_count ? '' : ' · no names found'}</dd>` : '';
     const symbolSection = symbols?.bucket_url ? `<div class="direct-imports" id="live-symbols"><button class="inline-link" id="live-symbol-open">Browse named __text symbols ↗</button></div>` : '';
-    return `<span class="detail-label">LIVE JAILBREAK MACH-O</span><h3>${escapeHTML(item.path.split('/').pop())}</h3><dl><dt>DEVICE PATH</dt><dd>${escapeHTML(item.path)}</dd><dt>FILE SIZE</dt><dd>${size(item.size)}</dd><dt>DEVICE SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>ARCHITECTURES AND FILE TYPES</dt><dd><ul>${slices}</ul></dd>${objc ? `<dt>OBJECTIVE-C METHODS</dt><dd>${fmt(objc.method_count)} · ${fmt(objc.class_count)} classes · ${fmt(objc.category_count)} categories</dd>` : ''}${symbolRow}<dt>DEVICE FILE RECORD</dt><dd><button class="inline-link" data-linked-tab="device" data-linked-query="${escapeHTML(item.path)}">Inspect path ↗</button></dd></dl>${liveMethodSection(item, objc)}${symbolSection}${liveDependencySection(dependencies)}<p class="explain">The bytes were acquired from this iPhone and matched a device-side SHA-256 pass. Method and symbol names are static metadata; they do not prove a process loaded the file or that a hook is safe.</p>`;
+    const swift = state.datasets.get(`device_macho_swift:${state.build}`)?.byPath.get(item.path);
+    const swiftStatus = swift?.statuses.every((status) => status === 'no_swift_info') ? ' · no Swift info reported' : swift?.statuses.includes('swift_sections_unparsed') ? ' · some Swift sections could not be parsed' : '';
+    const swiftRow = swift ? `<dt>SWIFT DUMP</dt><dd>${fmt(swift.declaration_count)} declarations · ${fmt(swift.member_count)} member / requirement lines across ${fmt(swift.slice_count)} slice(s)${swiftStatus}${swift.unparsed_line_count ? ` · ${fmt(swift.unparsed_line_count)} malformed lines omitted` : ''}</dd>` : '';
+    const swiftSection = swift?.bucket_url ? `<div class="direct-imports" id="live-swift"><button class="inline-link" id="live-swift-open">Browse Swift metadata ↗</button></div>` : '';
+    return `<span class="detail-label">LIVE JAILBREAK MACH-O</span><h3>${escapeHTML(item.path.split('/').pop())}</h3><dl><dt>DEVICE PATH</dt><dd>${escapeHTML(item.path)}</dd><dt>FILE SIZE</dt><dd>${size(item.size)}</dd><dt>DEVICE SHA-256</dt><dd>${escapeHTML(item.sha256)}</dd><dt>ARCHITECTURES AND FILE TYPES</dt><dd><ul>${slices}</ul></dd>${objc ? `<dt>OBJECTIVE-C METHODS</dt><dd>${fmt(objc.method_count)} · ${fmt(objc.class_count)} classes · ${fmt(objc.category_count)} categories</dd>` : ''}${symbolRow}${swiftRow}<dt>DEVICE FILE RECORD</dt><dd><button class="inline-link" data-linked-tab="device" data-linked-query="${escapeHTML(item.path)}">Inspect path ↗</button></dd></dl>${liveMethodSection(item, objc)}${symbolSection}${swiftSection}${liveDependencySection(dependencies)}<p class="explain">The bytes were acquired from this iPhone and matched a device-side SHA-256 pass. Method, symbol, and Swift names are static metadata; they do not prove a process loaded the file or that a hook is safe.</p>`;
   }
   if (mode === 'device') {
     const [path, type, bytes] = item;
@@ -864,6 +918,7 @@ async function renderExplorer() {
     ...(mode === 'device_macho' && activeBuild().device_macho_objc_url ? [dataset('device_macho_objc')] : []),
     ...(mode === 'device_macho' && activeBuild().device_macho_dependency_url ? [dataset('device_macho_dependencies')] : []),
     ...(mode === 'device_macho' && activeBuild().device_macho_symbol_index_url ? [dataset('device_macho_symbols')] : []),
+    ...(mode === 'device_macho' && activeBuild().device_macho_swift_index_url ? [dataset('device_macho_swift')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_function_url ? [dataset('driverkit_functions')] : []),
     ...(mode === 'macho' && activeBuild().standalone_objc_index_url ? [dataset('macho_methods_index')] : []),
@@ -887,7 +942,7 @@ async function renderExplorer() {
   const iosSymbolSummary = mode === 'images' && activeBuild().ios_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().ios_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>From ${fmt(activeBuild().ios_symbol_image_count)} exact iOS cache images</span></div><div><strong>${fmt(activeBuild().ios_symbol_empty_image_count)} IMAGES WITHOUT NAMES</strong><span>Names complement Objective-C methods and do not enumerate every function</span></div></div>` : '';
   const machoSummary = mode === 'macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} PHYSICAL MACH-O FILES</strong><span>Across FileSystem, SystemOS, and AppOS in the official IPSW</span></div><div><strong>${fmt(data.excluded_candidates.length)} MIXED CONTAINERS</strong><span>Metal libraries with non-Mach-O slices are listed in the coverage note</span></div></div>${activeBuild().standalone_objc_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_objc_method_count)} OBJECTIVE-C METHODS</strong><span>Static entries from inspected standalone files</span></div><div><strong>${fmt(activeBuild().standalone_objc_no_info_count)} FILES WITHOUT OBJC INFO</strong><span>A zero ObjC result is not a complete function inventory</span></div></div>` : ''}${activeBuild().standalone_symbol_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>Records within code sections of standalone files</span></div><div><strong>${fmt(activeBuild().standalone_symbol_empty_file_count)} FILES WITHOUT NAMES</strong><span>Stripped symbol tables do not imply missing functions</span></div></div>` : ''}${activeBuild().standalone_swift_index_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().standalone_swift_declaration_count)} SWIFT DUMP DECLARATIONS</strong><span>Static type and extension lines across standalone files</span></div><div><strong>${fmt(activeBuild().standalone_swift_partial_count)} PARTIAL OUTPUTS</strong><span>Malformed lines are counted, not silently accepted</span></div></div>` : ''}` : '';
   const liveIdentitySummary = mode === 'macho' && activeBuild().live_standalone_identity_url ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().live_standalone_matched_count)} DEVICE BYTE MATCHES</strong><span>Read-only SHA-256 pass on this iPhone</span></div><div><strong>${fmt(activeBuild().live_standalone_unobserved_count)} UNOBSERVED STAGING PATHS</strong><span>No same mapped path in the device snapshot; other locations remain possible</span></div></div>` : '';
-  const deviceMachoSummary = mode === 'device_macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} VERIFIED DEVICE FILES</strong><span>From the jailbreak installation namespace</span></div><div><strong>${fmt(data.records.reduce((count, item) => count + item.slices.length, 0))} MACH-O SLICES</strong><span>Architectures, file types, and UUIDs from acquired bytes</span></div>${activeBuild().device_macho_objc_url ? `<div><strong>${fmt(activeBuild().device_macho_objc_method_count)} OBJECTIVE-C METHODS</strong><span>${fmt(activeBuild().device_macho_objc_parsed_count)} files parsed · ${fmt(activeBuild().device_macho_objc_no_info_count)} without ObjC information</span></div>` : ''}${activeBuild().device_macho_symbol_index_url ? `<div><strong>${fmt(activeBuild().device_macho_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>Records across verified slices · ${fmt(activeBuild().device_macho_symbol_empty_file_count)} files without names</span></div>` : ''}</div>` : '';
+  const deviceMachoSummary = mode === 'device_macho' ? `<div class="kernel-summary"><div><strong>${fmt(data.macho_file_count)} VERIFIED DEVICE FILES</strong><span>From the jailbreak installation namespace</span></div><div><strong>${fmt(data.records.reduce((count, item) => count + item.slices.length, 0))} MACH-O SLICES</strong><span>Architectures, file types, and UUIDs from acquired bytes</span></div>${activeBuild().device_macho_objc_url ? `<div><strong>${fmt(activeBuild().device_macho_objc_method_count)} OBJECTIVE-C METHODS</strong><span>${fmt(activeBuild().device_macho_objc_parsed_count)} files parsed · ${fmt(activeBuild().device_macho_objc_no_info_count)} without ObjC information</span></div>` : ''}${activeBuild().device_macho_symbol_index_url ? `<div><strong>${fmt(activeBuild().device_macho_named_symbol_count)} NAMED __TEXT SYMBOLS</strong><span>Records across verified slices · ${fmt(activeBuild().device_macho_symbol_empty_file_count)} files without names</span></div>` : ''}${activeBuild().device_macho_swift_index_url ? `<div><strong>${fmt(activeBuild().device_macho_swift_declaration_count)} SWIFT DUMP DECLARATIONS</strong><span>${fmt(activeBuild().device_macho_swift_no_info_slice_count)} slices without Swift info · ${fmt(activeBuild().device_macho_swift_partial_slice_count)} partial outputs</span></div>` : ''}</div>` : '';
   explorer.innerHTML = deviceSummary + deviceMachoSummary + kernelSummary + serviceSummary + objcSummary + protocolSummary + dependencySummary + introSummary + iosSymbolSummary + driverkitSummary + machoSummary + liveIdentitySummary + toolbar({placeholder:mode === 'files' ? 'Search all filesystem paths…' : mode === 'restore' ? 'Search all restore environment paths…' : mode === 'device' ? 'Search published live paths…' : mode === 'device_macho' ? 'Search live paths, file types, UUIDs, hashes…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'protocols' ? 'Search Objective-C protocol names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names or use intro:…' : mode === 'macho' ? 'Search paths, file types, architectures, UUIDs, hashes…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'macho' ? Object.keys(data.volume_images) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#intro-filter')?.addEventListener('click', () => { state.query = 'intro:'; state.limit = 80; $('#catalog-search').value = state.query; renderResults(); });
@@ -919,6 +974,15 @@ async function renderExplorer() {
     if (event.target.id === 'live-symbol-more' && state.selected && state.liveSymbolData) {
       state.liveSymbolLimit += 80;
       $('#live-symbol-results').innerHTML = liveSymbolResults(state.liveSymbolData);
+    }
+    if (event.target.id === 'live-swift-open' && state.selected) openLiveSwift().catch(showError);
+    if (event.target.id === 'live-swift-type-more' && state.selected && state.liveSwiftData) {
+      state.liveSwiftTypeLimit += 40;
+      $('#live-swift-results').innerHTML = liveSwiftResults(state.liveSwiftData);
+    }
+    if (event.target.id === 'live-swift-member-more' && state.selected && state.liveSwiftData) {
+      state.liveSwiftMemberLimit += 80;
+      $('#live-swift-results').innerHTML = liveSwiftResults(state.liveSwiftData);
     }
     if (event.target.id === 'macho-symbol-open' && state.selected) openMachoSymbols().catch(showError);
     if (event.target.id === 'macho-symbol-more' && state.selected && state.machoSymbolData) {
@@ -963,6 +1027,12 @@ async function renderExplorer() {
       state.liveSymbolQuery = event.target.value;
       state.liveSymbolLimit = 80;
       $('#live-symbol-results').innerHTML = liveSymbolResults(state.liveSymbolData);
+    }
+    if (event.target.id === 'live-swift-search' && state.selected && state.liveSwiftData) {
+      state.liveSwiftQuery = event.target.value;
+      state.liveSwiftTypeLimit = 40;
+      state.liveSwiftMemberLimit = 80;
+      $('#live-swift-results').innerHTML = liveSwiftResults(state.liveSwiftData);
     }
     if (event.target.id === 'macho-symbol-search' && state.selected && state.machoSymbolData) {
       state.machoSymbolQuery = event.target.value;

@@ -416,6 +416,147 @@ def publish_live_symbols(build: str, product: str, path: Path,
             "device_macho_symbol_empty_file_count": totals["files_without_names"]}
 
 
+def publish_live_swift(build: str, product: str, path: Path,
+                       macho_path: Path) -> dict:
+    """Validate Swift dump lines against every exact device Mach-O slice."""
+    data = load(path)
+    macho = load(macho_path)
+    originals = {item["path"]: item for item in macho["records"]}
+    files = data.get("files")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_jailbreak_swift_declarations" or
+            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(files, list) or len(files) != len(originals) or
+            data.get("macho_file_count") != len(files)):
+        raise ValueError("incomplete live Swift catalog")
+    kinds = ("class", "struct", "enum", "protocol", "extension", "actor")
+    statuses = ("parsed", "partially_parsed", "no_swift_info",
+                "swift_sections_unparsed", "dump_without_swift_sections")
+    private_line = re.compile(
+        r"/(?:Users|var/mobile|private/var/mobile|private/var/containers)/|"
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+    )
+    seen = set()
+    totals = Counter()
+    summaries = []
+    buckets = defaultdict(list)
+    for item in files:
+        original = originals.get(item.get("path"))
+        if (original is None or item["path"] in seen or
+                item.get("sha256") != original["sha256"] or
+                item.get("slice_count") != len(original["slices"]) or
+                not isinstance(item.get("slices"), list) or
+                len(item["slices"]) != len(original["slices"])):
+            raise ValueError("live Swift file differs from verified Mach-O")
+        seen.add(item["path"])
+        declarations = []
+        file_members = 0
+        file_unparsed = 0
+        file_statuses = []
+        totals["slices"] += len(item["slices"])
+        for part, original_part in zip(item["slices"], original["slices"]):
+            status = part.get("status")
+            rows = part.get("declarations")
+            sections = part.get("swift_sections")
+            if (part.get("architecture") != original_part["architecture"] or
+                    part.get("uuid") != original_part["uuid"] or
+                    status not in statuses or not isinstance(rows, list) or
+                    not isinstance(sections, list) or
+                    part.get("declaration_count") != len(rows) or
+                    any(not isinstance(part.get(field), str) or
+                        not re.fullmatch(r"[0-9a-f]{64}", part[field]) for field in
+                        ("macho_loads_sha256", "swift_dump_sha256")) or
+                    any(not isinstance(part.get(field), int) or part[field] < 0
+                        for field in ("swift_dump_replacement_char_count",
+                                      "member_count", "stripped_member_count",
+                                      "unparsed_line_count")) or
+                    any(not isinstance(section, list) or len(section) != 4 or
+                        not isinstance(section[0], str) or
+                        not isinstance(section[1], str) or
+                        not section[1].startswith("__swift5_") or
+                        not isinstance(section[2], int) or
+                        not isinstance(section[3], int) or section[3] < 0
+                        for section in sections)):
+                raise ValueError("invalid live Swift slice")
+            if ((status == "no_swift_info" and
+                 (rows or sections or part["unparsed_line_count"])) or
+                    (status == "swift_sections_unparsed" and
+                     (not sections or rows)) or
+                    (status == "dump_without_swift_sections" and sections) or
+                    (status in ("parsed", "partially_parsed") and not sections) or
+                    (status == "parsed" and part["unparsed_line_count"]) or
+                    (status == "partially_parsed" and
+                     not part["unparsed_line_count"])):
+                raise ValueError("live Swift status contradicts parsed sections")
+            actual_kinds = Counter()
+            members = 0
+            stripped = 0
+            for row in rows:
+                if (not isinstance(row, dict) or row.get("kind") not in kinds or
+                        not isinstance(row.get("name"), str) or not row["name"] or
+                        not isinstance(row.get("members"), list)):
+                    raise ValueError("invalid live Swift declaration")
+                actual_kinds[row["kind"]] += 1
+                for value in [row["name"], *(member[1] for member in row["members"]
+                                                if isinstance(member, list) and len(member) == 2)]:
+                    if (not isinstance(value, str) or not value or
+                            has_private_characters(value) or "\ufffd" in value or
+                            private_line.search(value) or PRIVATE_REFERENCE.search(value)):
+                        raise ValueError("unsafe live Swift name or member")
+                for member in row["members"]:
+                    if (not isinstance(member, list) or len(member) != 2 or
+                            member[0] not in ("methods", "requirements") or
+                            not isinstance(member[1], str)):
+                        raise ValueError("invalid live Swift member")
+                    members += 1
+                    stripped += "<stripped>" in member[1]
+                declarations.append({"architecture": part["architecture"], **row})
+            if (part["member_count"] != members or
+                    part["stripped_member_count"] != stripped or
+                    any(part.get("kind_counts", {}).get(kind) != actual_kinds[kind]
+                        for kind in kinds)):
+                raise ValueError("live Swift slice counts disagree")
+            totals[status] += 1
+            totals["declarations"] += len(rows)
+            totals["members"] += members
+            totals["stripped_members"] += stripped
+            totals["unparsed_lines"] += part["unparsed_line_count"]
+            for kind in kinds:
+                totals[kind] += actual_kinds[kind]
+            file_members += members
+            file_unparsed += part["unparsed_line_count"]
+            file_statuses.append(status)
+        totals["files_without_declarations"] += not declarations
+        bucket_id = hashlib.sha256(item["path"].encode()).digest()[0] % 64
+        bucket_url = (f"data/{build}-jailbreak-swift/{bucket_id:02x}.json.gz"
+                      if declarations else None)
+        summaries.append({"path": item["path"], "sha256": item["sha256"],
+                          "slice_count": item["slice_count"],
+                          "statuses": file_statuses,
+                          "declaration_count": len(declarations),
+                          "member_count": file_members,
+                          "unparsed_line_count": file_unparsed,
+                          "bucket_url": bucket_url})
+        if declarations:
+            buckets[bucket_id].append({"path": item["path"], "sha256": item["sha256"],
+                                       "declarations": declarations})
+    if (seen != set(originals) or
+            any(data.get("totals", {}).get(key) != value for key, value in totals.items())):
+        raise ValueError("live Swift totals disagree")
+    for bucket_id, entries in buckets.items():
+        dump(DIST / f"data/{build}-jailbreak-swift/{bucket_id:02x}.json.gz",
+             {"schema_version": 1, "build": build, "files": entries}, compressed=True)
+    index_url = f"data/{build}-jailbreak-swift-index.json.gz"
+    dump(DIST / index_url,
+         {"schema_version": 1, "build": build, "files": summaries,
+          "totals": dict(totals)}, compressed=True)
+    return {"device_macho_swift_index_url": index_url,
+            "device_macho_swift_declaration_count": totals["declarations"],
+            "device_macho_swift_no_info_slice_count": totals["no_swift_info"],
+            "device_macho_swift_partial_slice_count": totals["partially_parsed"]}
+
+
 def publish_live_standalone_identity(build: str, product: str, path: Path,
                                      stock_path: Path, device_path: Path) -> dict:
     """Attach firmware analysis only to exact byte-matched device files."""
@@ -1414,6 +1555,13 @@ def build() -> None:
                 raise ValueError("live symbols require verified Mach-O files")
             device_info.update(publish_live_symbols(
                 build, dyld["product_type"], live_symbols_path,
+                live_macho_path))
+        live_swift_path = directory / "jailbreak-swift.json.gz"
+        if live_swift_path.exists():
+            if not live_macho_path.exists():
+                raise ValueError("live Swift metadata requires verified Mach-O files")
+            device_info.update(publish_live_swift(
+                build, dyld["product_type"], live_swift_path,
                 live_macho_path))
         live_standalone_path = directory / "standalone-live-identity.json.gz"
         if live_standalone_path.exists():

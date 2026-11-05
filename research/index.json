@@ -80,6 +80,13 @@
     "note": "research/23A355/Live-Jailbreak-Symbols.md"
   },
   {
+    "id": "live-jailbreak-swift",
+    "build": "23A355",
+    "title": "What Swift metadata is visible in the jailbreak installation?",
+    "summary": "All 493 slices of 463 device-verified Mach-O files were checked. Swift dumps yield 15,772 declarations and 8,062 member lines; 456 slices report no Swift info and eight outputs are partial.",
+    "note": "research/23A355/Live-Jailbreak-Swift.md"
+  },
+  {
     "id": "standalone-objc-method-coverage",
     "build": "23A355",
     "title": "What Objective-C methods are visible in standalone Mach-O files?",
