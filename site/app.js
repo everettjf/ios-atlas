@@ -29,7 +29,7 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'device_macho' ? await compressedJSON(info.device_macho_url) : kind === 'device_macho_objc' ? await compressedJSON(info.device_macho_objc_url) : kind === 'observation' ? await compressedJSON(info.stock_device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'device_macho' ? await compressedJSON(info.device_macho_url) : kind === 'device_macho_objc' ? await compressedJSON(info.device_macho_objc_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'device_macho') result.byPath = new Map(result.records.map((item) => [item.path, item]));
   if (kind === 'device_macho_objc') result.byPath = new Map(result.files.map((item) => [item.path, item]));
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
@@ -780,7 +780,6 @@ async function renderExplorer() {
     };
     return;
   }
-  if (mode === 'observation') { await renderObservation(); return; }
   if (mode === 'swift') { await renderSwiftExplorer(); return; }
   if (mode === 'reach') { await renderReachExplorer(); return; }
   if (mode === 'methods') { await renderMethodsExplorer(); return; }
@@ -906,52 +905,6 @@ async function renderExplorer() {
   });
   renderResults();
 }
-
-async function renderObservation() {
-  const explorer = $('#explorer');
-  if (!activeBuild().stock_device_url) {
-    explorer.innerHTML = '<p class="empty-state">No reviewed device comparison is available for this build.</p>';
-    return;
-  }
-  explorer.innerHTML = '<p class="loading">Comparing source-bound path indexes…</p>';
-  const data = await dataset('observation');
-  if (state.tab !== 'observation') return;
-  const cards = [
-    [data.unique_stock_pair_count, 'UNIQUE STOCK PATH / TYPE PAIRS'],
-    [data.observed_pair_count, 'FILTERED DEVICE PAIRS'],
-    [data.stock_only_pair_count, 'STOCK PAIRS NOT SEEN AT SAME PATH'],
-    [data.device_only_pair_count, 'PUBLISHED DEVICE-ONLY PAIRS'],
-  ];
-  const fileSystem = data.volumes.find((row) => row.name === 'FileSystem');
-  const fileSystemSentence = fileSystem?.same_path_type_count === data.observed_pair_count
-    ? 'Every published device pair matches the official FileSystem image. '
-    : '';
-  const matrix = (heading, rows, label) => `<section class="observation-matrix"><h3>${heading}</h3><div class="observation-table"><div class="observation-table-head"><span>${label}</span><span>STOCK</span><span>SAME PATH</span><span>STOCK ONLY</span></div>${rows.map((row) => `<div class="observation-table-row"><strong>${escapeHTML(row.name || row.path)}</strong><span>${fmt(row.stock_pair_count)}</span><span>${fmt(row.same_path_type_count ?? row.observed_pair_count)}</span><span>${fmt(row.stock_only_pair_count)}</span></div>`).join('')}</div></section>`;
-  explorer.innerHTML = `<div class="observation-summary">${cards.map(([value, label]) => `<div><strong>${fmt(value)}</strong><span>${label}</span></div>`).join('')}</div><div class="observation-intro"><p>Compared exact path and file type within the seven selected system roots. ${fileSystemSentence}${fmt(data.stock_only_pair_count)} stock pairs were not observed at those same paths in the filtered <code>/rootfs</code> view; the image breakdown below shows their source. This does not show that the files are absent from the phone or that a jailbreak changed them. A zero device-only count is enforced by the public catalog review gate.</p><button class="inline-link" id="observation-note">Read the source-bound interpretation ↗</button></div>${matrix('By IPSW image', data.volumes, 'IMAGE')}${matrix('By scanned root', data.roots, 'ROOT')}<section class="observation-list"><h3>Stock paths without a same-path device record</h3><div class="toolbar"><label class="searchbox"><span class="sr-only">Search stock-only paths</span><input id="observation-search" type="search" autocomplete="off" placeholder="Search stock-only paths…" value="${escapeHTML(state.query)}"></label><select id="observation-volume" aria-label="Filter IPSW image"><option value="all">All images</option>${data.volumes.map((row) => `<option value="${escapeHTML(row.name)}" ${state.volume === row.name ? 'selected' : ''}>${escapeHTML(row.name)}</option>`).join('')}</select><span class="result-count" id="observation-count"></span></div><div class="explorer-grid"><div id="observation-results" class="result-list"></div><aside id="observation-detail" class="detail"></aside></div></section>`;
-  $('#observation-note').addEventListener('click', () => setTab('research', 'stock-device-boundary'));
-  $('#observation-search').addEventListener('input', (event) => { state.query = event.target.value; state.limit = 80; clearTimeout(searchTimer); searchTimer = setTimeout(() => renderObservationResults(data), 180); });
-  $('#observation-volume').addEventListener('change', (event) => { state.volume = event.target.value; state.limit = 80; state.selected = null; renderObservationResults(data); });
-  renderObservationResults(data);
-}
-
-function renderObservationResults(data) {
-  const query = state.query.trim().toLocaleLowerCase();
-  const entries = data.stock_only.filter((row) =>
-    (state.volume === 'all' || row[2].includes(state.volume)) &&
-    (!query || `${row[0]} ${row[1]} ${row[2].join(' ')}`.toLocaleLowerCase().includes(query)));
-  if (!entries.includes(state.selected)) state.selected = null;
-  const visible = entries.slice(0, state.limit);
-  $('#observation-count').textContent = `${fmt(entries.length)} paths`;
-  $('#observation-results').innerHTML = `<div class="result-head"><span>STOCK PATH</span><span>IMAGE</span></div>${visible.map((row, index) => `<button class="result-row ${state.selected === row ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(row[0])}"><span class="row-main"><span class="row-icon">${row[1] === 'directory' ? '▤' : row[1] === 'symlink' ? '↗' : '·'}</span><span class="row-text">${escapeHTML(row[0])}</span></span><span class="row-sub">${escapeHTML(row[2].join(', '))}</span></button>`).join('') || '<p class="empty-state">No paths match this filter.</p>'}${entries.length > state.limit ? '<button id="observation-more" class="more-button">Show more ↓</button>' : ''}`;
-  const detail = (row) => row ? `<span class="detail-label">OFFICIAL IPSW PATH</span><h3>${escapeHTML(row[0].split('/').pop())}</h3><dl><dt>PATH</dt><dd>${escapeHTML(row[0])}</dd><dt>TYPE</dt><dd>${escapeHTML(row[1])}</dd><dt>STOCK IMAGE</dt><dd>${escapeHTML(row[2].join(', '))}</dd><dt>FILTERED /ROOTFS OBSERVATION</dt><dd>No record at the same path and type</dd></dl><p class="explain">The stock record comes from a separate mounted IPSW image. The device scan covered selected paths in the RootHide /rootfs namespace. This comparison cannot establish whether the file exists elsewhere on the device or whether a jailbreak changed it.</p><button class="inline-link" id="observation-stock-link">Find in stock filesystem ↗</button>` : '<div class="empty-detail">Select an official path to inspect its source boundary.</div>';
-  $('#observation-detail').innerHTML = detail(state.selected);
-  for (const button of $('#observation-results').querySelectorAll('.result-row')) button.addEventListener('click', () => { state.selected = visible[Number(button.dataset.index)]; renderObservationResults(data); });
-  $('#observation-results').querySelector('#observation-more')?.addEventListener('click', () => { state.limit += 80; renderObservationResults(data); });
-  $('#observation-stock-link')?.addEventListener('click', () => setTab('files', state.selected[0]));
-}
-
-async function render() { await renderExplorer(); }
-function showError(error) { $('#explorer').innerHTML = `<p class="empty-state">Unable to open this catalog: ${escapeHTML(error.message)}</p>`; }
 
 async function start() {
   state.manifest = await json('data/manifest.json');

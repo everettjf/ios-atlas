@@ -8,8 +8,6 @@ The **On-device files**, **Filesystem**, and **Restore RAM disks** views browse 
 
 The [**Jailbreak Mach-O** view](https://xnu.app/ios-atlas/#device_macho) publishes 463 of 464 files acquired from this phone's jailbreak installation tree; one path with a device-specific random suffix is excluded from the current catalog. All 464 acquired files matched device-side SHA-256 hashes. The 493 published slices comprise 323 executables, 141 dylibs, and 29 bundles. Each record shows the live path, full-file hash, architecture, file type, and Mach-O UUID where present. An exact-file class dump indexes **4,781 Objective-C methods** in 61 files; 402 files explicitly report no ObjC information. [The coverage note](research/23A355/Live-Jailbreak-MachO.md) states the source and remaining gaps.
 
-The [stock/device boundary note](research/23A355/Stock-Device-Boundary.md) retains the earlier path/type provenance analysis for the first seven-root scan. It explains why 4,133 stock paths without same-path records there cannot be called jailbreak deletions or whole-device absences. The site no longer offers cross-version comparison.
-
 The same build also indexes every member of the restore IPSW (127 archive entries), both restore RAM disks (4,132 entries), and two kernelcache variants with 256 kext metadata records each. Restore environments and kernelcache metadata have their own views; they are not counted as files on the normally running system.
 
 The **System services** view adds 621 stock launchd plists, their declared executable paths, 2,186 Mach service name declarations, and cryptex-aware path mapping. The [SpringBoard case study](research/23A355/SpringBoard.md) follows one declaration through its disk entry point to an in-cache framework image.
