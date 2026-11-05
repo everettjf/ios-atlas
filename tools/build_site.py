@@ -6,7 +6,9 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import re
 import shutil
+from collections import Counter, defaultdict
 from pathlib import Path
 
 
@@ -105,6 +107,45 @@ def build() -> None:
 
         images = [{**image, "physical_volumes": physical.get(image["install_name"], [])}
                   for image in dyld["images"]]
+        objc_info = {}
+        objc_path = directory / "objc-classes.json"
+        if objc_path.exists():
+            objc = load(objc_path)
+            records = objc["records"]
+            known = {image["install_name"] for image in dyld["images"]}
+            by_label = defaultdict(set)
+            for name in known:
+                by_label[name.rsplit("/", 1)[-1]].add(name)
+            resolution_counts = Counter(row[4] for row in records)
+            image_counts = Counter(row[3] for row in records if row[3])
+            if (not objc["complete"] or
+                    objc["kind"] != "dyld_objc_optimization_classes" or
+                    objc["source"] != "official_ipsw_intact_cache_family" or
+                    objc["build"] != build or
+                    objc["product_type"] != dyld["product_type"] or
+                    objc["firmware_sha256"] != dyld["firmware_sha256"] or
+                    objc["cache_uuid"] != dyld["cache_uuid"] or
+                    objc["record_count"] != len(records) or
+                    objc["image_count_with_classes"] != len(image_counts) or
+                    objc["resolution_counts"] != dict(resolution_counts) or
+                    any(len(row) != 5 or not row[0] or
+                        not re.fullmatch(r"0x[0-9a-f]+", row[1]) or
+                        row[2] not in by_label or
+                        (row[3] not in by_label[row[2]] if row[3] else row[4] != "unresolved") or
+                        (row[4] == "unresolved") != (row[3] is None) or
+                        (row[4] == "unique_label") != (len(by_label[row[2]]) == 1) or
+                        row[4] not in ("unique_label", "segment_address", "unresolved")
+                        for row in records)):
+                raise ValueError(f"incomplete or mismatched ObjC class catalog in {directory}")
+            for image in images:
+                image["objc_class_count"] = image_counts[image["install_name"]]
+            dump(DIST / "data" / f"{build}-objc.json.gz",
+                 {"schema_version": 1, "build": build, "records": records},
+                 compressed=True)
+            objc_info = {"objc_class_count": len(records),
+                         "objc_image_count": len(image_counts),
+                         "objc_unresolved_count": resolution_counts["unresolved"],
+                         "objc_url": f"data/{build}-objc.json.gz"}
         dump(DIST / "data" / f"{build}-files.json.gz",
              {"schema_version": 1, "build": build, "volumes": volume_metadata,
               "entries": compact_entries}, compressed=True)
@@ -327,7 +368,8 @@ def build() -> None:
                        "file_count": len(compact_entries),
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
-                       "dyld_url": f"data/{build}-dyld.json", **dependency_info, **device_info,
+                       "dyld_url": f"data/{build}-dyld.json", **dependency_info, **objc_info,
+                       **device_info,
                        **driverkit_info, **archive_info, **restore_info, **kernel_info,
                        **service_info})
 

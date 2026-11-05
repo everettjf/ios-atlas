@@ -27,7 +27,7 @@ async function dataset(kind, build = state.build) {
   const key = `${kind}:${build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
   const info = state.manifest.builds.find((item) => item.build === build);
-  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
+  const result = kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'services') result.binaryByKey = new Map(result.binaries.map((item) => [`${item.volume}:${item.path}`, item]));
   if (kind === 'dependencies' || kind === 'driverkit_dependencies') {
     result.byName = new Map(result.images.map((item) => [item.install_name, item]));
@@ -61,10 +61,12 @@ function updateSource() {
   const restore = state.tab === 'restore';
   const kernel = state.tab === 'kernel';
   const services = state.tab === 'services';
-  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
+  const objc = state.tab === 'objc';
+  $('#source-title').textContent = device ? 'Source: live iPhone 11 system view' : driverkit ? 'Source: official DriverKit cache' : objc ? 'Source: official iOS dyld cache Objective-C table' : archive ? 'Source: complete restore IPSW archive' : restore ? 'Source: official restore RAM disks' : kernel ? 'Source: official kernelcache Mach-O filesets' : services ? 'Source: official FileSystem launchd plists' : 'Source: official iPhone 11 firmware';
   $('#source-description').textContent = device
     ? 'Read-only /rootfs observation of selected Apple system roots. User data and jailbreak namespace are excluded; differences do not establish jailbreak causation.'
     : driverkit ? 'A separate DriverKit platform cache: 51 images in 3 physical files. All 3 files matched the connected device by SHA-256.'
+    : objc ? 'Class entries come from the intact iOS cache optimization table. Image labels are resolved to exact install names with Mach-O segment addresses where needed.'
     : archive ? 'All 127 ZIP entries are indexed by path and role. Artifact presence is distinct from mounted filesystem content.'
     : restore ? 'Erase and Upgrade recovery environments are cataloged separately from the installed iOS filesystem.'
     : kernel ? 'Release and research kernelcaches have distinct UUIDs. Kext metadata and fileset entry counts are separate measurements.'
@@ -91,6 +93,11 @@ function serviceBinary(item, data) {
 
 function detailHTML(item, mode, data) {
   if (!item) return `<div class="empty-detail">Select a row to inspect its source and metadata.</div>`;
+  if (mode === 'objc') {
+    const [name, address, label, installName, resolution] = item;
+    const imageLink = installName ? `<button class="inline-link" data-linked-tab="images" data-linked-query="${escapeHTML(installName)}">${escapeHTML(installName)} ↗</button>` : 'Unresolved';
+    return `<span class="detail-label">OBJECTIVE-C CLASS ENTRY</span><h3>${escapeHTML(name)}</h3><dl><dt>CLASS METADATA ADDRESS</dt><dd>${escapeHTML(address)}</dd><dt>CACHE IMAGE LABEL</dt><dd>${escapeHTML(label)}</dd><dt>DEFINING CACHE IMAGE</dt><dd>${imageLink}</dd><dt>IMAGE RESOLUTION</dt><dd>${resolution === 'segment_address' ? 'Class address within a Mach-O segment of one matching image' : resolution === 'unique_label' ? 'Unique image basename in this cache' : 'No unique image established'}</dd></dl><p class="explain">This is an entry in the dyld cache Objective-C optimization table. Names and addresses describe static metadata in the official firmware, not live objects or method calls. Multiple entries may share a class name.</p>`;
+  }
   if (mode === 'images' || mode === 'driverkit') {
     const present = item.physical_volumes.length > 0;
     const consumers = item.service_consumer_count;
@@ -100,7 +107,7 @@ function detailHTML(item, mode, data) {
     const loadRows = imports.map((imp) => `<li>${graph.byName.has(imp.install_name) ? `<button class="inline-link" data-linked-tab="${mode}" data-linked-query="${escapeHTML(imp.install_name)}">${escapeHTML(imp.install_name)} ↗</button>` : escapeHTML(imp.install_name)}<small>${escapeHTML(imp.load_command.replace(/^LC_/, ''))} · ${graph.byName.has(imp.install_name) ? 'IN CACHE' : 'NO EXACT CACHE MATCH'}</small></li>`).join('');
     const importerRows = importers.slice(0, 30).map((entry) => `<li><button class="inline-link" data-linked-tab="${mode}" data-linked-query="${escapeHTML(entry.source)}">${escapeHTML(entry.source)} ↗</button><small>${escapeHTML(entry.load_command.replace(/^LC_/, ''))}</small></li>`).join('');
     const graphHTML = graph ? `<div class="direct-imports"><h4>Direct library loads (${fmt(imports.length)})</h4><ul>${loadRows || '<li>None recorded</li>'}</ul></div><div class="direct-imports"><h4>Loaded by cached images (${fmt(importers.length)})</h4><ul>${importerRows || '<li>None recorded</li>'}</ul>${importers.length > 30 ? `<button class="more-button" data-linked-tab="${mode}" data-linked-query="imports:${escapeHTML(item.install_name)}">View all ${fmt(importers.length)} importers ↗</button>` : ''}</div>` : '';
-    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}</dl>${graphHTML}<p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Library edges are direct static Mach-O load commands, not runtime calls; weak loads may never resolve.</p>`;
+    return `<span class="detail-label">${mode === 'driverkit' ? 'DRIVERKIT CACHE IMAGE' : 'IN-CACHE IMAGE'}</span><h3>${escapeHTML(item.install_name.split('/').pop())}</h3><dl><dt>LOGICAL INSTALL NAME</dt><dd>${escapeHTML(item.install_name)}</dd><dt>IMAGE UUID</dt><dd>${escapeHTML(item.uuid)}</dd><dt>SOURCE VERSION</dt><dd>${escapeHTML(item.version || 'Not recorded')}</dd><dt>CACHE UUID</dt><dd>${escapeHTML(data.cache_uuid)}</dd><dt>STANDALONE FILE IN SCANNED IMAGES</dt><dd>${present ? escapeHTML(item.physical_volumes.join(', ')) : 'None observed'}</dd>${consumers == null ? '' : `<dt>DIRECT IMPORTS BY INDEXED SERVICE EXECUTABLES</dt><dd>${fmt(consumers)}${consumers ? ` <button class="inline-link" data-linked-tab="services" data-linked-query="${escapeHTML(item.install_name)}">View services ↗</button>` : ''}</dd>`}${item.objc_class_count == null ? '' : `<dt>OBJECTIVE-C CLASS ENTRIES</dt><dd>${fmt(item.objc_class_count)}${item.objc_class_count ? ` <button class="inline-link" data-linked-tab="objc" data-linked-query="image:${escapeHTML(item.install_name)}">View classes ↗</button>` : ''}</dd>`}</dl>${graphHTML}<p class="explain">${present ? 'A separate physical file was also found at this logical path. The cache image and file remain distinct records.' : 'No regular file exists at this path in the three processed IPSW images. Its executable image is listed in the dyld shared cache.'} Library edges are direct static Mach-O load commands, not runtime calls; weak loads may never resolve.</p>`;
   }
   if (filesystemMode(mode)) {
     const [volumeIndex, path, type, bytes, target] = item;
@@ -144,14 +151,14 @@ function detailHTML(item, mode, data) {
 function renderRows(items, mode, data) {
   const visible = items.slice(0, state.limit);
   const rows = visible.map((item, index) => {
-    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' ? item.path : mode === 'kernel' ? item.id : mode === 'services' ? item.label || item.plist_path : item.name;
-    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'kernel' ? item.variant.toUpperCase() : mode === 'services' ? item.executable.status.toUpperCase() : size(item.size);
-    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' ? '▧' : mode === 'kernel' ? '✳' : mode === 'services' ? '◉' : '◈';
+    const path = mode === 'images' || mode === 'driverkit' ? item.install_name : mode === 'objc' ? item[0] : filesystemMode(mode) ? item[1] : mode === 'device' ? item[0] : mode === 'archive' ? item.path : mode === 'kernel' ? item.id : mode === 'services' ? item.label || item.plist_path : item.name;
+    const secondary = mode === 'images' || mode === 'driverkit' ? (item.physical_volumes.length ? 'DISK + CACHE' : 'IN CACHE') : mode === 'objc' ? item[2] : mode === 'restore' ? data.volumes[item[0]].name.replace(/^RestoreRamDisk/, '') : mode === 'files' ? data.volumes[item[0]].name : mode === 'device' ? item[1].toUpperCase() : mode === 'archive' ? item.kind.toUpperCase() : mode === 'kernel' ? item.variant.toUpperCase() : mode === 'services' ? item.executable.status.toUpperCase() : size(item.size);
+    const icon = mode === 'images' || mode === 'driverkit' ? '◇' : mode === 'objc' ? '◌' : filesystemMode(mode) ? item[2] === 'directory' ? '▤' : item[2] === 'symlink' ? '↗' : '·' : mode === 'device' ? item[1] === 'directory' ? '▤' : item[1] === 'symlink' ? '↗' : '·' : mode === 'archive' ? '▧' : mode === 'kernel' ? '✳' : mode === 'services' ? '◉' : '◈';
     return `<button class="result-row ${state.selected === item ? 'selected' : ''}" data-index="${index}" title="${escapeHTML(path)}"><span class="row-main"><span class="row-icon">${icon}</span><span class="row-text">${escapeHTML(path)}</span></span><span class="row-sub">${escapeHTML(secondary)}</span></button>`;
   }).join('');
   $('#result-count').textContent = `${fmt(items.length)} result${items.length === 1 ? '' : 's'}`;
-  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'services' ? 'SERVICE LABEL' : 'PATH / INSTALL NAME';
-  const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : 'SOURCE';
+  const heading = mode === 'kernel' ? 'BUNDLE IDENTIFIER' : mode === 'archive' ? 'ARCHIVE MEMBER' : mode === 'services' ? 'SERVICE LABEL' : mode === 'objc' ? 'CLASS NAME' : 'PATH / INSTALL NAME';
+  const sourceHeading = mode === 'kernel' ? 'VARIANT' : mode === 'archive' ? 'KIND' : mode === 'services' ? 'EXECUTABLE' : mode === 'objc' ? 'IMAGE LABEL' : 'SOURCE';
   $('#results').innerHTML = `<div class="result-head"><span>${heading}</span><span>${sourceHeading}</span></div>${rows || '<p class="empty-state">No matching entries in the selected source.</p>'}${items.length > state.limit ? '<button id="show-more" class="more-button">Show more ↓</button>' : ''}`;
   $('#detail').innerHTML = detailHTML(state.selected, mode, data);
   for (const row of document.querySelectorAll('.result-row')) row.addEventListener('click', () => { state.selected = visible[Number(row.dataset.index)]; $('#detail').innerHTML = detailHTML(state.selected, mode, data); document.querySelectorAll('.result-row').forEach((other) => other.classList.toggle('selected', other === row)); });
@@ -160,12 +167,14 @@ function renderRows(items, mode, data) {
 
 function renderResults() {
   const mode = state.tab;
-  const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
-  if (!data || !['images','driverkit','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
+  const data = state.datasets.get(`${filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'}:${state.build}`);
+  if (!data || !['images','driverkit','objc','files','restore','device','caches','archive','kernel','services'].includes(mode)) return;
   const query = state.query.trim().toLocaleLowerCase();
   let items;
   if (filesystemMode(mode)) items = data.entries.filter((item) => (state.volume === 'all' || data.volumes[item[0]].name === state.volume) && (!query || item[1].toLocaleLowerCase().includes(query)));
   else if (mode === 'device') items = data.entries.filter((item) => !query || item[0].toLocaleLowerCase().includes(query));
+  else if (mode === 'objc' && query.startsWith('image:')) items = data.records.filter((item) => item[3] === state.query.trim().slice(6));
+  else if (mode === 'objc') items = data.records.filter((item) => !query || `${item[0]} ${item[1]} ${item[2]} ${item[3] || ''}`.toLocaleLowerCase().includes(query));
   else if ((mode === 'images' || mode === 'driverkit') && query.startsWith('imports:')) {
     const graph = state.datasets.get(`${mode === 'driverkit' ? 'driverkit_dependencies' : 'dependencies'}:${state.build}`);
     const sources = new Set((graph?.importers.get(state.query.trim().slice(8)) || []).map((entry) => entry.source));
@@ -192,22 +201,24 @@ async function renderExplorer() {
   if (mode === 'compare') { await renderCompare(); return; }
   if (mode === 'device' && !activeBuild().device_url) { explorer.innerHTML = '<p class="empty-state">No privacy-reviewed device system inventory is published for this build.</p>'; return; }
   if (mode === 'driverkit' && !activeBuild().driverkit_url) { explorer.innerHTML = '<p class="empty-state">No DriverKit cache is cataloged for this build.</p>'; return; }
+  if (mode === 'objc' && !activeBuild().objc_url) { explorer.innerHTML = '<p class="empty-state">No Objective-C class table is cataloged for this build.</p>'; return; }
   if (mode === 'archive' && !activeBuild().archive_url) { explorer.innerHTML = '<p class="empty-state">No restore archive is cataloged for this build.</p>'; return; }
   if (mode === 'restore' && !activeBuild().restore_url) { explorer.innerHTML = '<p class="empty-state">No restore RAM disks are cataloged for this build.</p>'; return; }
   if (mode === 'kernel' && !activeBuild().kernel_url) { explorer.innerHTML = '<p class="empty-state">No kernelcache metadata is cataloged for this build.</p>'; return; }
   if (mode === 'services' && !activeBuild().service_url) { explorer.innerHTML = '<p class="empty-state">No official launchd service catalog is available for this build.</p>'; return; }
   explorer.innerHTML = '<p class="loading">Opening source-bound catalog…</p>';
   const [data] = await Promise.all([
-    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
+    dataset(filesystemMode(mode) ? mode : mode === 'device' ? 'device' : mode === 'objc' ? 'objc' : mode === 'driverkit' ? 'driverkit' : mode === 'archive' ? 'archive' : mode === 'kernel' ? 'kernel' : mode === 'services' ? 'services' : 'dyld'),
     ...(mode === 'images' && activeBuild().dyld_dependency_url ? [dataset('dependencies')] : []),
     ...(mode === 'driverkit' && activeBuild().driverkit_dependency_url ? [dataset('driverkit_dependencies')] : [])
   ]);
   if (state.tab !== mode) return;
   const kernelSummary = mode === 'kernel' ? `<div class="kernel-summary">${data.images.map((image) => `<div><strong>${escapeHTML(image.variant.toUpperCase())}</strong><span>UUID ${escapeHTML(image.macho_uuid)}</span><span>Darwin ${escapeHTML(image.darwin)} · XNU ${escapeHTML(image.xnu)} · ${fmt(image.fileset_entry_count)} fileset entries · ${fmt(image.kext_count)} kext records</span></div>`).join('')}</div>` : '';
   const serviceSummary = mode === 'services' ? `<div class="kernel-summary"><div><strong>${fmt(data.records.length)} PLISTS</strong><span>Launchd job and configuration declarations</span></div><div><strong>${fmt(activeBuild().mach_service_name_count)} MACH SERVICE NAMES</strong><span>Declared names; duplicates across plists are possible</span></div>${activeBuild().service_direct_import_count == null ? '' : `<div><strong>${fmt(activeBuild().service_direct_import_count)} DIRECT LOADS</strong><span>From ${fmt(activeBuild().service_executable_count)} service executables; ${fmt(activeBuild().service_cache_matched_import_count)} match cache images</span></div>`}</div>` : '';
+  const objcSummary = mode === 'objc' ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild().objc_class_count)} CLASS ENTRIES</strong><span>From the iOS cache Objective-C optimization table</span></div><div><strong>${fmt(activeBuild().objc_image_count)} CACHE IMAGES</strong><span>${fmt(activeBuild().objc_unresolved_count)} class entries without an exact image</span></div></div>` : '';
   const prefix = mode === 'driverkit' ? 'driverkit' : 'dyld';
   const dependencySummary = (mode === 'images' || mode === 'driverkit') && activeBuild()[`${prefix}_dependency_url`] ? `<div class="kernel-summary"><div><strong>${fmt(activeBuild()[`${prefix}_direct_import_count`])} DIRECT LIBRARY LOADS</strong><span>From ${fmt(activeBuild()[`${prefix}_dependency_image_count`])} cached images</span></div><div><strong>${fmt(activeBuild()[`${prefix}_exact_cache_match_count`])} EXACT CACHE MATCHES</strong><span>Static install-name matches within this cache family</span></div></div>` : '';
-  explorer.innerHTML = kernelSummary + serviceSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'restore' ? 'Search restore environment paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
+  explorer.innerHTML = kernelSummary + serviceSummary + objcSummary + dependencySummary + toolbar({placeholder:mode === 'files' ? 'Search filesystem paths…' : mode === 'restore' ? 'Search restore environment paths…' : mode === 'device' ? 'Search live system paths…' : mode === 'objc' ? 'Search Objective-C class names or images…' : mode === 'images' || mode === 'driverkit' ? 'Search library install names…' : mode === 'archive' ? 'Search IPSW archive members…' : mode === 'kernel' ? 'Search kext identifiers…' : mode === 'services' ? 'Search labels, programs, Mach services, events…' : 'Search cache file names…', volumes:filesystemMode(mode) ? data.volumes.map((volume) => volume.name) : mode === 'kernel' ? data.images.map((image) => image.variant) : mode === 'services' ? ['direct','cryptex','unresolved','undeclared'] : [], filterLabel:mode === 'kernel' ? 'All variants' : mode === 'services' ? 'All resolutions' : 'All volumes'}) + '<div class="explorer-grid"><div id="results" class="result-list"></div><aside id="detail" class="detail"></aside></div>';
   bindToolbar();
   $('#detail').addEventListener('click', (event) => {
     const link = event.target.closest('[data-linked-tab]');
@@ -261,7 +272,7 @@ async function start() {
   $('#build-select').addEventListener('change', () => { state.build = $('#build-select').value; state.selected = null; state.limit = 80; const build = activeBuild(); $('#metric-files').textContent = fmt(build.file_count); $('#metric-images').textContent = fmt(build.image_count); $('#metric-caches').textContent = fmt(build.cache_file_count); $('#metric-build').textContent = build.build; render().catch(showError); });
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
   const initial = location.hash.slice(1);
-  if (['files','restore','device','images','driverkit','caches','archive','kernel','services','research','compare'].includes(initial)) state.tab = initial;
+  if (['files','restore','device','images','objc','driverkit','caches','archive','kernel','services','research','compare'].includes(initial)) state.tab = initial;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
   await render();
 }
