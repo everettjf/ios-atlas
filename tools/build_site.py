@@ -183,6 +183,31 @@ def build() -> None:
             kernel_info = {"kernel_image_count": len(kernel_images),
                            "kext_record_count": len(kexts),
                            "kernel_url": f"data/{build}-kernel.json"}
+        service_info = {}
+        service_path = directory / "launchd.json"
+        if service_path.exists():
+            service = load(service_path)
+            records = service["records"]
+            source_plists = {entry["path"] for entry in volumes[0]["entries"]
+                             if entry["type"] == "file" and entry["path"].endswith(".plist")
+                             and any(f"/{folder}/" in entry["path"] for folder in
+                                     ("LaunchDaemons", "LaunchAgents", "DeveloperModeLaunchDaemons"))}
+            if (not service["complete"] or service["kind"] != "launchd_plists" or
+                    service["build"] != build or service["product_type"] != dyld["product_type"] or
+                    service["firmware_sha256"] != dyld["firmware_sha256"] or
+                    service["image_name"] != volumes[0]["image_name"] or
+                    service["record_count"] != len(records) or
+                    service["job_count"] != sum(item["kind"] == "job" for item in records) or
+                    {item["plist_path"] for item in records} != source_plists or
+                    len({item["plist_path"] for item in records}) != len(records) or
+                    service["mach_service_name_count"] != sum(len(item["mach_services"]) for item in records)):
+                raise ValueError(f"incomplete or mismatched launchd catalog in {directory}")
+            dump(DIST / "data" / f"{build}-services.json", {"schema_version": 1,
+                 "build": build, "records": records})
+            service_info = {"launchd_plist_count": len(records),
+                            "launchd_job_count": service["job_count"],
+                            "mach_service_name_count": service["mach_service_name_count"],
+                            "service_url": f"data/{build}-services.json"}
         builds.append({"build": build, "version": "26.0.1",
                        "product_type": dyld["product_type"],
                        "firmware_sha256": dyld["firmware_sha256"],
@@ -193,7 +218,8 @@ def build() -> None:
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
                        "dyld_url": f"data/{build}-dyld.json", **device_info,
-                       **driverkit_info, **archive_info, **restore_info, **kernel_info})
+                       **driverkit_info, **archive_info, **restore_info, **kernel_info,
+                       **service_info})
 
     if not builds:
         raise ValueError("no complete catalogs found")

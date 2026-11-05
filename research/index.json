@@ -13,5 +13,12 @@
     "title": "What is inside the two kernelcaches?",
     "summary": "The release and research artifacts share a build but have distinct Mach-O UUIDs. Fileset entries and kext metadata count different structures.",
     "note": "research/23A355/Kernelcache.md"
+  },
+  {
+    "id": "springboard-launch-chain",
+    "build": "23A355",
+    "title": "Where does SpringBoard's entry point lead?",
+    "summary": "A stock launchd plist points to a disk executable whose entry thunk imports a SpringBoard.framework function present in the dyld shared cache.",
+    "note": "research/23A355/SpringBoard.md"
   }
 ]

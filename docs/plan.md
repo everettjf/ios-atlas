@@ -58,9 +58,9 @@ Do not commit firmware, extracted Apple binaries, cache files, device identifier
 
 **Done when:** each displayed difference says what was compared and whether its origin is established or merely suspected.
 
-### 3. Add relationships and research notes — Foundation example completed; deeper traces pending
+### 3. Add relationships and research notes — launchd catalog and two component examples completed; deeper traces pending
 
-- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership.
+- For selected images, index imported libraries, ObjC/Swift metadata, relevant launchd services, and process ownership. All 621 stock FileSystem launchd plists now have source-bound service records; the SpringBoard note follows one plist through its disk entry point into a cached framework. ObjC/Swift and runtime process ownership remain future research.
 - Follow one user-visible behavior from entry point through framework and service, confirming static hypotheses with bounded runtime observation where needed.
 - Keep analysis evidence and uncertainty attached to each claim. Use REA for focused binary questions after selecting an exact artifact; do not infer execution from decompilation alone.
 
