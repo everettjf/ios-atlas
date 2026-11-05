@@ -1,4 +1,6 @@
 const $ = (selector) => document.querySelector(selector);
+const assetVersion = new URL(import.meta.url).searchParams.get('v') || 'dev';
+const versioned = (url) => `${url}?v=${assetVersion}`;
 const fmt = (value) => new Intl.NumberFormat('en-US').format(value);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const size = (value) => value == null ? '—' : value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
@@ -6,14 +8,14 @@ const state = { manifest:null, build:null, tab:'images', query:'', volume:'all',
 let searchTimer;
 
 async function json(url) {
-  const response = await fetch(url);
+  const response = await fetch(versioned(url));
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
   return response.json();
 }
 
 async function compressedJSON(url) {
   if (!('DecompressionStream' in window)) throw new Error('This browser cannot open compressed catalog data. Use a current Safari, Chrome, or Firefox.');
-  const response = await fetch(url);
+  const response = await fetch(versioned(url));
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
   return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
 }

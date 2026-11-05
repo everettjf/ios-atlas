@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -125,6 +126,16 @@ def build() -> None:
     research = json.loads((ROOT / "research" / "index.json").read_text(encoding="utf-8"))
     dump(DIST / "data" / "manifest.json",
          {"schema_version": 1, "builds": builds, "research": research})
+    digest = hashlib.sha256()
+    for path in sorted(DIST.rglob("*")):
+        if path.is_file() and path.name != "index.html":
+            digest.update(str(path.relative_to(DIST)).encode())
+            digest.update(path.read_bytes())
+    version = digest.hexdigest()[:12]
+    index = (DIST / "index.html").read_text(encoding="utf-8")
+    index = index.replace('href="styles.css"', f'href="styles.css?v={version}"')
+    index = index.replace('src="app.js"', f'src="app.js?v={version}"')
+    (DIST / "index.html").write_text(index, encoding="utf-8")
     print(f"built {DIST} with {len(builds)} build(s)")
 
 
