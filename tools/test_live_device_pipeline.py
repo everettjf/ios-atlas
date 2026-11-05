@@ -141,6 +141,47 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_live_dependencies_reject_private_load_names(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            macho_path = root / "macho.json.gz"
+            macho_path.write_bytes(gzip.compress(json.dumps({"records": [
+                {"path": "/usr/bin/tool", "sha256": "a" * 64,
+                 "slices": [{"architecture": "arm64", "uuid": "B" * 36}]}
+            ]}).encode(), mtime=0))
+            part = {"architecture": "arm64", "uuid": "B" * 36,
+                    "load_dump_sha256": "c" * 64, "install_name": None,
+                    "dependencies": [{"load_command": "LC_LOAD_DYLIB",
+                                      "install_name": "/usr/lib/libSystem.B.dylib"}],
+                    "rpaths": ["@loader_path/Frameworks"],
+                    "redacted_rpath_count": 1}
+            data = {"schema_version": 1,
+                    "kind": "live_jailbreak_direct_dependencies",
+                    "source": "verified_live_device_macho_bytes",
+                    "build": "23A355", "product_type": "iPhone12,1",
+                    "macho_file_count": 1,
+                    "totals": {"slices": 1, "direct_loads": 1, "rpaths": 1,
+                               "redacted_rpaths": 1, "without_loads": 0},
+                    "files": [{"path": "/usr/bin/tool", "sha256": "a" * 64,
+                               "slice_count": 1, "slices": [part]}]}
+            candidate = root / "dependencies.json.gz"
+            candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                info = build_site.publish_live_dependencies(
+                    "23A355", "iPhone12,1", candidate, macho_path)
+                self.assertEqual(info["device_macho_direct_load_count"], 1)
+                part["rpaths"].append("/Users/person/private-build-path")
+                data["totals"]["rpaths"] += 1
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_dependencies(
+                        "23A355", "iPhone12,1", candidate, macho_path)
+            finally:
+                build_site.DIST = old_dist
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,7 +12,7 @@ The 464 private files contain 495 Mach-O slices: **323 executable**, **143 dylib
 
 - A file's presence and load commands do not prove that a running process loaded it.
 - Hash and UUID identify these acquired bytes at the observation time; the device may change after collection.
-- An exact-file class dump now covers all 463 published files. It found 4,781 static Objective-C method entries in 61 files; 402 files reported no ObjC information. Named symbols, Swift declarations, direct dependencies, and code-signing identities remain unindexed for this live set.
+- An exact-file class dump covers all 463 published files. It found 4,781 static Objective-C method entries in 61 files; 402 files reported no ObjC information. Mach-O load commands across all 493 slices declare 3,070 direct dylib loads and 572 runpaths. Three runpaths containing build-machine user directories are counted but withheld, leaving 569 public runpath entries. Named symbols, Swift declarations, code-signing identities, and actual dyld resolution remain unindexed for this live set.
 - The data-volume scan was partial because of protected directories. This note does not claim every possible executable on the phone was readable.
 
-Next: run the remaining horizontal metadata passes on these verified files, link their direct dependencies to cache images and other live files, and give libraries short source-backed descriptions before tracing selected method bodies. The [research TODO](../../docs/research-todo.md) tracks that work.
+Next: run the remaining horizontal metadata passes on these verified files, link direct loads to cache images and other live files only when the namespace and path mapping are supported, and give libraries short source-backed descriptions before tracing selected method bodies. The [research TODO](../../docs/research-todo.md) tracks that work.

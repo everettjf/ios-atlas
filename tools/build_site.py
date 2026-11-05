@@ -17,6 +17,7 @@ from export_live_device import KINDS as LIVE_DEVICE_KINDS
 from export_live_device import DEVICE_SPECIFIC_PATH
 from export_live_device import check_prefix as check_live_prefix
 from export_live_device import has_private_characters, inside
+from catalog_live_jailbreak_dependencies import PRIVATE_REFERENCE
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -243,6 +244,74 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) ->
             "device_macho_objc_method_count": totals["methods"],
             "device_macho_objc_parsed_count": totals["parsed"],
             "device_macho_objc_no_info_count": totals["no_objc_info"]}
+
+
+def publish_live_dependencies(build: str, product: str, path: Path,
+                              macho_path: Path) -> dict:
+    """Publish static direct-load declarations from exact verified live files."""
+    data = load(path)
+    macho = load(macho_path)
+    originals = {item["path"]: item for item in macho["records"]}
+    files = data.get("files")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_jailbreak_direct_dependencies" or
+            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(files, list) or len(files) != len(originals) or
+            data.get("macho_file_count") != len(files)):
+        raise ValueError("incomplete live direct-dependency catalog")
+    seen = set()
+    totals = Counter()
+    load_kinds = {"LC_LOAD_DYLIB", "LC_LOAD_WEAK_DYLIB",
+                  "LC_REEXPORT_DYLIB", "LC_LOAD_UPWARD_DYLIB",
+                  "LC_LAZY_LOAD_DYLIB"}
+
+    def public_string(value: str) -> bool:
+        return (isinstance(value, str) and value and
+                not has_private_characters(value) and
+                not PRIVATE_REFERENCE.search(value))
+
+    for item in files:
+        original = originals.get(item.get("path"))
+        if (original is None or item["path"] in seen or
+                item.get("sha256") != original["sha256"] or
+                item.get("slice_count") != len(original["slices"]) or
+                not isinstance(item.get("slices"), list) or
+                len(item["slices"]) != len(original["slices"])):
+            raise ValueError("live dependency file identity differs")
+        seen.add(item["path"])
+        for part, expected in zip(item["slices"], original["slices"]):
+            dependencies = part.get("dependencies")
+            rpaths = part.get("rpaths")
+            redacted = part.get("redacted_rpath_count")
+            if (part.get("architecture") != expected["architecture"] or
+                    part.get("uuid") != expected["uuid"] or
+                    not re.fullmatch(r"[0-9a-f]{64}",
+                                     part.get("load_dump_sha256", "")) or
+                    (part.get("install_name") is not None and
+                     not public_string(part["install_name"])) or
+                    not isinstance(dependencies, list) or
+                    not isinstance(rpaths, list) or
+                    not isinstance(redacted, int) or redacted < 0 or
+                    any(not public_string(name) for name in rpaths) or
+                    any(not isinstance(row, dict) or
+                        row.get("load_command") not in load_kinds or
+                        not public_string(row.get("install_name"))
+                        for row in dependencies)):
+                raise ValueError("unsafe or mismatched live dependency slice")
+            totals["slices"] += 1
+            totals["direct_loads"] += len(dependencies)
+            totals["rpaths"] += len(rpaths)
+            totals["redacted_rpaths"] += redacted
+            totals["without_loads"] += not dependencies
+    if seen != set(originals) or any(data.get("totals", {}).get(key) != value
+                                     for key, value in totals.items()):
+        raise ValueError("live dependency totals disagree")
+    url = f"data/{build}-jailbreak-dependencies.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"device_macho_dependency_url": url,
+            "device_macho_direct_load_count": totals["direct_loads"],
+            "device_macho_redacted_rpath_count": totals["redacted_rpaths"]}
 
 
 def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dict:
@@ -1166,6 +1235,13 @@ def build() -> None:
                 raise ValueError("live Objective-C methods require verified Mach-O files")
             device_info.update(publish_live_objc(build, dyld["product_type"],
                                                  live_objc_path, live_macho_path))
+        live_dependencies_path = directory / "jailbreak-dependencies.json.gz"
+        if live_dependencies_path.exists():
+            if not live_macho_path.exists():
+                raise ValueError("live dependencies require verified Mach-O files")
+            device_info.update(publish_live_dependencies(
+                build, dyld["product_type"], live_dependencies_path,
+                live_macho_path))
         archive_info = {}
         archive_path = directory / "firmware-archive.json"
         kernel_path = directory / "kernel.json"

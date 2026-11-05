@@ -60,3 +60,15 @@ python3 tools/catalog_live_jailbreak_objc.py \
 ```
 
 The result covers all 463 published files: 61 have 4,781 parsed Objective-C method entries, while 402 explicitly report no ObjC information. Empty ObjC output is not evidence that a file has no code or callable functions.
+
+A separate read-only `ipsw macho info --json --loads` pass inspects every architecture slice of the same verified files. Repeated architecture labels in one fat file are extracted to private temporary thin files so each UUID is checked independently. The aggregate is produced with:
+
+```sh
+python3 tools/catalog_live_jailbreak_dependencies.py \
+  --macho-catalog catalog/ios/23A355/jailbreak-macho.json.gz \
+  --binary-root .local/live-device-23A355/macho-files \
+  --workdir .local/live-device-23A355/dependency-work \
+  --output .local/live-device-23A355/jailbreak-dependencies-candidate.json.gz
+```
+
+The published catalog covers 463 files, 493 slices, 3,070 direct dylib load commands, and 569 public runpath declarations. Three embedded build-machine user-directory runpaths are counted but withheld. The website shows load names as static declarations; `@rpath` and `@loader_path` names are not claimed as resolved runtime paths.
