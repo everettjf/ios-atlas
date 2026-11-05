@@ -16,7 +16,7 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Index named `__text` symbols in all 3,363 standalone Mach-O files, including explicit zero-name results.
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.
 - [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 218 of 227 exact top-level iOS framework images and one DriverKit image; nine top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
-- [ ] Verify selected live device files outside the cache against the exact-build firmware, with exact namespace and path mapping.
+- [x] Verify all 3,157 firmware standalone Mach-O files observed at mapped device paths by device-side SHA-256; preserve the 206 unmatched staging-path records without claiming whole-device absence.
 - [x] Record all live mounts and RootHide namespaces; capture a private, resumable metadata snapshot with per-root completeness and error counts. Ten roots completed; two data-volume roots have protected-directory errors.
 - [x] Publish a privacy-reviewed catalog of live system and jailbreak installation paths, including paths absent from the stock IPSW; keep user and app data path names private.
 - [x] Identify, acquire, hash, and parse Mach-O headers for all 464 files found in the jailbreak installation tree; publish 463 after withholding one randomized filename.
@@ -24,7 +24,7 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Record direct dylib load commands and runpaths for all 493 slices of those verified files; withhold three embedded build-machine user paths.
 - [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
 - [ ] Run named symbol, Swift, and code-signing passes over the verified live Mach-O files; keep zero and unsupported results explicit. Resolve direct library loads only where exact device evidence permits.
-- [ ] Verify base-system standalone executables, dylibs, frameworks, and extensions against the exact-build IPSW before reusing firmware analysis.
+- [ ] Discover any additional base-system standalone executables, dylibs, frameworks, and extensions absent from the firmware inventory; establish identity before reusing firmware analysis.
 - [x] Make live device files the primary website view, show scan-root coverage, and remove cross-version comparison navigation.
 - [ ] Add live standalone Mach-O and library analysis coverage by mount, including unsupported and failed states.
 

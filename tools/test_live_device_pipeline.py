@@ -182,6 +182,50 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_live_standalone_identity_requires_exact_hash_and_mapping(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            stock_path = root / "stock.json.gz"
+            device_path = root / "device.json.gz"
+            candidate = root / "identity.json.gz"
+            stock = {"firmware_sha256": "f" * 64,
+                     "records": [{"volume": "FileSystem", "path": "/usr/bin/tool",
+                                  "size": 4, "sha256": "a" * 64}]}
+            device = {"entries": [["/rootfs/usr/bin/tool", "file", 4]]}
+            identity = {"schema_version": 1, "kind": "live_standalone_macho_identity",
+                        "source": "read_only_device_sha256_and_exact_build_ipsw",
+                        "build": "23A355", "product_type": "iPhone12,1",
+                        "firmware_sha256": "f" * 64,
+                        "hash_command_exit_code": 0, "record_count": 1,
+                        "counts": {"matched": 1},
+                        "records": [{"volume": "FileSystem", "path": "/usr/bin/tool",
+                                     "device_path": "/rootfs/usr/bin/tool", "size": 4,
+                                     "firmware_sha256": "a" * 64,
+                                     "device_sha256": "a" * 64, "status": "matched"}]}
+            for path, value in ((stock_path, stock), (device_path, device),
+                                (candidate, identity)):
+                path.write_bytes(gzip.compress(json.dumps(value).encode(), mtime=0))
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                info = build_site.publish_live_standalone_identity(
+                    "23A355", "iPhone12,1", candidate, stock_path, device_path)
+                self.assertEqual(info["live_standalone_matched_count"], 1)
+                identity["records"][0]["device_sha256"] = "b" * 64
+                candidate.write_bytes(gzip.compress(json.dumps(identity).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_standalone_identity(
+                        "23A355", "iPhone12,1", candidate, stock_path, device_path)
+                identity["records"][0]["device_sha256"] = "a" * 64
+                identity["records"][0]["device_path"] = "/rootfs/private/var/mobile/secret"
+                candidate.write_bytes(gzip.compress(json.dumps(identity).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_standalone_identity(
+                        "23A355", "iPhone12,1", candidate, stock_path, device_path)
+            finally:
+                build_site.DIST = old_dist
+
 
 if __name__ == "__main__":
     unittest.main()

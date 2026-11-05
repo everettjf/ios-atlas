@@ -314,6 +314,70 @@ def publish_live_dependencies(build: str, product: str, path: Path,
             "device_macho_redacted_rpath_count": totals["redacted_rpaths"]}
 
 
+def publish_live_standalone_identity(build: str, product: str, path: Path,
+                                     stock_path: Path, device_path: Path) -> dict:
+    """Attach firmware analysis only to exact byte-matched device files."""
+    data = load(path)
+    stock = load(stock_path)
+    device = load(device_path)
+    expected = {(item["volume"], item["path"]): item
+                for item in stock["records"]}
+    public_files = {row[0]: row[2] for row in device["entries"]
+                    if row[1] == "file"}
+    prefixes = {"FileSystem": "/rootfs",
+                "SystemOS": "/rootfs/private/preboot/Cryptexes/OS",
+                "AppOS": "/rootfs/private/preboot/Cryptexes/App"}
+    records = data.get("records")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_standalone_macho_identity" or
+            data.get("source") != "read_only_device_sha256_and_exact_build_ipsw" or
+            data.get("build") != build or data.get("product_type") != product or
+            data.get("firmware_sha256") != stock["firmware_sha256"] or
+            not isinstance(records, list) or len(records) != len(expected) or
+            data.get("record_count") != len(records) or
+            data.get("hash_command_exit_code") != 0):
+        raise ValueError("incomplete live standalone identity catalog")
+    seen = set()
+    counts = Counter()
+    for item in records:
+        key = (item.get("volume"), item.get("path"))
+        original = expected.get(key)
+        if original is None or key in seen:
+            raise ValueError("unknown or duplicate standalone identity")
+        seen.add(key)
+        mapped = prefixes[item["volume"]] + item["path"]
+        status = item.get("status")
+        live_hash = item.get("device_sha256")
+        if (item.get("device_path") != mapped or
+                item.get("size") != original["size"] or
+                item.get("firmware_sha256") != original["sha256"] or
+                has_private_characters(mapped) or
+                DEVICE_SPECIFIC_PATH.fullmatch(mapped) or
+                status not in ("matched", "content_differs",
+                               "unobserved_at_mapped_path",
+                               "non_file_at_mapped_path",
+                               "size_differs_at_snapshot", "hash_failed") or
+                (status == "matched" and live_hash != original["sha256"]) or
+                (status == "content_differs" and
+                 (not isinstance(live_hash, str) or
+                  not re.fullmatch(r"[0-9a-f]{64}", live_hash) or
+                  live_hash == original["sha256"])) or
+                (status not in ("matched", "content_differs") and
+                 live_hash is not None)):
+            raise ValueError("unsafe or unsupported standalone identity record")
+        if (status == "matched" and item["volume"] == "FileSystem" and
+                public_files.get(mapped) != item["size"]):
+            raise ValueError("matched FileSystem binary lacks a public device file")
+        counts[status] += 1
+    if seen != set(expected) or data.get("counts") != dict(counts):
+        raise ValueError("standalone identity coverage disagrees")
+    url = f"data/{build}-standalone-live-identity.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"live_standalone_identity_url": url,
+            "live_standalone_matched_count": counts["matched"],
+            "live_standalone_unobserved_count": counts["unobserved_at_mapped_path"]}
+
+
 def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dict:
     dependencies = load(path)
     dependency_images = dependencies["images"]
@@ -1242,6 +1306,13 @@ def build() -> None:
             device_info.update(publish_live_dependencies(
                 build, dyld["product_type"], live_dependencies_path,
                 live_macho_path))
+        live_standalone_path = directory / "standalone-live-identity.json.gz"
+        if live_standalone_path.exists():
+            if not live_device_path.exists():
+                raise ValueError("live standalone identity requires public device paths")
+            device_info.update(publish_live_standalone_identity(
+                build, dyld["product_type"], live_standalone_path,
+                directory / "standalone-macho.json.gz", live_device_path))
         archive_info = {}
         archive_path = directory / "firmware-archive.json"
         kernel_path = directory / "kernel.json"
