@@ -1,0 +1,19 @@
+# Where does GraphicsServices get the mode passed to `CFRunLoopRunInMode`?
+
+Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`), SystemOS arm64e cache UUID `C0A7E671-35E1-3E6C-842D-FCE4E0A08C7E`. The inspected `/System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices` image has UUID `4EB73F50-CDF2-3161-94C0-0F3E7002B67C`. Its local `ipsw dyld extract` derivative has SHA-256 `fa9e9a556605ea732487ebb840986962cef09f6cbf503c48ba50d764d919ee62`; the binary is not published.
+
+The [event-runner note](GraphicsServices-Event-Run.md) follows `GSEventRun` into `GSEventRunModal` and then `CFRunLoopRunInMode`. This note checks the mode value's immediate source and the two named functions that change it. It is a static reading of this exact cache image, not a device execution trace.
+
+## Direct instruction evidence
+
+- `_GSEventRunModal` begins at `0x22246e420`. At `0x22246e45c–0x22246e484`, it loads a shared pointer at image-data offset `0x468`, calls `CFArrayGetCount`, subtracts one, and calls `CFArrayGetValueAtIndex` on the same array. After a null check, it passes the returned value in `x0` to `CFRunLoopRunInMode` at `0x22246e494`. Thus the mode argument comes from the **last entry of that array** at this call site. The code does not identify which concrete mode string occupies the last entry at runtime.
+- `_GSEventPushRunLoopMode` at `0x222470094` loads the same array pointer (`0x2224700ac`). When it is null, the function calls `CFArrayCreateMutable` at `0x2224700c0` and stores the result at the shared offset (`0x2224700c4`). It passes the incoming `x0` value to `CFArrayAppendValue` at `0x2224700cc`. These instructions establish a last-in selection mechanism for later modal-loop iterations.
+- `_GSEventPopRunLoopMode` at `0x2224700f4` loads the same array pointer (`0x22247010c`). If it is non-null, it obtains the last value with `CFArrayGetCount` and `CFArrayGetValueAtIndex` (`0x22247011c–0x222470128`). It compares that value with its incoming argument using `CFStringCompare` with zero options (`0x22247013c`). Only a zero comparison result reaches `CFArrayRemoveValueAtIndex` at `0x222470158`. [Apple's array API](https://developer.apple.com/documentation/corefoundation/cfarrayremovevalueatindex%28_%3A_%3A%29) defines removal by index; these instructions select the final index.
+- Both push and pop load a separately stored run-loop pointer at shared offset `0x470` and tail-call `CFRunLoopStop` (`0x2224700d4–0x2224700f0`, `0x22247015c–0x222470180`). [Apple documents](https://developer.apple.com/documentation/corefoundation/cfrunloopstop%28_%3A%29) that stopping a run loop returns control from its current activation. `GSEventRunModal` has a branch back to its array lookup after `CFRunLoopRunInMode` returns (`0x22246e498–0x22246e49c`), allowing a subsequent iteration to read the changed last entry. This is a possible static control path; the exact activation and scheduling on the phone are unverified.
+- `__GSEventInitializeShared` stores `CFRunLoopGetCurrent` at the same `0x470` offset on its no-queue branch (`0x22246df50–0x22246df54`). The other initialization branch is not traced to an equivalent assignment here, so this note does not claim the stored run-loop pointer is always set.
+
+The array is used like a mode stack in these three function bodies. This does not identify the original mode pushed by a caller, prove balanced push/pop calls, show which process owns a caller, or establish that a particular mode ran on the connected device. No tweak hook is selected.
+
+## Reproduce
+
+Verify the derivative SHA-256 and image UUID above, then disassemble `_GSEventRunModal`, `_GSEventPushRunLoopMode`, `_GSEventPopRunLoopMode`, and `__GSEventInitializeShared` with `xcrun llvm-objdump -m -d --dis-symname '<symbol>' .local/rea/extracted/GraphicsServices`. Imported function names were cross-checked with `xcrun llvm-nm -n` on the same derivative. The Apple binary and full disassembly stay local.

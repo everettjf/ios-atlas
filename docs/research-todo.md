@@ -62,6 +62,7 @@ The [23A355 handoff](handoff-23A355.md) closes the current horizontal delivery p
 - [x] Trace CoreFoundation's two public run-loop entry wrappers to the shared internal function.
 - [x] Trace the exact SpringBoard embedded-scene delegate through superclass setup, a retained configuration block, and a candidate startup-completion send; leave callback timing and runtime dispatch open.
 - [x] Trace UIKitCore's `_run` through event-source installation and GraphicsServices' `GSEventRun` to CoreFoundation's `CFRunLoopRunInMode`; leave live branch choices and run-loop mode open.
+- [x] Trace GraphicsServices' modal run-loop mode source and its named push/pop functions; leave concrete mode values, callers, and live scheduling open.
 - [x] Create a source-bound WidgetKit overview with documented purpose and API types, exact-image method and symbol examples, direct dependencies, and known gaps.
 - [x] Trace the live UpdateBrain service entry into its device-acquired library; record the XPC listener, entitlement gate, and seven static command dispatch targets with Ghidra addresses and private evidence bundles.
 - [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.

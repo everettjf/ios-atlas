@@ -306,6 +306,14 @@
     "note": "research/23A355/GraphicsServices-Event-Run.md"
   },
   {
+    "id": "graphicsservices-run-loop-modes",
+    "build": "23A355",
+    "title": "Where does GraphicsServices get the mode passed to CFRunLoopRunInMode?",
+    "summary": "The exact GraphicsServices event runner selects the last entry of a shared mutable array; its push and pop functions change that entry and stop the stored run loop. Concrete runtime modes and callers remain unknown.",
+    "install_name": "/System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices",
+    "note": "research/23A355/GraphicsServices-RunLoop-Modes.md"
+  },
+  {
     "id": "corefoundation-run-loop",
     "build": "23A355",
     "title": "What do CoreFoundation's run-loop entry points do?",
