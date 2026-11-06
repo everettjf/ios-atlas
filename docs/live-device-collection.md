@@ -136,6 +136,16 @@ python3 tools/catalog_live_jailbreak_dependencies.py \
 
 The published catalog covers 463 files, 493 slices, 3,070 direct dylib load commands, and 569 public runpath declarations. Three embedded build-machine user-directory runpaths are counted but withheld. The website shows load names as static declarations; `@rpath` and `@loader_path` names are not claimed as resolved runtime paths.
 
+A second pass classifies the 4,848 direct loads across both published live Mach-O families against this build's iOS and DriverKit cache install names and the verified live files' absolute install names:
+
+```sh
+python3 tools/catalog_live_load_targets.py \
+  --catalog-directory catalog/ios/23A355 \
+  --output .local/live-device-23A355/live-load-targets-candidate.json.gz
+```
+
+The result records 3,476 exact iOS cache-name matches and 110 same-architecture absolute install-name matches to verified Developer files. Another 1,252 tokenized names remain unresolved; ten absolute names have no exact target in these catalogs. The published index covers all 505 files and preserves each load command and architecture. The site builder recomputes every match from the four verified Mach-O and load catalogs plus the two exact-build caches before publication. These are **static name matches**: they neither expand `@rpath` or `@loader_path` in a process nor prove that dyld loaded a target at runtime. Public paths and names passed the same private-pattern checks as the source catalogs.
+
 A separate named-symbol pass checks every acquired file and slice again, then accepts only named records whose addresses lie inside an executable `__text` section:
 
 ```sh

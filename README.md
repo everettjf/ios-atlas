@@ -16,6 +16,8 @@ The [**Jailbreak Mach-O** view](https://xnu.app/ios-atlas/#device_macho) publish
 
 The [**Developer Mach-O** view](https://xnu.app/ios-atlas/#developer_macho) covers all 42 hash-verified Mach-O files from the live Developer mount, including 84 architecture slices. It shows 1,778 direct library loads, 7,735 arm64e Objective-C method entries, **78,771 named `__text` symbol records**, 17,230 Swift dump declarations, and 84 CodeDirectories. Three files have no named symbols; one Objective-C class dump failed and remains an unknown result. Swift no-info and partial outputs are labeled, and signing metadata does not establish trust. [The collection record](docs/live-device-collection.md) states the method and limits.
 
+Across the Jailbreak and Developer views, all 4,848 direct library loads now have a static name-match status: 3,476 match an iOS cache install name, 110 match an absolute install name in a verified live Developer file, 1,252 use unresolved path tokens, and ten have no exact catalog match. Detail pages link only the exact matches. The status does not prove which library dyld loaded in a running process.
+
 The same build also indexes every member of the restore IPSW (127 archive entries), both restore RAM disks (4,132 entries), and two kernelcache variants with 256 kext metadata records each. Restore environments and kernelcache metadata have their own views; they are not counted as files on the normally running system.
 
 The **System services** view adds 621 stock launchd plists, their declared executable paths, 2,186 Mach service name declarations, and cryptex-aware path mapping. The [SpringBoard case study](research/23A355/SpringBoard.md) follows one declaration through its disk entry point to an in-cache framework image.

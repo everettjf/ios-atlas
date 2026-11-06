@@ -29,6 +29,8 @@ jobs:
         run: node tools/test_tree.mjs
       - name: Check live-device privacy export
         run: python3 tools/test_live_device_pipeline.py
+      - name: Check live library name matches
+        run: python3 tools/test_live_load_targets.py
       - name: Build static site
         run: python3 tools/build_site.py
       - uses: actions/upload-pages-artifact@v3
@@ -36,3 +38,5 @@ jobs:
           path: dist
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000

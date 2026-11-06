@@ -18,6 +18,7 @@ from export_live_device import DEVICE_SPECIFIC_PATH
 from export_live_device import check_prefix as check_live_prefix
 from export_live_device import has_private_characters, inside
 from catalog_live_jailbreak_dependencies import PRIVATE_REFERENCE
+from catalog_live_load_targets import catalog as catalog_live_load_targets
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -400,6 +401,39 @@ def publish_live_dependencies(build: str, product: str, path: Path,
     return {f"{key_prefix}_dependency_url": url,
             f"{key_prefix}_direct_load_count": totals["direct_loads"],
             f"{key_prefix}_redacted_rpath_count": totals["redacted_rpaths"]}
+
+
+def publish_live_load_targets(build: str, product: str, directory: Path) -> dict:
+    """Recompute every static name match before publishing reviewed live loads."""
+    candidate = directory / "live-load-targets.json.gz"
+    if not candidate.exists():
+        return {}
+    required = ("dyld.json", "driverkit-dyld.json", "developer-macho.json.gz",
+                "developer-dependencies.json.gz", "jailbreak-macho.json.gz",
+                "jailbreak-dependencies.json.gz")
+    if any(not (directory / name).is_file() for name in required):
+        raise ValueError("live load targets require both complete live families and caches")
+    sources = {
+        family: (load(directory / f"{family}-macho.json.gz"),
+                 load(directory / f"{family}-dependencies.json.gz"))
+        for family in ("developer", "jailbreak")
+    }
+    expected = catalog_live_load_targets(
+        load(directory / "dyld.json"), load(directory / "driverkit-dyld.json"),
+        sources)
+    data = load(candidate)
+    if (data != expected or data["build"] != build or
+            data["product_type"] != product):
+        raise ValueError("live static load-target catalog differs from exact sources")
+    url = f"data/{build}-live-load-targets.json.gz"
+    dump(DIST / url, data, compressed=True)
+    totals = data["totals"]
+    return {"live_load_target_url": url,
+            "live_load_target_count": totals["loads"],
+            "live_load_cache_match_count": totals.get("cache_install_name", 0),
+            "live_load_live_match_count": totals.get("live_install_name", 0),
+            "live_load_tokenized_count": totals.get("tokenized_name", 0),
+            "live_load_unmatched_count": totals.get("no_exact_match", 0)}
 
 
 def publish_live_symbols(build: str, product: str, path: Path,
@@ -1759,6 +1793,8 @@ def build() -> None:
             device_info.update(publish_live_dependencies(
                 build, dyld["product_type"], live_dependencies_path,
                 live_macho_path))
+        device_info.update(publish_live_load_targets(
+            build, dyld["product_type"], directory))
         live_symbols_path = directory / "jailbreak-symbols.json.gz"
         if live_symbols_path.exists():
             if not live_macho_path.exists():
