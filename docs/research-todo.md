@@ -18,7 +18,7 @@ Current delivery focus: finish the one-device file and dynamic-library atlas, in
 - [x] Run an exact-file Objective-C class and method pass over all 3,363 standalone Mach-O files; retain inspected zero results.
 - [x] Index named `__text` symbols in all 3,363 standalone Mach-O files, including explicit zero-name results.
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.
-- [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 219 of 227 exact top-level iOS framework images and one DriverKit image; eight top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
+- [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 220 of 227 exact top-level iOS framework images and one DriverKit image; seven top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
 - [x] Verify all 3,157 firmware standalone Mach-O files observed at mapped device paths by device-side SHA-256; preserve the 206 unmatched staging-path records without claiming whole-device absence.
 - [x] Link the 3,117 hash-matched, reviewed base-system paths to exact firmware Mach-O analysis; show 40 cryptex hash matches without exposing their physical paths.
 - [x] Record all live mounts and RootHide namespaces; capture a private, resumable metadata snapshot with per-root completeness and error counts. Ten roots completed; two data-volume roots have protected-directory errors.

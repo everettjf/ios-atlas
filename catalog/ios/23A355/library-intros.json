@@ -282,6 +282,15 @@
       "source_checked_at": "2026-11-05"
     },
     {
+      "install_name": "/System/Library/Frameworks/BusinessChat.framework/BusinessChat",
+      "summary": "Apple describes Messages for Business as customer-to-business conversations in Messages. The BusinessChat cache image has related named classes, but this page does not document that binary's implementation.",
+      "source_url": "https://developer.apple.com/imessage/",
+      "source_label": "Apple Developer: Messages for Business",
+      "source_document_sha256": "33d370d6c8fce6a09343fff36c4b6610acdc22c3ea7ed7187f0d01ba3492092e",
+      "source_checked_at": "2026-11-06",
+      "verbatim": false
+    },
+    {
       "install_name": "/System/Library/Frameworks/CFNetwork.framework/CFNetwork",
       "summary": "CFNetwork provides network protocol abstractions and services for sockets, HTTP, and changes in network configuration.",
       "source_url": "https://developer.apple.com/documentation/cfnetwork",
