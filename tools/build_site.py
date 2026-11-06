@@ -19,6 +19,7 @@ from export_live_device import check_prefix as check_live_prefix
 from export_live_device import has_private_characters, inside
 from catalog_live_jailbreak_dependencies import PRIVATE_REFERENCE
 from catalog_live_load_targets import catalog as catalog_live_load_targets
+from export_live_coverage import ROOTS as LIVE_COVERAGE_ROOTS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,6 +115,8 @@ def publish_live_device(build: str, product: str, path: Path) -> dict:
     if (data.get("schema_version") != 1 or data.get("kind") != "live_device_public_paths" or
             data.get("source") != "trusted_device_private_snapshot_privacy_export" or
             data.get("build") != build or data.get("product_type") != product or
+            not isinstance(data.get("private_manifest_sha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", data.get("private_manifest_sha256", "")) or
             not isinstance(prefixes, list) or not prefixes or len(prefixes) != len(set(prefixes)) or
             not isinstance(entries, list) or not entries or data.get("entry_count") != len(entries)):
         raise ValueError("incomplete or mismatched live-device public catalog")
@@ -146,9 +149,65 @@ def publish_live_device(build: str, product: str, path: Path) -> dict:
     shutil.copy2(path, DIST / url)
     return {"device_url": url, "device_count": len(entries),
             "device_observed_at_utc": data["observed_at_utc"],
+            "device_snapshot_sha256": data["private_manifest_sha256"],
             "device_scope": "reviewed_live", "device_snapshot_root_count": data["snapshot_root_count"],
             "device_complete_root_count": data["complete_root_count"],
             "device_unpublished_entry_count": data["unpublished_entry_count"]}
+
+
+def publish_live_coverage(build: str, product: str, path: Path,
+                          device_path: Path) -> dict:
+    """Admit only fixed public labels and numeric mount summaries."""
+    data = load(path)
+    device = load(device_path)
+    expected_top = {"schema_version", "kind", "source", "build", "product_type",
+                    "observed_at_utc", "private_manifest_sha256", "public_path_count",
+                    "roots", "totals"}
+    expected_row = {"label", "mount_type", "publication", "status",
+                    "observations", "regular_files", "access_errors"}
+    expected_totals = {"root_count", "complete_root_count", "partial_root_count",
+                       "observations", "regular_files", "access_errors"}
+    if (not isinstance(data, dict) or set(data) != expected_top or
+            data.get("schema_version") != 1 or
+            data.get("kind") != "live_mount_coverage_public" or
+            data.get("source") != "reviewed_private_live_device_snapshot" or
+            data.get("build") != build or data.get("product_type") != product or
+            data.get("observed_at_utc") != device.get("observed_at_utc") or
+            data.get("private_manifest_sha256") != device.get("private_manifest_sha256") or
+            data.get("public_path_count") != device.get("entry_count") or
+            not isinstance(data.get("roots"), list) or
+            len(data["roots"]) != len(LIVE_COVERAGE_ROOTS) or
+            not isinstance(data.get("totals"), dict) or
+            set(data["totals"]) != expected_totals):
+        raise ValueError("invalid or mismatched public live coverage")
+    for row, (_, (label, publication, mount_type)) in zip(
+            data["roots"], LIVE_COVERAGE_ROOTS.items()):
+        if (not isinstance(row, dict) or set(row) != expected_row or
+                row["label"] != label or row["publication"] != publication or
+                row["mount_type"] != mount_type or
+                row["status"] not in ("complete", "partial") or
+                any(type(row[key]) is not int or row[key] < 0
+                    for key in ("observations", "regular_files", "access_errors")) or
+                row["regular_files"] > row["observations"] or
+                (row["status"] == "complete" and row["access_errors"] != 0) or
+                (row["status"] == "partial" and row["access_errors"] == 0)):
+            raise ValueError("unsafe public live coverage row")
+    totals = data["totals"]
+    expected = {"root_count": len(data["roots"]),
+                "complete_root_count": sum(row["status"] == "complete" for row in data["roots"]),
+                "partial_root_count": sum(row["status"] == "partial" for row in data["roots"]),
+                **{key: sum(row[key] for row in data["roots"])
+                   for key in ("observations", "regular_files", "access_errors")}}
+    if (any(type(totals[key]) is not int for key in expected_totals) or
+            totals != expected or
+            totals["root_count"] != device.get("snapshot_root_count") or
+            totals["complete_root_count"] != device.get("complete_root_count")):
+        raise ValueError("public live coverage totals disagree")
+    url = f"data/{build}-live-coverage.json"
+    dump(DIST / url, data)
+    return {"device_coverage_url": url,
+            "device_access_error_count": totals["access_errors"],
+            "device_observation_count": totals["observations"]}
 
 
 def publish_live_macho(build: str, product: str, path: Path, device_path: Path) -> dict:
@@ -1733,6 +1792,12 @@ def build() -> None:
         live_device_path = directory / "device-live.json.gz"
         if live_device_path.exists():
             device_info.update(publish_live_device(build, dyld["product_type"], live_device_path))
+        live_coverage_path = directory / "live-coverage.json"
+        if live_coverage_path.exists():
+            if not live_device_path.exists():
+                raise ValueError("mount coverage requires reviewed live device paths")
+            device_info.update(publish_live_coverage(
+                build, dyld["product_type"], live_coverage_path, live_device_path))
         live_macho_path = directory / "jailbreak-macho.json.gz"
         if live_macho_path.exists():
             if not live_device_path.exists():

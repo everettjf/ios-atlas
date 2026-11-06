@@ -22,6 +22,17 @@ python3 tools/collect_live_device.py --host root@127.0.0.1 --port 22326 --identi
 
 The full pass enumerates each discovered mount independently with `find -xdev`; symlinks are not followed. Files named with newlines are preserved through a NUL-delimited protocol. Each root gets a compressed JSONL file, count, SHA-256, and `complete`/`partial` status. A partial root is retried on the next run. On 2026-11-05, 10 of 12 roots completed. `/rootfs/private/var` reported 16 protected-directory errors, and `/rootfs/private/var/mobile` reported 57; their reachable entries remain private. All 73 errors were `Operation not permitted`, and all affected directories lie outside the reviewed public path allowlist. Their descendant counts remain unknown. Local stderr files include private paths and must not be published. Duplicate namespace views remain distinct until a reviewed mapping exists. Because the phone can change during collection, the result is a time-bounded observation, not an atomic filesystem snapshot.
 
+The separate mount-coverage export replaces every private source path with a fixed reviewed label and retains only scan status, path-observation count, reachable regular-file count, and access-error count. It checks the private manifest and scan-file hashes against the public device catalog before producing a candidate:
+
+```sh
+python3 tools/export_live_coverage.py \
+  --manifest .local/live-device-23A355/manifest.json \
+  --device-catalog catalog/ios/23A355/device-live.json.gz \
+  --output .local/live-device-23A355/live-coverage-candidate.json
+```
+
+Review the labels and totals before copying the candidate to `catalog/ios/23A355/live-coverage.json`. The site builder accepts only the fixed labels and numeric fields, checks 12 roots against the public device catalog, and rejects raw path fields. The current export has 531,311 path observations and 284,150 reachable regular-file records across independently scanned roots. Nested views may overlap, and descendants of the 73 protected directories remain uncounted. These totals are not the 439,365 deduplicated public path records.
+
 ## Public export
 
 Create a **private** `.local/live-device/allowlist.json` after reviewing actual mounts and paths. Its schema is `{"schema_version":1,"prefixes":["/rootfs/System"]}`. The exporter accepts only hardcoded system and jailbreak prefix families; broad `/`, `/private`, and `/var/mobile` exports are rejected. Add the actual jailbreak prefix only after inspecting it. The export strips UID/GID, inode, mount source, symlink target, and all path records outside the allowlist.

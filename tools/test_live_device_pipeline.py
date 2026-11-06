@@ -32,6 +32,34 @@ class LiveDevicePipelineTests(unittest.TestCase):
                                  0, 0, 42, 9, 1790739622, "line\nbreak"]])
         self.assertIn("-printf", scan_command(root))
 
+    def test_mount_coverage_rejects_private_labels_and_false_counts(self) -> None:
+        catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
+        data = json.loads((catalog / "live-coverage.json").read_text())
+        device = catalog / "device-live.json.gz"
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            candidate = root / "coverage.json"
+            previous = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                candidate.write_text(json.dumps(data))
+                info = build_site.publish_live_coverage(
+                    "23A355", "iPhone12,1", candidate, device)
+                self.assertEqual(info["device_access_error_count"], 73)
+                data["roots"][0]["label"] = "/private/var/mobile/private-name"
+                candidate.write_text(json.dumps(data))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_coverage(
+                        "23A355", "iPhone12,1", candidate, device)
+                data["roots"][0]["label"] = "Jailbreak namespace"
+                data["roots"][0]["observations"] += 1
+                candidate.write_text(json.dumps(data))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_coverage(
+                        "23A355", "iPhone12,1", candidate, device)
+            finally:
+                build_site.DIST = previous
+
     @unittest.skipUnless(sys.platform == "darwin", "Darwin stat protocol")
     def test_scan_keeps_newlines_and_symlink_targets(self) -> None:
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
