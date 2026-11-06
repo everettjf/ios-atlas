@@ -36,7 +36,7 @@ Current delivery focus: finish the one-device file and dynamic-library atlas, in
 - [x] Index named `__text` symbols across all 84 verified Developer Mach-O slices, including three files with no names; keep symbol records distinct from Objective-C methods.
 - [x] Check Swift dump metadata across all 84 Developer slices; preserve 12 no-info and 10 partial-parse slice results.
 - [x] Read embedded CodeDirectory metadata across all 84 Developer slices; keep entitlement values and raw signing output private and distinguish metadata from trust.
-- [ ] Establish the cause and any safe read-only access route for the 73 protected-directory errors in the two data-volume views. A follow-up confirmed the same distinct error set, and even `stat` was denied; descendant counts remain unknown.
+- [ ] Establish the cause and any safe read-only access route for the 73 protected-directory errors in the two data-volume views. A root follow-up could read all 73 parents but neither `stat` nor `find -maxdepth 0` could access any target; the iCTRL service was unavailable for a lock-state check. Descendant counts remain unknown.
 - [x] Classify all 4,848 direct loads in verified live Mach-O files by exact cache or live install name; leave tokenized and unmatched names unresolved.
 - [ ] Verify selected runtime load paths with bounded, read-only device observations, including runpath expansion and weak-load behavior.
 - [x] Classify all 219,216 reachable base-root regular files by type, reconcile all 3,117 ordinary Mach-O files with byte-verified firmware identities, and verify the one mixed Metal container against exact FileSystem bytes. The Preboot and Developer mounts have separate type passes; data-volume and volatile mounts retain explicit gaps.

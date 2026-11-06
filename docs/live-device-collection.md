@@ -77,6 +77,8 @@ After reviewing the candidate's category counts and public path set, copy the ve
 
 A later read-only follow-up of the two partial data-volume views found the same 73 protected directories as the first snapshot. Even `stat` on those directory paths returned `Operation not permitted`; their cause and descendant counts remain unknown. A file-type pass matched all 23,490 reachable Data regular-file paths in its later snapshot and found 303 private Mach-O signatures. The Mobile data type pass observed three candidates among 29,500 paths, but 34 paths appeared and 34 disappeared relative to its snapshot. None of these private candidates is presented as a verified public binary. See the [data-volume boundary note](../research/23A355/Data-Volume-Type-Boundary.md).
 
+A further bounded root-SSH probe verified that metadata for all 73 parent directories was readable, while `stat` and `find -maxdepth 0` still failed on all 73 targets. Its private aggregate is `.local/live-device-data-followup-20261106/protected-access-probe.json`; it contains no public path list. The mode bits of the parents alone do not identify the denial mechanism. The iCTRL service was not listening for a lock-state check at that time.
+
 A subsequent read-only `sha256sum -z` pass hashed all 306 private candidates on the exact phone, with no missing result or stderr. At that stage it had not acquired their bytes or parsed their Mach-O headers, and protected descendants remained unknown. The private hash tool checks the snapshot digest, NUL-delimited type paths, and device product/build before hashing; it records path and hash values only under ignored `.local`:
 
 ```sh
