@@ -1272,6 +1272,15 @@
       "source_checked_at": "2026-11-05"
     },
     {
+      "install_name": "/System/Library/Frameworks/MetalPerformancePrimitives.framework/MetalPerformancePrimitives",
+      "summary": "Apple's MPP guide describes Metal 4 tensor operations for machine-learning kernels on M5. This iPhone 11 cache image is present, but the guide does not establish API availability or execution on this device.",
+      "source_url": "https://developer.apple.com/download/files/Metal-Performance-Primitives-Programming-Guide.pdf",
+      "source_label": "Apple Developer: Metal Performance Primitives Programming Guide",
+      "source_document_sha256": "8e930fa8ba74f4c7d3f0ebd224c7d79b54d2893523782e827c60e3a098f2c92f",
+      "source_checked_at": "2026-11-06",
+      "verbatim": false
+    },
+    {
       "install_name": "/System/Library/Frameworks/MetalPerformanceShaders.framework/MetalPerformanceShaders",
       "summary": "Optimize graphics and compute performance with kernels that are fine-tuned for the unique characteristics of each Metal GPU family.",
       "source_url": "https://developer.apple.com/documentation/metalperformanceshaders",
