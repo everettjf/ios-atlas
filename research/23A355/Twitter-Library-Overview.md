@@ -1,0 +1,9 @@
+# What does the Twitter cache image expose?
+
+Target: the iPhone 11 iOS 26.0.1 (`23A355`) iOS dyld cache, UUID `C0A7E671-35E1-3E6C-842D-FCE4E0A08C7E`. The image is `/System/Library/Frameworks/Twitter.framework/Twitter`, UUID `7C5FB8B2-613A-3E0B-AC92-64299C2E4DA2`. The intact main cache has SHA-256 `6097e3ce9e29cfccd19d5aab182d006868a93a14c3a5cebcb22b6675c1527b19`; the 80-file cache family was separately matched to this phone by device-side SHA-256.
+
+The [exact-image method catalog](../../catalog/ios/23A355/objc-image-methods-7C5FB8B2-613A-3E0B-AC92-64299C2E4DA2.json.gz) records **23 Objective-C methods** across **two classes and one category**. Its compressed source record has SHA-256 `912baee4cb16f060cbe5a18cd65c1d82b1c08b8b495017683599121178289f94`. `TWRequest` names `initWithURL:parameters:requestMethod:`, `signedURLRequest`, and `performRequestWithHandler:`. `TWTweetComposeViewController` names `canSendTweet`, `setInitialText:`, `addImage:`, `addURL:`, and a completion handler. The `NSString (TWStringAdditions)` category names one character-count method.
+
+These names support a **static role inference**: the image contains a legacy tweet-composition and request surface. They do not show that Twitter accounts are configured, that a request was sent, that the service still works, or that any process loaded this image on the phone. Method names are neither full function-body analysis nor proof of a supported public API in this build.
+
+An `ipsw dyld extract` derivative with SHA-256 `d4086bd1ecfd3716ea4cdea56c1fc7be0b8821eada45782691a50adfcb231c37` was produced privately for optional follow-up, but REA's native `dyld_info` inspection rejected its `__DATA_CONST` flag layout. This note therefore relies on the separately validated intact-cache method catalog, not on that failed derivative inspection. Future work can inspect selected method bodies and callers, then observe loading only if a bounded read-only device route is available.

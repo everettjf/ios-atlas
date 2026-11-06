@@ -33,7 +33,7 @@
     "id": "framework-introduction-coverage",
     "build": "23A355",
     "title": "Which cache frameworks have sourced introductions?",
-    "summary": "Apple Developer sources now supply linked introductions for 219 of 227 exact top-level framework images. Other cache images retain metadata overviews while functional research continues.",
+    "summary": "Apple Developer sources now supply linked introductions for 221 of 227 exact top-level framework images. Other cache images retain metadata overviews while functional research continues.",
     "note": "research/23A355/Framework-Introduction-Coverage.md"
   },
   {
@@ -43,6 +43,14 @@
     "summary": "The exact cache image exposes 270 Objective-C methods, including chat-button and authentication code. Focused static analysis supports a chat UI role; runtime ownership and the complete workflow remain open.",
     "install_name": "/System/Library/Frameworks/BusinessChat.framework/BusinessChat",
     "note": "research/23A355/BusinessChat-Library-Overview.md"
+  },
+  {
+    "id": "twitter-library-overview",
+    "build": "23A355",
+    "title": "What does the Twitter cache image expose?",
+    "summary": "The exact cache method catalog records 23 Objective-C entries in a request class, a tweet composer, and one string category. Runtime loading and service availability remain unknown.",
+    "install_name": "/System/Library/Frameworks/Twitter.framework/Twitter",
+    "note": "research/23A355/Twitter-Library-Overview.md"
   },
   {
     "id": "widgetkit-library-overview",

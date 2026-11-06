@@ -65,7 +65,9 @@ Current delivery focus: finish the one-device file and dynamic-library atlas, in
 - [x] Trace the live UpdateBrain service entry into its device-acquired library; record the XPC listener, entitlement gate, and seven static command dispatch targets with Ghidra addresses and private evidence bundles.
 - [ ] Follow selected UpdateBrain command handlers and identify their clients; verify runpath resolution and process ownership before describing runtime behavior.
 - [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.
+- [x] Record a first-pass Twitter role from the exact cache image's 23 Objective-C method entries, keeping runtime loading and service availability unknown.
 - [ ] Trace BusinessChat action and network-provider call sites and identify its runtime process owner.
+- [ ] Trace selected Twitter request and composer methods, then identify any current callers or process owner before claiming runtime use.
 - [ ] Map selected public Swift APIs to exact-image metadata or exports before describing their implementation in this build.
 - [ ] Follow WidgetKit's `_WidgetExtensionSession` timeline and control request methods into their immediate call sites, and distinguish its code from `ChronoServices`.
 - [ ] Inspect selected method bodies and call sites in the exact image; attach addresses, disassembly, and tool versions.
