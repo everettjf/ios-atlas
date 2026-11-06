@@ -45,7 +45,8 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Resnapshot the volatile Software Update mount and reconcile all 2,080 reachable file paths with a complete type pass; recheck both ordinary Mach-O candidates by device SHA-256.
 - [x] Classify all reachable files from a later partial Data snapshot by type: 23,490 paths matched exactly, with 303 private Mach-O signatures. Observe three Mobile data candidates while retaining its 34-path churn and 57 protected-directory limit. Keep all private app and mobile paths out of the public site.
 - [x] Hash all 306 reachable Data and Mobile data Mach-O type candidates on the exact device with a NUL-safe, read-only pass; keep every path and digest private, and retain the older type-scan and protected-directory limits.
-- [ ] Acquire selected private data-volume candidate bytes and reconcile their Mach-O headers and static metadata against device hashes without publishing app paths or content.
+- [x] Acquire all 306 reachable private data-volume Mach-O candidates, match every local byte stream to its device-side hash, and parse 312 architecture slices without publishing app paths, hashes, or binaries.
+- [ ] Inspect selected private data-volume binaries for Objective-C, named symbols, Swift, dependencies, and signing metadata; keep the individual results private unless a separate privacy review approves an aggregate.
 - [x] Expose static analysis status by mount for verified public code, including no-info and failed Objective-C results, partial Swift results, and mounts with no code-classification pass.
 - [ ] Expand live standalone Mach-O and library analysis coverage to every publishable code-bearing file on each mount, including unsupported formats and failed analyses.
 

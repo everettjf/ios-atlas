@@ -64,7 +64,7 @@ The site's **Verified code by mount** table separates path scanning from byte-ve
 
 A later read-only follow-up of the two partial data-volume views found the same 73 protected directories as the first snapshot. Even `stat` on those directory paths returned `Operation not permitted`; their cause and descendant counts remain unknown. A file-type pass matched all 23,490 reachable Data regular-file paths in its later snapshot and found 303 private Mach-O signatures. The Mobile data type pass observed three candidates among 29,500 paths, but 34 paths appeared and 34 disappeared relative to its snapshot. None of these private candidates is presented as a verified public binary. See the [data-volume boundary note](../research/23A355/Data-Volume-Type-Boundary.md).
 
-A subsequent read-only `sha256sum -z` pass hashed all 306 private candidates on the exact phone, with no missing result or stderr. It did not acquire their bytes or parse their Mach-O headers, and protected descendants remain unknown. The private hash tool checks the snapshot digest, NUL-delimited type paths, and device product/build before hashing; it records path and hash values only under ignored `.local`:
+A subsequent read-only `sha256sum -z` pass hashed all 306 private candidates on the exact phone, with no missing result or stderr. At that stage it had not acquired their bytes or parsed their Mach-O headers, and protected descendants remained unknown. The private hash tool checks the snapshot digest, NUL-delimited type paths, and device product/build before hashing; it records path and hash values only under ignored `.local`:
 
 ```sh
 python3 tools/hash_private_macho_candidates.py \
@@ -75,6 +75,18 @@ python3 tools/hash_private_macho_candidates.py \
   --product iPhone12,1 --build 23A355 \
   --output .local/live-device-data-followup-20261106/private-macho-hashes.json
 ```
+
+A second read-only tar pass acquired every candidate into ignored `.local`, accepted only requested regular-file members, and compared every local SHA-256 to the device hash record. All 306 matched, with no size change from the earlier snapshot; 312 Mach-O architecture slices and all UUIDs parsed. The private acquisition manifest retains paths, hashes, opaque local binary filenames, per-file outcomes, and any diagnostic text. Only reviewed aggregate counts enter the public note and Coverage view:
+
+```sh
+python3 tools/acquire_private_macho_candidates.py \
+  --hash-manifest .local/live-device-data-followup-20261106/private-macho-hashes.json \
+  --output-dir .local/live-device-data-followup-20261106/acquired-macho \
+  --port 22326 --identity <DEVICE_KEY> --known-hosts <PINNED_HOST_KEYS> \
+  --product iPhone12,1 --build 23A355
+```
+
+The Data and Mobile data mounts remain partial because 73 directories denied traversal. Their changed or unreadable descendants and non-Mach-O code formats are outside this verified candidate set. The five dSYM companions are Mach-O files but are not launchable code.
 
 The first static analysis pass over all 84 Developer Mach-O slices reads `LC_LOAD_*` and `LC_RPATH` declarations from the acquired, hash-verified bytes. It found 1,778 direct library loads and 158 public runpath declarations. The catalog preserves weak loads and architecture-specific duplication; it does not resolve `@rpath` against a running process or prove that any file was loaded. Generate the private aggregate before review and publication with:
 

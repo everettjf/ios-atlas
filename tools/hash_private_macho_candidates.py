@@ -12,6 +12,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -120,6 +121,7 @@ def collect(args: argparse.Namespace) -> dict:
     output.parent.mkdir(parents=True, exist_ok=True)
     stderr = output.with_suffix(output.suffix + ".stderr")
     stderr.write_bytes(result.stderr)
+    os.chmod(stderr, 0o600)
     record = {
         "schema_version": 1,
         "kind": "private_live_data_macho_hashes",
@@ -136,6 +138,7 @@ def collect(args: argparse.Namespace) -> dict:
     temporary = output.with_suffix(output.suffix + ".tmp")
     temporary.write_text(json.dumps(record, ensure_ascii=True, sort_keys=True,
                                     separators=(",", ":")) + "\n")
+    os.chmod(temporary, 0o600)
     temporary.replace(output)
     return record
 

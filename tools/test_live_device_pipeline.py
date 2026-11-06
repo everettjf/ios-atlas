@@ -13,6 +13,7 @@ import unittest
 from pathlib import Path
 
 import build_site
+from acquire_private_macho_candidates import archive_name
 from hash_private_macho_candidates import parse_hashes
 from collect_live_device import PRIVATE_ROOT, private_path, records_from_chunks, scan_command
 from export_live_device import export
@@ -42,6 +43,16 @@ class LiveDevicePipelineTests(unittest.TestCase):
             parse_hashes(digest + b"  " + path, {path})
         with self.assertRaises(ValueError):
             parse_hashes(digest + b"  " + path + b"\0", set())
+
+    def test_private_tar_member_must_be_exact_requested_file(self) -> None:
+        expected = {"rootfs/private/var/example\nname"}
+        self.assertEqual(archive_name("./rootfs/private/var/example\nname", expected),
+                         "rootfs/private/var/example\nname")
+        for name in ("/rootfs/private/var/example\nname",
+                     "../rootfs/private/var/example\nname",
+                     "rootfs/private/var/other"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                archive_name(name, expected)
 
     def test_mount_coverage_rejects_private_labels_and_false_counts(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
