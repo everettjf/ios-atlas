@@ -301,6 +301,10 @@ def publish_live_macho(build: str, product: str, path: Path, device_path: Path) 
             data.get("source") != "verified_live_device_macho_bytes" or
             data.get("build") != build or data.get("product_type") != product or
             not isinstance(records, list) or data.get("macho_file_count") != len(records) or
+            not isinstance(data.get("classification_file_count"), int) or
+            not isinstance(data.get("withheld_identifier_count"), int) or
+            data["withheld_identifier_count"] < 0 or
+            data["classification_file_count"] < len(records) + data["withheld_identifier_count"] or
             data.get("failed_count") != len(data.get("failures", [])) or
             data.get("failed_count") != 0):
         raise ValueError("incomplete or mismatched live Mach-O catalog")
@@ -322,7 +326,10 @@ def publish_live_macho(build: str, product: str, path: Path, device_path: Path) 
         seen.add(item_path)
     url = f"data/{build}-jailbreak-macho.json.gz"
     shutil.copy2(path, DIST / url)
-    return {"device_macho_url": url, "device_macho_count": len(records)}
+    return {"device_macho_url": url, "device_macho_count": len(records),
+            "device_macho_scanned_file_count": data["classification_file_count"],
+            "device_macho_verified_count": len(records) + data["withheld_identifier_count"],
+            "device_macho_withheld_count": data["withheld_identifier_count"]}
 
 
 def publish_live_developer_macho(build: str, product: str, path: Path,

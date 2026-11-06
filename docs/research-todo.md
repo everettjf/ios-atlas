@@ -38,6 +38,7 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [ ] Discover any additional base-system standalone executables, dylibs, frameworks, and extensions absent from the firmware inventory; establish identity before reusing firmware analysis. The base `/rootfs` and both cryptex file paths all appear in the corresponding official image catalogs; the separate Developer mount adds 42 verified Mach-O files. Remaining data-volume and preboot coverage is explicit in the collection note.
 - [x] Make live device files the primary website view, show scan-root coverage, and remove cross-version comparison navigation.
 - [x] Publish privacy-reviewed per-mount scan counts, statuses, and access-error totals without private path names.
+- [x] Show byte-verified Mach-O counts by mount, distinguishing exhaustive live file-type passes from firmware-seeded hash matches and unclassified mounts.
 - [ ] Add live standalone Mach-O and library analysis coverage by mount, including unsupported and failed states.
 
 ## Deeper studies, one component at a time

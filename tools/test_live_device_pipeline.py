@@ -175,6 +175,7 @@ class LiveDevicePipelineTests(unittest.TestCase):
             macho = {"schema_version": 1, "kind": "live_jailbreak_macho_inventory",
                      "source": "verified_live_device_macho_bytes", "build": "23A355",
                      "product_type": "iPhone12,1", "macho_file_count": 1,
+                     "classification_file_count": 2, "withheld_identifier_count": 0,
                      "failed_count": 0, "failures": [], "records": [record]}
             candidate = root / "macho.json.gz"
             candidate.write_bytes(gzip.compress(json.dumps(macho).encode(), mtime=0))
@@ -185,6 +186,8 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 info = build_site.publish_live_macho("23A355", "iPhone12,1",
                                                      candidate, device)
                 self.assertEqual(info["device_macho_count"], 1)
+                self.assertEqual(info["device_macho_verified_count"], 1)
+                self.assertEqual(info["device_macho_scanned_file_count"], 2)
                 record["path"] = "/private/var/mobile/secret"
                 candidate.write_bytes(gzip.compress(json.dumps(macho).encode(), mtime=0))
                 with self.assertRaises(ValueError):
