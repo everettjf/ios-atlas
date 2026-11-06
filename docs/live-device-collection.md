@@ -49,6 +49,16 @@ python3 tools/catalog_live_developer_macho.py \
 
 The private snapshot also shows 219,216 regular files under the base `/rootfs` mount, each with a same-path record in the official FileSystem image. All 2,091 OS and 1,099 App cryptex regular files likewise have same-path records in their respective official images. Same-path presence alone is not a byte match. Another 67 regular files in preboot lie outside the two mounted cryptex trees; these are firmware payloads, tickets, and mount metadata in device-specific paths and are not published as live Mach-O library records.
 
+The first static analysis pass over all 84 Developer Mach-O slices reads `LC_LOAD_*` and `LC_RPATH` declarations from the acquired, hash-verified bytes. It found 1,778 direct library loads and 158 public runpath declarations. The catalog preserves weak loads and architecture-specific duplication; it does not resolve `@rpath` against a running process or prove that any file was loaded. Generate the private aggregate before review and publication with:
+
+```sh
+python3 tools/catalog_live_developer_dependencies.py \
+  --macho-catalog catalog/ios/23A355/developer-macho.json.gz \
+  --binary-root .local/live-device/developer-macho-files \
+  --workdir .local/live-device/developer-dependency-work \
+  --output .local/live-device/developer-dependencies-candidate.json.gz
+```
+
 The complete jailbreak-root scan found 6,449 regular files. A device-side GNU `file -0 -0` pass identified 464 Mach-O candidates. A separate `sha256sum -z` pass hashed those exact paths. A private tar transfer acquired those files; every local copy matched its device-side hash. The reproducible header catalog is generated with:
 
 ```sh

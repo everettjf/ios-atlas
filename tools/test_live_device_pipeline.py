@@ -210,6 +210,19 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     build_site.publish_live_dependencies(
                         "23A355", "iPhone12,1", candidate, macho_path)
+                part["rpaths"].pop()
+                data["totals"]["rpaths"] -= 1
+                data["kind"] = "live_developer_direct_dependencies"
+                data["source"] = "verified_live_developer_mount_bytes"
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                info = build_site.publish_live_dependencies(
+                    "23A355", "iPhone12,1", candidate, macho_path, "developer")
+                self.assertEqual(info["developer_macho_direct_load_count"], 1)
+                part["dependencies"][0]["install_name"] = "/Users/person/private.dylib"
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_dependencies(
+                        "23A355", "iPhone12,1", candidate, macho_path, "developer")
             finally:
                 build_site.DIST = old_dist
 

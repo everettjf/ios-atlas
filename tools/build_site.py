@@ -290,15 +290,26 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) ->
 
 
 def publish_live_dependencies(build: str, product: str, path: Path,
-                              macho_path: Path) -> dict:
+                              macho_path: Path, family: str = "jailbreak") -> dict:
     """Publish static direct-load declarations from exact verified live files."""
+    families = {
+        "jailbreak": ("live_jailbreak_direct_dependencies",
+                      "verified_live_device_macho_bytes", "jailbreak",
+                      "device_macho"),
+        "developer": ("live_developer_direct_dependencies",
+                      "verified_live_developer_mount_bytes", "developer",
+                      "developer_macho"),
+    }
+    if family not in families:
+        raise ValueError("unsupported live dependency family")
+    kind, source, filename, key_prefix = families[family]
     data = load(path)
     macho = load(macho_path)
     originals = {item["path"]: item for item in macho["records"]}
     files = data.get("files")
     if (data.get("schema_version") != 1 or
-            data.get("kind") != "live_jailbreak_direct_dependencies" or
-            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("kind") != kind or
+            data.get("source") != source or
             data.get("build") != build or data.get("product_type") != product or
             not isinstance(files, list) or len(files) != len(originals) or
             data.get("macho_file_count") != len(files)):
@@ -350,11 +361,11 @@ def publish_live_dependencies(build: str, product: str, path: Path,
     if seen != set(originals) or any(data.get("totals", {}).get(key) != value
                                      for key, value in totals.items()):
         raise ValueError("live dependency totals disagree")
-    url = f"data/{build}-jailbreak-dependencies.json.gz"
+    url = f"data/{build}-{filename}-dependencies.json.gz"
     shutil.copy2(path, DIST / url)
-    return {"device_macho_dependency_url": url,
-            "device_macho_direct_load_count": totals["direct_loads"],
-            "device_macho_redacted_rpath_count": totals["redacted_rpaths"]}
+    return {f"{key_prefix}_dependency_url": url,
+            f"{key_prefix}_direct_load_count": totals["direct_loads"],
+            f"{key_prefix}_redacted_rpath_count": totals["redacted_rpaths"]}
 
 
 def publish_live_symbols(build: str, product: str, path: Path,
@@ -1642,6 +1653,13 @@ def build() -> None:
                 raise ValueError("Developer Mach-O catalog requires reviewed live paths")
             device_info.update(publish_live_developer_macho(
                 build, dyld["product_type"], developer_macho_path, live_device_path))
+        developer_dependencies_path = directory / "developer-dependencies.json.gz"
+        if developer_dependencies_path.exists():
+            if not developer_macho_path.exists():
+                raise ValueError("Developer dependencies require verified Mach-O files")
+            device_info.update(publish_live_dependencies(
+                build, dyld["product_type"], developer_dependencies_path,
+                developer_macho_path, "developer"))
         live_objc_path = directory / "jailbreak-objc-methods.json.gz"
         if live_objc_path.exists():
             if not live_macho_path.exists():
