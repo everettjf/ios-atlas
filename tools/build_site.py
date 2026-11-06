@@ -403,15 +403,23 @@ def publish_live_dependencies(build: str, product: str, path: Path,
 
 
 def publish_live_symbols(build: str, product: str, path: Path,
-                         macho_path: Path) -> dict:
+                         macho_path: Path, family: str = "jailbreak") -> dict:
     """Publish reviewed per-slice names only for exact verified device files."""
+    families = {
+        "jailbreak": ("live_jailbreak_named_text_symbols",
+                      "verified_live_device_macho_bytes", "jailbreak", "device_macho"),
+        "developer": ("live_developer_named_text_symbols",
+                      "verified_live_developer_mount_bytes", "developer", "developer_macho"),
+    }
+    if family not in families:
+        raise ValueError("unsupported live symbol family")
+    kind, source, filename, key_prefix = families[family]
     data = load(path)
     macho = load(macho_path)
     originals = {item["path"]: item for item in macho["records"]}
     files = data.get("files")
     if (data.get("schema_version") != 1 or
-            data.get("kind") != "live_jailbreak_named_text_symbols" or
-            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("kind") != kind or data.get("source") != source or
             data.get("build") != build or data.get("product_type") != product or
             not isinstance(files, list) or len(files) != len(originals) or
             data.get("macho_file_count") != len(files)):
@@ -479,7 +487,7 @@ def publish_live_symbols(build: str, product: str, path: Path,
             totals["slices_without_names"] += not names
         totals["files_without_names"] += not rows
         bucket_id = hashlib.sha256(item["path"].encode()).digest()[0] % 64
-        bucket_url = (f"data/{build}-jailbreak-symbols/{bucket_id:02x}.json.gz"
+        bucket_url = (f"data/{build}-{filename}-symbols/{bucket_id:02x}.json.gz"
                       if rows else None)
         summaries.append({"path": item["path"], "sha256": item["sha256"],
                           "named_symbol_count": len(rows),
@@ -492,16 +500,16 @@ def publish_live_symbols(build: str, product: str, path: Path,
             any(data.get("totals", {}).get(key) != value for key, value in totals.items())):
         raise ValueError("live symbol totals disagree")
     for bucket_id, entries in buckets.items():
-        dump(DIST / f"data/{build}-jailbreak-symbols/{bucket_id:02x}.json.gz",
+        dump(DIST / f"data/{build}-{filename}-symbols/{bucket_id:02x}.json.gz",
              {"schema_version": 1, "build": build, "files": entries},
              compressed=True)
-    index_url = f"data/{build}-jailbreak-symbol-index.json.gz"
+    index_url = f"data/{build}-{filename}-symbol-index.json.gz"
     dump(DIST / index_url,
          {"schema_version": 1, "build": build, "files": summaries,
           "totals": dict(totals)}, compressed=True)
-    return {"device_macho_symbol_index_url": index_url,
-            "device_macho_named_symbol_count": totals["named_symbols"],
-            "device_macho_symbol_empty_file_count": totals["files_without_names"]}
+    return {f"{key_prefix}_symbol_index_url": index_url,
+            f"{key_prefix}_named_symbol_count": totals["named_symbols"],
+            f"{key_prefix}_symbol_empty_file_count": totals["files_without_names"]}
 
 
 def publish_live_swift(build: str, product: str, path: Path,
@@ -1700,6 +1708,13 @@ def build() -> None:
                 raise ValueError("Developer dependencies require verified Mach-O files")
             device_info.update(publish_live_dependencies(
                 build, dyld["product_type"], developer_dependencies_path,
+                developer_macho_path, "developer"))
+        developer_symbols_path = directory / "developer-symbols.json.gz"
+        if developer_symbols_path.exists():
+            if not developer_macho_path.exists():
+                raise ValueError("Developer symbols require verified Mach-O files")
+            device_info.update(publish_live_symbols(
+                build, dyld["product_type"], developer_symbols_path,
                 developer_macho_path, "developer"))
         live_objc_path = directory / "jailbreak-objc-methods.json.gz"
         if live_objc_path.exists():

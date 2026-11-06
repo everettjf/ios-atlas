@@ -311,6 +311,20 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     build_site.publish_live_symbols(
                         "23A355", "iPhone12,1", symbol_path, macho_path)
+                slice_record["symbols"][0][0] = "0x1000"
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_symbols(
+                        "23A355", "iPhone12,1", symbol_path, macho_path,
+                        "developer")
+                data["kind"] = "live_developer_named_text_symbols"
+                data["source"] = "verified_live_developer_mount_bytes"
+                symbol_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                developer = build_site.publish_live_symbols(
+                    "23A355", "iPhone12,1", symbol_path, macho_path,
+                    "developer")
+                self.assertEqual(developer["developer_macho_named_symbol_count"], 1)
+                self.assertTrue((build_site.DIST /
+                                 developer["developer_macho_symbol_index_url"]).is_file())
             finally:
                 build_site.DIST = old_dist
 

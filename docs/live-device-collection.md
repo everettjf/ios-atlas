@@ -69,6 +69,16 @@ python3 tools/catalog_live_developer_objc.py \
   --output .local/live-device/developer-objc-candidate.json.gz
 ```
 
+A separate named-symbol pass checked all 84 slices against the acquired file hashes and Mach-O UUIDs. It found 78,771 named records inside executable `__text` sections; three files (six slices) yielded no names. The public builder checks every symbol address against its code section and rejects private path and contact patterns before publishing searchable per-file buckets. Names overlap Objective-C methods and do not enumerate every callable function. Reproduce the private pass with:
+
+```sh
+python3 tools/catalog_live_developer_symbols.py \
+  --macho-catalog catalog/ios/23A355/developer-macho.json.gz \
+  --binary-root .local/live-device/developer-macho-files \
+  --workdir .local/live-device/developer-symbol-work \
+  --output .local/live-device/developer-symbols-candidate.json.gz
+```
+
 The complete jailbreak-root scan found 6,449 regular files. A device-side GNU `file -0 -0` pass identified 464 Mach-O candidates. A separate `sha256sum -z` pass hashed those exact paths. A private tar transfer acquired those files; every local copy matched its device-side hash. The reproducible header catalog is generated with:
 
 ```sh
