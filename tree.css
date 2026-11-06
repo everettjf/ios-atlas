@@ -1,0 +1,49 @@
+.folder-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line);
+  font: 12px var(--mono);
+  color: var(--muted);
+}
+.folder-breadcrumbs button {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  padding: 2px 4px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.folder-breadcrumbs button:hover { text-decoration: underline; }
+.folder-breadcrumbs button[aria-current="location"] { color: var(--ink); font-weight: 700; }
+.folder-row .row-text { font-weight: 500; }
+.folder-cache { border-top: 2px solid var(--line); margin-top: 10px; }
+.folder-cache-heading {
+  display: flex;
+  gap: 6px;
+  flex-direction: column;
+  padding: 14px 20px;
+  background: #faf7f2;
+}
+.folder-cache-heading strong { font: 600 12px var(--mono); color: var(--accent); }
+.folder-cache-heading span { font-size: 12px; color: var(--muted); }
+.folder-cache-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: #fff;
+  padding: 11px 20px;
+  font: 12px var(--mono);
+  color: var(--ink);
+}
+.folder-cache-row:hover { background: #fff4e8; }
+.folder-cache-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-cache-row small { white-space: nowrap; color: var(--accent); font-size: 10px; }
