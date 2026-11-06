@@ -956,7 +956,11 @@ async function renderCoverageExplorer() {
       return [fmt(info.developer_macho_count), `${fmt(info.developer_scanned_file_count)} regular files classified; ${fmt(info.developer_scanned_file_count - info.developer_macho_count)} are not Mach-O; ${fmt(info.developer_macho_objc_failed_count)} Objective-C class dump${info.developer_macho_objc_failed_count === 1 ? '' : 's'} failed; method counts for those files remain unknown`];
     }
     if (root.label === 'Base root filesystem') return [fmt(info.standalone_device_public_match_count), 'Official standalone Mach-O bytes verified on the phone; other live file contents not classified here'];
-    if (root.label === 'Preboot volume') return [fmt(info.standalone_device_matched_count - info.standalone_device_public_match_count), 'OS and App cryptex Mach-O bytes verified; other preboot files not code-classified'];
+    if (root.label === 'Preboot volume') {
+      const standardCount = info.standalone_device_matched_count - info.standalone_device_public_match_count;
+      if (root.regular_files !== 3257 || standardCount !== 40) throw new Error('Preboot type-pass evidence differs from this snapshot');
+      return [fmt(standardCount), `All ${fmt(root.regular_files)} reachable regular files classified by type: ${fmt(standardCount)} standard Mach-O files verified, plus one byte-matched mixed Metal container outside this count`];
+    }
     if (!root.regular_files) return ['—', 'No reachable regular files in this scan'];
     return ['—', root.status === 'partial' ? 'No code-classification pass; protected descendants remain unknown' : 'No code-classification pass'];
   };
@@ -977,13 +981,18 @@ async function renderCoverageExplorer() {
       `${fmt(info.developer_macho_code_directory_count)} slices: loads, symbols, Swift, and signing checked; Swift ${fmt(info.developer_macho_swift_no_info_slice_count)} no info, ${fmt(info.developer_macho_swift_partial_slice_count)} partial`,
       'Failed class dump has an unknown method count; runtime use unverified'
     ];
-    if (root.label === 'Base root filesystem' || root.label === 'Preboot volume') {
-      const count = root.label === 'Base root filesystem' ? info.standalone_device_public_match_count : info.standalone_device_matched_count - info.standalone_device_public_match_count;
-      return [`${fmt(count)} device files byte-matched to official firmware`,
-        root.label === 'Base root filesystem' ? 'Exact-file firmware results linked to reviewed device paths' : 'Exact-file firmware results available; live physical paths withheld',
-        'Methods, symbols, and Swift metadata from matched firmware files',
-        'Firmware-seeded pass; other live regular files not code-classified'];
-    }
+    if (root.label === 'Base root filesystem') return [
+      `${fmt(info.standalone_device_public_match_count)} device files byte-matched to official firmware`,
+      'Exact-file firmware results linked to reviewed device paths',
+      'Methods, symbols, and Swift metadata from matched firmware files',
+      'Firmware-seeded pass; other live regular files not code-classified'
+    ];
+    if (root.label === 'Preboot volume') return [
+      `${fmt(info.standalone_device_matched_count - info.standalone_device_public_match_count)} standalone Mach-O files + 1 mixed Metal container byte-matched`,
+      'Firmware results for standard Mach-O; mixed Metal not method-indexed',
+      'All reachable files type-classified; GPU Mach-O slice header recorded',
+      'Embedded formats and runtime use remain unverified; physical paths withheld'
+    ];
     return ['No code-classification pass', 'Not inspected', 'Not inspected',
       root.status === 'partial' ? 'Protected descendants and code-bearing file count unknown' :
       root.regular_files ? 'Code-bearing file count unknown' : 'No reachable regular files in this view'];
@@ -992,12 +1001,12 @@ async function renderCoverageExplorer() {
     const cells = analysisState(root).map((value) => `<td>${escapeHTML(value)}</td>`).join('');
     return `<tr><th scope="row">${escapeHTML(root.label)}</th>${cells}</tr>`;
   }).join('');
-  const analysisSection = `<section class="coverage-section"><h3>Static analysis status by mount</h3><p>Results describe the verified public code set in each independent mount view. “No info” is an inspected empty metadata result; “failed” and “not inspected” have different meanings. Mount views overlap, so their counts cannot be added.</p><div class="coverage-table-wrap"><table class="coverage-table analysis-table"><thead><tr><th scope="col">Mount view</th><th scope="col">Code source</th><th scope="col">Objective-C</th><th scope="col">Other static analysis</th><th scope="col">Remaining gap</th></tr></thead><tbody>${analysisRows}</tbody></table></div></section>`;
+  const analysisSection = `<section class="coverage-section"><h3>Static analysis status by mount</h3><p>Results describe the verified public code set in each independent mount view. “No info” is an inspected empty metadata result; “failed” and “not inspected” have different meanings. Mount views overlap, so their counts cannot be added.</p><div class="coverage-table-wrap"><table class="coverage-table analysis-table"><thead><tr><th scope="col">Mount view</th><th scope="col">Code source</th><th scope="col">Objective-C</th><th scope="col">Other static analysis</th><th scope="col">Remaining gap</th></tr></thead><tbody>${analysisRows}</tbody></table></div><p class="coverage-note">The Preboot type pass found one mixed QuartzCore Metal container beyond the 40 standard Mach-O files; its bytes match official SystemOS. <button class="inline-link" data-linked-tab="research" data-linked-query="preboot-metal-container">Read exact evidence ↗</button></p></section>`;
   const layer = (tab, count, title, description) => `<button class="coverage-layer" data-linked-tab="${tab}"><strong>${fmt(count)}</strong><span>${title}</span><small>${description}</small><em>Explore ↗</em></button>`;
   explorer.innerHTML = `<div class="coverage-page"><div class="kernel-summary"><div><strong>${fmt(totals.complete_root_count)} / ${fmt(totals.root_count)} ROOTS COMPLETE</strong><span>Two data-volume views are partial</span></div><div><strong>${fmt(totals.observations)} PATH OBSERVATIONS</strong><span>Across independent scans; nested views can overlap</span></div><div><strong>${fmt(totals.access_errors)} ACCESS ERRORS</strong><span>Protected directories; descendant counts unknown</span></div><div><strong>${fmt(data.public_path_count)} PUBLISHED PATHS</strong><span>Privacy-reviewed, deduplicated system and jailbreak paths</span></div></div><section class="coverage-section"><h3>Filesystem scan roots</h3><p>Each root was scanned without crossing its mount. Labels replace private source paths. File counts describe reachable regular-file records, including those withheld from the public path catalog.</p><div class="coverage-table-wrap"><table class="coverage-table"><thead><tr><th scope="col">Mount view</th><th scope="col">Status</th><th scope="col">Observations</th><th scope="col">Regular files</th><th scope="col">Access errors</th></tr></thead><tbody>${rows}</tbody></table></div><p class="coverage-note">The two partial data-volume views returned “Operation not permitted” for 73 directories. Every affected directory lies outside the reviewed public path allowlist. Counts are observations, not a count of unique on-device files; unreadable descendants are not included.</p></section><section class="coverage-section"><h3>Verified code by mount</h3><p>Counts show physical Mach-O files whose bytes were checked against this phone. A dash means no code-classification pass, not zero executable files. Mount views can overlap, so do not add their counts.</p><div class="coverage-table-wrap"><table class="coverage-table code-coverage-table"><thead><tr><th scope="col">Mount view</th><th scope="col">Verified Mach-O</th><th scope="col">Analysis scope and gaps</th></tr></thead><tbody>${codeRows}</tbody></table></div></section>${analysisSection}<section class="coverage-section"><h3>Code analysis layers</h3><p>These catalogs use different evidence. A cache image is a logical library, while a Mach-O file is a physical binary.</p><div class="coverage-layers">${layer('images', activeBuild().image_count, 'iOS cache images', 'Exact cache bytes checked against this device')}${layer('driverkit', activeBuild().driverkit_image_count, 'DriverKit cache images', 'Separate exact-build cache family')}${layer('device_macho', activeBuild().device_macho_count, 'Jailbreak Mach-O files', 'Acquired bytes matched device-side hashes')}${layer('developer_macho', activeBuild().developer_macho_count, 'Developer Mach-O files', 'Acquired bytes matched device-side hashes')}${layer('macho', activeBuild().standalone_macho_file_count, 'Firmware standalone Mach-O', 'Official IPSW source; device identity is tracked separately')}</div><p class="coverage-note">A separate read-only device pass verified ${fmt(activeBuild().standalone_device_matched_count)} standalone system files by SHA-256. Static metadata and name matches do not establish runtime loading. One randomized jailbreak filename is withheld from the public Mach-O catalog.</p></section></div>`;
   explorer.onclick = (event) => {
     const link = event.target.closest('[data-linked-tab]');
-    if (link) setTab(link.dataset.linkedTab);
+    if (link) setTab(link.dataset.linkedTab, link.dataset.linkedQuery || '');
   };
 }
 

@@ -67,6 +67,13 @@
     "note": "research/23A355/Standalone-MachO-Coverage.md"
   },
   {
+    "id": "preboot-metal-container",
+    "build": "23A355",
+    "title": "What does the live Preboot code scan add?",
+    "summary": "All 3,257 reachable Preboot files were classified by type. Forty standard Mach-O files were already byte-matched; one mixed QuartzCore Metal container also exactly matches SystemOS firmware and remains outside the standalone Mach-O count.",
+    "note": "research/23A355/Preboot-Metal-Container.md"
+  },
+  {
     "id": "live-jailbreak-macho",
     "build": "23A355",
     "title": "Which Mach-O files are installed in the live jailbreak tree?",
