@@ -60,6 +60,38 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = previous
 
+    def test_firmware_device_identity_links_only_reviewed_paths(self) -> None:
+        catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
+        original = build_site.load(catalog / "standalone-live-identity.json.gz")
+        firmware = build_site.load(catalog / "standalone-macho.json.gz")
+        device = catalog / "device-live.json.gz"
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            candidate = root / "identity.json.gz"
+            candidate.write_bytes(gzip.compress(json.dumps(original).encode(), mtime=0))
+            previous = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                info = build_site.publish_standalone_device_identity(
+                    "23A355", "iPhone12,1", candidate, firmware, device)
+                self.assertEqual(info["standalone_device_matched_count"], 3157)
+                self.assertEqual(info["standalone_device_public_match_count"], 3117)
+                published = build_site.load(build_site.DIST / info["standalone_device_identity_url"])
+                self.assertEqual(len(published["records"]), 3157)
+                linked = [row for row in published["records"] if "public_device_path" in row]
+                self.assertEqual(len(linked), 3117)
+                self.assertTrue(all(row["volume"] == "FileSystem" for row in linked))
+                self.assertTrue(all("public_device_path" not in row for row in published["records"]
+                                    if row["volume"] != "FileSystem"))
+                self.assertTrue(all("status" not in row for row in published["records"]))
+                original["records"][0]["device_sha256"] = "0" * 64
+                candidate.write_bytes(gzip.compress(json.dumps(original).encode(), mtime=0))
+                with self.assertRaisesRegex(ValueError, "hash differs"):
+                    build_site.publish_standalone_device_identity(
+                        "23A355", "iPhone12,1", candidate, firmware, device)
+            finally:
+                build_site.DIST = previous
+
     @unittest.skipUnless(sys.platform == "darwin", "Darwin stat protocol")
     def test_scan_keeps_newlines_and_symlink_targets(self) -> None:
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:

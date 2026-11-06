@@ -10,6 +10,8 @@ Each official path was mapped to a physical path in the RootHide view: FileSyste
 
 **3,157 of 3,363** official standalone Mach-O files were present at those mapped physical paths, and **all 3,157 device SHA-256 hashes equaled the corresponding complete-file IPSW hashes**. This comprises 3,117 FileSystem files, 25 SystemOS files, and 15 AppOS files. The hash command returned successfully with no missing hash records. Their existing Objective-C, symbol, and Swift metadata pages can therefore identify the exact bytes observed on this phone at the recorded time.
 
+The website exposes the 3,157 verified identities through a public index. All 3,117 matched FileSystem binaries have a reviewed live-device path and a link from that path to the exact firmware Mach-O page. The 40 matched cryptex binaries have an identity status on their firmware pages, but no physical preboot path is emitted into the site index. The builder checks every original firmware hash, device hash, size, mapped path, and snapshot identity before publishing these links. The 206 staging-path results remain in this research record; the website does not present them as a device comparison or absence claim. A match remains a time-bounded byte observation, not proof of runtime loading.
+
 The remaining **206** official records all have paths beneath `/private/var/staged_system_apps` in the FileSystem image. No regular files were observed at those same mapped staging paths in the snapshot. This is a **path-location result**, not evidence that those apps or their executables are absent from the phone; installation may place them elsewhere. No firmware metadata is labeled device-verified for these 206 records.
 
 ## Limits and next work

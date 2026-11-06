@@ -20,6 +20,7 @@ from export_live_device import has_private_characters, inside
 from catalog_live_jailbreak_dependencies import PRIVATE_REFERENCE
 from catalog_live_load_targets import catalog as catalog_live_load_targets
 from export_live_coverage import ROOTS as LIVE_COVERAGE_ROOTS
+from verify_live_standalone import DEVICE_PREFIX as STANDALONE_DEVICE_PREFIX
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -208,6 +209,85 @@ def publish_live_coverage(build: str, product: str, path: Path,
     return {"device_coverage_url": url,
             "device_access_error_count": totals["access_errors"],
             "device_observation_count": totals["observations"]}
+
+
+def publish_standalone_device_identity(build: str, product: str, path: Path,
+                                       standalone: dict, device_path: Path) -> dict:
+    """Publish hash identity while withholding nonpublic physical device paths."""
+    identity = load(path)
+    device = load(device_path)
+    source_files = {(item["volume"], item["path"]): item
+                    for item in standalone["records"]}
+    public_files = {row[0]: row for row in device["entries"]}
+    records = identity.get("records", [])
+    if (identity.get("schema_version") != 1 or
+            identity.get("kind") != "live_standalone_macho_identity" or
+            identity.get("source") != "read_only_device_sha256_and_exact_build_ipsw" or
+            identity.get("build") != build or identity.get("product_type") != product or
+            identity.get("firmware_sha256") != standalone["firmware_sha256"] or
+            identity.get("private_snapshot_manifest_sha256") !=
+            device.get("private_manifest_sha256") or
+            identity.get("snapshot_observed_at_utc") != device.get("observed_at_utc") or
+            identity.get("hash_command_exit_code") != 0 or
+            not isinstance(records, list) or
+            identity.get("record_count") != len(records) or
+            len(records) != len(source_files) or
+            len(source_files) != len(standalone["records"])):
+        raise ValueError("incomplete or mismatched standalone live identity")
+    counts = Counter()
+    published = []
+    seen = set()
+    for row in records:
+        key = (row.get("volume"), row.get("path"))
+        original = source_files.get(key)
+        if original is None or key in seen:
+            raise ValueError("unknown or duplicate standalone identity")
+        seen.add(key)
+        volume, firmware_path = key
+        mapped_path = STANDALONE_DEVICE_PREFIX[volume][1] + firmware_path
+        if (row.get("device_path") != mapped_path or
+                row.get("size") != original["size"] or
+                row.get("firmware_sha256") != original["sha256"]):
+            raise ValueError("standalone identity mapping differs")
+        status = row.get("status")
+        if status == "matched":
+            if row.get("device_sha256") != original["sha256"]:
+                raise ValueError("standalone device hash differs")
+            counts["matched"] += 1
+            observed = public_files.get(mapped_path)
+            if volume == "FileSystem":
+                if observed is None or observed[1:] != ["file", original["size"]]:
+                    raise ValueError("matched base-system file absent from public paths")
+                counts["matched_public_path"] += 1
+            elif observed is not None:
+                raise ValueError("private cryptex path entered public path catalog")
+            record = {"volume": volume, "path": firmware_path,
+                      "sha256": original["sha256"]}
+            if volume == "FileSystem":
+                record["public_device_path"] = mapped_path
+            published.append(record)
+        elif status == "unobserved_at_mapped_path":
+            if row.get("device_sha256") is not None or mapped_path in public_files:
+                raise ValueError("unobserved standalone path has a device record")
+            counts["unobserved_at_mapped_path"] += 1
+        else:
+            raise ValueError("unsupported standalone identity status")
+    if (seen != set(source_files) or
+            identity.get("counts") != {key: counts[key]
+                                      for key in ("matched", "unobserved_at_mapped_path")}):
+        raise ValueError("standalone identity counts disagree")
+    url = f"data/{build}-standalone-device-identity.json.gz"
+    dump(DIST / url, {"schema_version": 1,
+                      "kind": "public_standalone_device_identity",
+                      "build": build,
+                      "snapshot_observed_at_utc": device["observed_at_utc"],
+                      "hash_finished_at_utc": identity["hash_finished_at_utc"],
+                      "verified_file_count": counts["matched"],
+                      "public_path_count": counts["matched_public_path"],
+                      "records": published}, compressed=True)
+    return {"standalone_device_identity_url": url,
+            "standalone_device_matched_count": counts["matched"],
+            "standalone_device_public_match_count": counts["matched_public_path"]}
 
 
 def publish_live_macho(build: str, product: str, path: Path, device_path: Path) -> dict:
@@ -1510,6 +1590,14 @@ def build() -> None:
             dump(DIST / standalone_url, standalone, compressed=True)
             standalone_info = {"standalone_macho_file_count": len(rows),
                                "standalone_macho_url": standalone_url}
+            live_identity_path = directory / "standalone-live-identity.json.gz"
+            if live_identity_path.exists():
+                device_catalog_path = directory / "device-live.json.gz"
+                if not device_catalog_path.exists():
+                    raise ValueError("standalone live identity requires public device paths")
+                standalone_info.update(publish_standalone_device_identity(
+                    build, dyld["product_type"], live_identity_path,
+                    standalone, device_catalog_path))
             objc_path = directory / "standalone-objc-methods.json.gz"
             if objc_path.exists():
                 objc_methods = load(objc_path)
