@@ -172,6 +172,46 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_developer_objc_keeps_failed_class_dump_explicit(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            macho_path = root / "macho.json.gz"
+            objc_path = root / "objc.json.gz"
+            path = "/rootfs/System/Developer/Library/Frameworks/XCTest.framework/XCTest"
+            macho_path.write_bytes(gzip.compress(json.dumps({"records": [{
+                "path": path, "sha256": "a" * 64,
+                "slices": [{"architecture": "arm64", "uuid": "A" * 36},
+                           {"architecture": "arm64e", "uuid": "B" * 36}]
+            }]}).encode(), mtime=0))
+            record = {"volume": "Developer", "path": path,
+                      "sha256": "a" * 64, "uuid": "B" * 36,
+                      "architecture": "arm64e", "status": "failed",
+                      "failure_reason": "class_dump_error", "groups": [], "records": [],
+                      "class_count": 0, "category_count": 0,
+                      "method_count": 0, "unknown_selector_count": 0}
+            data = {"schema_version": 1, "kind": "live_developer_objc_methods",
+                    "source": "verified_live_developer_mount_bytes",
+                    "build": "23A355", "product_type": "iPhone12,1",
+                    "selected_architecture": "arm64e", "macho_file_count": 1,
+                    "totals": {"failed": 1, "classes": 0, "categories": 0,
+                               "methods": 0, "unknown_selectors": 0},
+                    "files": [record]}
+            objc_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                info = build_site.publish_live_objc(
+                    "23A355", "iPhone12,1", objc_path, macho_path, "developer")
+                self.assertEqual(info["developer_macho_objc_failed_count"], 1)
+                record["failure_reason"] = "ignored_error"
+                objc_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_objc(
+                        "23A355", "iPhone12,1", objc_path, macho_path, "developer")
+            finally:
+                build_site.DIST = old_dist
+
     def test_live_dependencies_reject_private_load_names(self) -> None:
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
             root = Path(temporary)

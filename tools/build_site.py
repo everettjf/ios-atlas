@@ -228,16 +228,27 @@ def publish_live_developer_macho(build: str, product: str, path: Path,
             "developer_scanned_file_count": data["classification_file_count"]}
 
 
-def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) -> dict:
+def publish_live_objc(build: str, product: str, path: Path, macho_path: Path,
+                      family: str = "jailbreak") -> dict:
     """Validate per-file ObjC metadata against the exact acquired Mach-O index."""
+    families = {
+        "jailbreak": ("live_jailbreak_objc_methods", "verified_live_device_macho_bytes",
+                      "Jailbreak", "jailbreak", "device_macho"),
+        "developer": ("live_developer_objc_methods", "verified_live_developer_mount_bytes",
+                      "Developer", "developer", "developer_macho"),
+    }
+    if family not in families:
+        raise ValueError("unsupported live ObjC family")
+    kind, source, volume, filename, key_prefix = families[family]
     data = load(path)
     macho = load(macho_path)
     originals = {item["path"]: item for item in macho["records"]}
     files = data.get("files")
     if (data.get("schema_version") != 1 or
-            data.get("kind") != "live_jailbreak_objc_methods" or
-            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("kind") != kind or
+            data.get("source") != source or
             data.get("build") != build or data.get("product_type") != product or
+            (family == "developer" and data.get("selected_architecture") != "arm64e") or
             not isinstance(files, list) or len(files) != len(originals) or
             data.get("macho_file_count") != len(files)):
         raise ValueError("incomplete live Objective-C method catalog")
@@ -245,13 +256,20 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) ->
     totals = Counter()
     for item in files:
         original = originals.get(item.get("path"))
+        selected = (next((part for part in original["slices"]
+                          if part["architecture"] == "arm64e"), None)
+                    if original and family == "developer" else
+                    original["slices"][0] if original else None)
         groups = item.get("groups")
         methods = item.get("records")
         if (original is None or item["path"] in seen or
-                item.get("volume") != "Jailbreak" or
+                selected is None or item.get("volume") != volume or
+                (family == "developer" and item.get("architecture") != "arm64e") or
                 item.get("sha256") != original["sha256"] or
-                item.get("uuid") != original["slices"][0]["uuid"] or
-                item.get("status") not in ("parsed", "no_objc_info") or
+                item.get("uuid") != selected["uuid"] or
+                item.get("status") not in (("parsed", "no_objc_info", "failed")
+                                           if family == "developer" else
+                                           ("parsed", "no_objc_info")) or
                 not isinstance(groups, list) or not isinstance(methods, list) or
                 item.get("method_count") != len(methods) or
                 item.get("class_count") != sum(group["category_name"] is None
@@ -259,8 +277,23 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) ->
                 item.get("category_count") != sum(group["category_name"] is not None
                                                   for group in groups)):
             raise ValueError("live Objective-C record differs from verified Mach-O")
-        if item["status"] == "no_objc_info" and (groups or methods):
-            raise ValueError("no-ObjC record contains methods")
+        if item["status"] in ("no_objc_info", "failed") and (groups or methods):
+            raise ValueError("empty or failed ObjC record contains methods")
+        if item["status"] == "failed" and (
+                item.get("failure_reason") != "class_dump_error" or
+                any(item.get(field) != 0 for field in
+                    ("class_count", "category_count", "method_count",
+                     "unknown_selector_count"))):
+            raise ValueError("invalid explicit ObjC inspection failure")
+        if family == "developer" and (
+                any(any(has_private_characters(str(value)) or
+                        "/Users/" in str(value) for value in group.values())
+                    for group in groups) or
+                any(row[2] is not None and (
+                    not isinstance(row[2], str) or
+                    has_private_characters(row[2]) or "/" in row[2])
+                    for row in methods)):
+            raise ValueError("unsafe Developer ObjC name")
         if item["status"] == "parsed":
             start = int(item["text_address"], 16)
             end = start + item["text_size"]
@@ -281,12 +314,13 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) ->
     if seen != set(originals) or any(data["totals"].get(key) != value
                                      for key, value in totals.items()):
         raise ValueError("live Objective-C totals disagree")
-    url = f"data/{build}-jailbreak-objc-methods.json.gz"
+    url = f"data/{build}-{filename}-objc-methods.json.gz"
     shutil.copy2(path, DIST / url)
-    return {"device_macho_objc_url": url,
-            "device_macho_objc_method_count": totals["methods"],
-            "device_macho_objc_parsed_count": totals["parsed"],
-            "device_macho_objc_no_info_count": totals["no_objc_info"]}
+    return {f"{key_prefix}_objc_url": url,
+            f"{key_prefix}_objc_method_count": totals["methods"],
+            f"{key_prefix}_objc_parsed_count": totals["parsed"],
+            f"{key_prefix}_objc_no_info_count": totals["no_objc_info"],
+            f"{key_prefix}_objc_failed_count": totals["failed"]}
 
 
 def publish_live_dependencies(build: str, product: str, path: Path,
@@ -1653,6 +1687,13 @@ def build() -> None:
                 raise ValueError("Developer Mach-O catalog requires reviewed live paths")
             device_info.update(publish_live_developer_macho(
                 build, dyld["product_type"], developer_macho_path, live_device_path))
+        developer_objc_path = directory / "developer-objc-methods.json.gz"
+        if developer_objc_path.exists():
+            if not developer_macho_path.exists():
+                raise ValueError("Developer ObjC methods require verified Mach-O files")
+            device_info.update(publish_live_objc(
+                build, dyld["product_type"], developer_objc_path,
+                developer_macho_path, "developer"))
         developer_dependencies_path = directory / "developer-dependencies.json.gz"
         if developer_dependencies_path.exists():
             if not developer_macho_path.exists():

@@ -59,6 +59,16 @@ python3 tools/catalog_live_developer_dependencies.py \
   --output .local/live-device/developer-dependencies-candidate.json.gz
 ```
 
+The first Objective-C pass selects the **arm64e** slice of each of the 42 verified Developer binaries. It parsed 7,735 method entries across 40 files; one file explicitly reported no ObjC info. `XCTest.framework/XCTest` returned a class-dump error with partial output for both arm64e and arm64, so its method count is **unknown**, and its partial output is not published. The catalog preserves this as one `failed` record rather than an inspected zero. Reproduce the private pass with:
+
+```sh
+python3 tools/catalog_live_developer_objc.py \
+  --macho-catalog catalog/ios/23A355/developer-macho.json.gz \
+  --binary-root .local/live-device/developer-macho-files \
+  --workdir .local/live-device/developer-objc-work \
+  --output .local/live-device/developer-objc-candidate.json.gz
+```
+
 The complete jailbreak-root scan found 6,449 regular files. A device-side GNU `file -0 -0` pass identified 464 Mach-O candidates. A separate `sha256sum -z` pass hashed those exact paths. A private tar transfer acquired those files; every local copy matched its device-side hash. The reproducible header catalog is generated with:
 
 ```sh
