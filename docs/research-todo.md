@@ -14,6 +14,7 @@ Current delivery focus: finish the one-device file and dynamic-library atlas, in
 - [x] Index the cache's ObjC class and protocol tables and Swift type conformances separately.
 - [x] Index named `__text` function symbols for all 51 images in the separate DriverKit cache; verify its ObjC class dumps.
 - [x] Identify and hash standalone Mach-O files across the three official mounted system images; record architecture, file type, and UUID.
+- [x] Record direct dylib load commands, install names, and runpaths for every one of the 3,363 standalone firmware Mach-O files; verify exact source hashes and slice UUIDs, and keep runtime resolution unknown.
 - [x] Run an exact-file Objective-C class and method pass over all 3,363 standalone Mach-O files; retain inspected zero results.
 - [x] Index named `__text` symbols in all 3,363 standalone Mach-O files, including explicit zero-name results.
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.

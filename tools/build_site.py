@@ -306,8 +306,16 @@ def publish_standalone_device_identity(build: str, product: str, path: Path,
             identity.get("counts") != {key: counts[key]
                                       for key in ("matched", "unobserved_at_mapped_path")}):
         raise ValueError("standalone identity counts disagree")
+    links = sorted((row["device_path"], row["volume"], row["path"])
+                   for row in records if row["status"] == "matched" and
+                   row["volume"] == "FileSystem")
+    url = f"data/{build}-standalone-device-links.json.gz"
+    dump(DIST / url, {"schema_version": 1, "kind": "public_standalone_device_links",
+                      "build": build, "product_type": product,
+                      "count": len(links), "records": links}, compressed=True)
     return {"standalone_device_matched_count": counts["matched"],
-            "standalone_device_public_match_count": counts["matched_public_path"]}
+            "standalone_device_public_match_count": counts["matched_public_path"],
+            "standalone_device_links_url": url}
 
 
 def publish_live_macho(build: str, product: str, path: Path, device_path: Path) -> dict:
@@ -488,6 +496,77 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path,
             f"{key_prefix}_objc_parsed_count": totals["parsed"],
             f"{key_prefix}_objc_no_info_count": totals["no_objc_info"],
             f"{key_prefix}_objc_failed_count": totals["failed"]}
+
+
+def publish_standalone_dependencies(build: str, product: str, path: Path,
+                                    standalone: dict) -> dict:
+    """Validate complete IPSW file and slice identities before publication."""
+    data = load(path)
+    files = data.get("files")
+    originals = {(item["volume"], item["path"]): item
+                 for item in standalone["records"]}
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "standalone_macho_direct_dependencies" or
+            data.get("source") != "official_ipsw_mounted_images" or
+            data.get("build") != build or data.get("product_type") != product or
+            data.get("firmware_sha256") != standalone["firmware_sha256"] or
+            not isinstance(files, list) or len(files) != len(originals) or
+            data.get("macho_file_count") != len(files)):
+        raise ValueError("incomplete standalone direct-dependency catalog")
+    load_kinds = {"LC_LOAD_DYLIB", "LC_LOAD_WEAK_DYLIB",
+                  "LC_REEXPORT_DYLIB", "LC_LOAD_UPWARD_DYLIB",
+                  "LC_LAZY_LOAD_DYLIB"}
+    seen = set()
+    totals = Counter()
+    for item in files:
+        key = (item.get("volume"), item.get("path"))
+        original = originals.get(key)
+        if (original is None or key in seen or
+                item.get("sha256") != original["sha256"] or
+                item.get("slice_count") != len(original["slices"]) or
+                not isinstance(item.get("slices"), list) or
+                len(item["slices"]) != len(original["slices"])):
+            raise ValueError("standalone dependency file identity differs")
+        seen.add(key)
+        for part, expected in zip(item["slices"], original["slices"]):
+            dependencies = part.get("dependencies")
+            rpaths = part.get("rpaths")
+            redacted = part.get("redacted_rpath_count")
+            if (part.get("architecture") != expected["architecture"] or
+                    part.get("uuid") != expected["uuid"] or
+                    not re.fullmatch(r"[0-9a-f]{64}",
+                                     part.get("load_dump_sha256", "")) or
+                    (part.get("install_name") is not None and
+                     (not isinstance(part["install_name"], str) or
+                      has_private_characters(part["install_name"]) or
+                      PRIVATE_REFERENCE.search(part["install_name"]))) or
+                    not isinstance(dependencies, list) or
+                    not isinstance(rpaths, list) or
+                    not isinstance(redacted, int) or redacted < 0 or
+                    any(not isinstance(name, str) or not name or
+                        has_private_characters(name) or PRIVATE_REFERENCE.search(name)
+                        for name in rpaths) or
+                    any(not isinstance(row, dict) or
+                        row.get("load_command") not in load_kinds or
+                        not isinstance(row.get("install_name"), str) or
+                        not row["install_name"] or
+                        has_private_characters(row["install_name"]) or
+                        PRIVATE_REFERENCE.search(row["install_name"])
+                        for row in dependencies)):
+                raise ValueError("unsafe or mismatched standalone dependency slice")
+            totals["slices"] += 1
+            totals["direct_loads"] += len(dependencies)
+            totals["rpaths"] += len(rpaths)
+            totals["redacted_rpaths"] += redacted
+            totals["without_loads"] += not dependencies
+    if seen != set(originals) or any(data.get("totals", {}).get(key) != value
+                                     for key, value in totals.items()):
+        raise ValueError("standalone dependency totals disagree")
+    url = f"data/{build}-standalone-dependencies.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"standalone_dependency_url": url,
+            "standalone_direct_load_count": totals["direct_loads"],
+            "standalone_redacted_rpath_count": totals["redacted_rpaths"]}
 
 
 def publish_live_dependencies(build: str, product: str, path: Path,
@@ -1617,6 +1696,11 @@ def build() -> None:
             dump(DIST / standalone_url, standalone, compressed=True)
             standalone_info = {"standalone_macho_file_count": len(rows),
                                "standalone_macho_url": standalone_url}
+            standalone_dependency_path = directory / "standalone-dependencies.json.gz"
+            if standalone_dependency_path.exists():
+                standalone_info.update(publish_standalone_dependencies(
+                    build, dyld["product_type"], standalone_dependency_path,
+                    standalone))
             live_identity_path = directory / "standalone-live-identity.json.gz"
             if live_identity_path.exists():
                 device_catalog_path = directory / "device-live.json.gz"

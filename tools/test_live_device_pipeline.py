@@ -84,6 +84,31 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = previous
 
+    def test_standalone_dependencies_cover_every_file_and_reject_private_load(self) -> None:
+        catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
+        source = build_site.load(catalog / "standalone-macho.json.gz")
+        data = build_site.load(catalog / "standalone-dependencies.json.gz")
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            candidate = root / "dependencies.json.gz"
+            previous = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                info = build_site.publish_standalone_dependencies(
+                    "23A355", "iPhone12,1", candidate, source)
+                self.assertEqual(info["standalone_direct_load_count"], 73257)
+                part = next(part for item in data["files"] for part in item["slices"]
+                            if part["dependencies"])
+                part["dependencies"][0]["install_name"] = "/Users/builder/private.dylib"
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_standalone_dependencies(
+                        "23A355", "iPhone12,1", candidate, source)
+            finally:
+                build_site.DIST = previous
+
     def test_mount_coverage_rejects_private_labels_and_false_counts(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
         data = json.loads((catalog / "live-coverage.json").read_text())
@@ -112,7 +137,7 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = previous
 
-    def test_firmware_device_identity_keeps_only_aggregate_counts(self) -> None:
+    def test_firmware_device_identity_publishes_reviewed_links_only(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
         original = build_site.load(catalog / "standalone-live-identity.json.gz")
         firmware = build_site.load(catalog / "standalone-macho.json.gz")
@@ -126,9 +151,12 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 build_site.DIST = root / "dist"
                 info = build_site.publish_standalone_device_identity(
                     "23A355", "iPhone12,1", candidate, firmware, device)
-                self.assertEqual(info, {"standalone_device_matched_count": 3157,
-                                        "standalone_device_public_match_count": 3117})
-                self.assertFalse(build_site.DIST.exists())
+                self.assertEqual(info["standalone_device_matched_count"], 3157)
+                self.assertEqual(info["standalone_device_public_match_count"], 3117)
+                links = build_site.load(build_site.DIST / info["standalone_device_links_url"])
+                self.assertEqual(links["count"], 3117)
+                self.assertTrue(all(row[0].startswith("/rootfs/") and
+                                    row[1] == "FileSystem" for row in links["records"]))
                 original["records"][0]["device_sha256"] = "0" * 64
                 candidate.write_bytes(gzip.compress(json.dumps(original).encode(), mtime=0))
                 with self.assertRaisesRegex(ValueError, "hash differs"):

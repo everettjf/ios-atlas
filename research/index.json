@@ -67,6 +67,13 @@
     "note": "research/23A355/Standalone-MachO-Coverage.md"
   },
   {
+    "id": "standalone-direct-loads",
+    "build": "23A355",
+    "title": "Which libraries do standalone firmware binaries declare?",
+    "summary": "All 3,363 exact-IPSW standalone Mach-O files declare 73,257 direct library loads across 3,363 slices. File pages preserve command kinds and runpaths while separating static declarations from runtime resolution.",
+    "note": "research/23A355/Standalone-Direct-Loads.md"
+  },
+  {
     "id": "preboot-metal-container",
     "build": "23A355",
     "title": "What does the live Preboot code scan add?",
