@@ -13,6 +13,7 @@ import unittest
 from pathlib import Path
 
 import build_site
+from catalog_live_file_formats import classify
 from acquire_private_macho_candidates import archive_name
 from hash_private_macho_candidates import parse_hashes
 from collect_live_device import PRIVATE_ROOT, private_path, records_from_chunks, scan_command
@@ -53,6 +54,35 @@ class LiveDevicePipelineTests(unittest.TestCase):
                      "rootfs/private/var/other"):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 archive_name(name, expected)
+
+    def test_file_format_labels_exclude_private_descriptions_and_false_scripts(self) -> None:
+        self.assertEqual(classify(b"POSIX shell script, ASCII text executable"), "script")
+        self.assertEqual(classify(b"Mach-O executable, flags:<HAS_TLV_DESCRIPTORS>"), "macho")
+        self.assertEqual(classify(b"DOS EPS Binary File Postscript"), "other")
+        self.assertEqual(classify(b"Apple binary property list"), "plist")
+
+    def test_public_file_formats_cover_all_reviewed_files_and_reject_private_path(self) -> None:
+        catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
+        data = build_site.load(catalog / "live-file-formats.json.gz")
+        device = catalog / "device-live.json.gz"
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            candidate = root / "formats.json.gz"
+            previous = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                info = build_site.publish_live_file_formats(
+                    "23A355", "iPhone12,1", candidate, device)
+                self.assertEqual(info["device_format_count"], 225778)
+                data["records"][0][0] = "/private/var/mobile/Containers/private-name"
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_file_formats(
+                        "23A355", "iPhone12,1", candidate, device)
+            finally:
+                build_site.DIST = previous
 
     def test_mount_coverage_rejects_private_labels_and_false_counts(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"

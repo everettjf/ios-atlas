@@ -95,6 +95,13 @@
     "note": "research/23A355/UpdateBrain-Live-Code.md"
   },
   {
+    "id": "live-file-format-coverage",
+    "build": "23A355",
+    "title": "Which published device files have content-format labels?",
+    "summary": "All 225,778 published regular files have fixed, privacy-reviewed content-format categories from complete live type passes. Private Data and Mobile data formats remain aggregate-only; 73 protected directories are still inaccessible.",
+    "note": "research/23A355/Live-File-Format-Coverage.md"
+  },
+  {
     "id": "data-volume-type-boundary",
     "build": "23A355",
     "title": "What did the partial data-volume type passes observe?",

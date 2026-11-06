@@ -21,6 +21,7 @@ from catalog_live_jailbreak_dependencies import PRIVATE_REFERENCE
 from catalog_live_load_targets import catalog as catalog_live_load_targets
 from export_live_coverage import ROOTS as LIVE_COVERAGE_ROOTS
 from verify_live_standalone import DEVICE_PREFIX as STANDALONE_DEVICE_PREFIX
+from catalog_live_file_formats import CATEGORIES as LIVE_FILE_FORMAT_CATEGORIES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,6 +155,41 @@ def publish_live_device(build: str, product: str, path: Path) -> dict:
             "device_scope": "reviewed_live", "device_snapshot_root_count": data["snapshot_root_count"],
             "device_complete_root_count": data["complete_root_count"],
             "device_unpublished_entry_count": data["unpublished_entry_count"]}
+
+
+def publish_live_file_formats(build: str, product: str, path: Path,
+                              device_path: Path) -> dict:
+    """Admit only fixed format categories for every reviewed regular file."""
+    data = load(path)
+    device = load(device_path)
+    regular = {row[0] for row in device["entries"] if row[1] == "file"}
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_device_public_file_formats" or
+            data.get("source") != "private_live_file_type_pass_fixed_categories" or
+            data.get("build") != build or data.get("product_type") != product or
+            data.get("private_manifest_sha256") != device["private_manifest_sha256"] or
+            data.get("device_catalog_sha256") != hashlib.sha256(device_path.read_bytes()).hexdigest() or
+            data.get("file_count") != len(regular) or
+            not isinstance(data.get("records"), list) or
+            len(data["records"]) != len(regular) or
+            data.get("excluded_private_type_paths") != 4):
+        raise ValueError("live file-format catalog source or count differs")
+    seen = set()
+    counts = Counter()
+    for row in data["records"]:
+        if (not isinstance(row, list) or len(row) != 2 or
+                row[0] not in regular or row[0] in seen or
+                row[1] not in LIVE_FILE_FORMAT_CATEGORIES):
+            raise ValueError("unsafe or duplicate live file-format row")
+        seen.add(row[0])
+        counts[row[1]] += 1
+    if seen != regular or data.get("category_counts") != dict(counts):
+        raise ValueError("live file-format coverage or totals differ")
+    url = f"data/{build}-device-file-formats.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"device_format_url": url, "device_format_count": len(regular),
+            "device_script_count": counts["script"],
+            "device_elf_count": counts["elf"]}
 
 
 def publish_live_coverage(build: str, product: str, path: Path,
@@ -1871,6 +1907,12 @@ def build() -> None:
         live_device_path = directory / "device-live.json.gz"
         if live_device_path.exists():
             device_info.update(publish_live_device(build, dyld["product_type"], live_device_path))
+        live_format_path = directory / "live-file-formats.json.gz"
+        if live_format_path.exists():
+            if not live_device_path.exists():
+                raise ValueError("live file formats require reviewed device paths")
+            device_info.update(publish_live_file_formats(
+                build, dyld["product_type"], live_format_path, live_device_path))
         live_coverage_path = directory / "live-coverage.json"
         if live_coverage_path.exists():
             if not live_device_path.exists():
