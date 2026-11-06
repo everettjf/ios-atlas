@@ -32,7 +32,7 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Index named `__text` symbols across all 84 verified Developer Mach-O slices, including three files with no names; keep symbol records distinct from Objective-C methods.
 - [x] Check Swift dump metadata across all 84 Developer slices; preserve 12 no-info and 10 partial-parse slice results.
 - [x] Read embedded CodeDirectory metadata across all 84 Developer slices; keep entitlement values and raw signing output private and distinguish metadata from trust.
-- [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
+- [ ] Establish the cause and any safe read-only access route for the 73 protected-directory errors in the two data-volume views. A follow-up confirmed the same distinct error set, and even `stat` was denied; descendant counts remain unknown.
 - [x] Classify all 4,848 direct loads in verified live Mach-O files by exact cache or live install name; leave tokenized and unmatched names unresolved.
 - [ ] Verify selected runtime load paths with bounded, read-only device observations, including runpath expansion and weak-load behavior.
 - [x] Classify all 219,216 reachable base-root regular files by type, reconcile all 3,117 ordinary Mach-O files with byte-verified firmware identities, and verify the one mixed Metal container against exact FileSystem bytes. The Preboot and Developer mounts have separate type passes; data-volume and volatile mounts retain explicit gaps.
@@ -43,6 +43,7 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Classify all reachable regular files in the completed Hardware, Baseband, and xARTS mount scans; record zero ordinary Mach-O candidates with exact path-set checks.
 - [x] Byte-verify and parse two live-only Software Update Mach-O files, preserving their private physical paths and the mount's time-bounded observation limit.
 - [x] Resnapshot the volatile Software Update mount and reconcile all 2,080 reachable file paths with a complete type pass; recheck both ordinary Mach-O candidates by device SHA-256.
+- [x] Classify all reachable files from a later partial Data snapshot by type: 23,490 paths matched exactly, with 303 private Mach-O signatures. Observe three Mobile data candidates while retaining its 34-path churn and 57 protected-directory limit. Keep all private app and mobile paths out of the public site.
 - [x] Expose static analysis status by mount for verified public code, including no-info and failed Objective-C results, partial Swift results, and mounts with no code-classification pass.
 - [ ] Expand live standalone Mach-O and library analysis coverage to every publishable code-bearing file on each mount, including unsupported formats and failed analyses.
 

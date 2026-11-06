@@ -95,6 +95,13 @@
     "note": "research/23A355/UpdateBrain-Live-Code.md"
   },
   {
+    "id": "data-volume-type-boundary",
+    "build": "23A355",
+    "title": "What did the partial data-volume type passes observe?",
+    "summary": "A later partial Data scan classified 23,490 reachable files and found 303 private Mach-O signatures. Mobile data saw three candidates amid file churn. The same 73 protected directories remained unreadable, including to stat.",
+    "note": "research/23A355/Data-Volume-Type-Boundary.md"
+  },
+  {
     "id": "live-jailbreak-macho",
     "build": "23A355",
     "title": "Which Mach-O files are installed in the live jailbreak tree?",
