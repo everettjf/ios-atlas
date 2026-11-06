@@ -25,9 +25,10 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Index named `__text` symbol records across all 493 slices of the 463 published, device-hash-verified jailbreak Mach-O files; retain explicit zero-name results.
 - [x] Check Swift metadata across those same 493 slices; retain no-info and partial-parse states and link parsed lines to verified file bytes.
 - [x] Read embedded CodeDirectory metadata across all 493 verified slices; distinguish ad hoc and no-CMS reports and keep entitlement parse failures explicit without publishing raw values.
+- [x] Identify and verify all 42 Mach-O files in the separately mounted Developer image: classify all 117 regular files, match device-side SHA-256 to acquired bytes, and index 84 architecture slices.
 - [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
 - [ ] Resolve direct library loads only where exact device evidence permits; record unresolved or unsupported targets explicitly.
-- [ ] Discover any additional base-system standalone executables, dylibs, frameworks, and extensions absent from the firmware inventory; establish identity before reusing firmware analysis.
+- [ ] Discover any additional base-system standalone executables, dylibs, frameworks, and extensions absent from the firmware inventory; establish identity before reusing firmware analysis. The base `/rootfs` and both cryptex file paths all appear in the corresponding official image catalogs; the separate Developer mount adds 42 verified Mach-O files. Remaining data-volume and preboot coverage is explicit in the collection note.
 - [x] Make live device files the primary website view, show scan-root coverage, and remove cross-version comparison navigation.
 - [ ] Add live standalone Mach-O and library analysis coverage by mount, including unsupported and failed states.
 

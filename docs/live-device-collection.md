@@ -36,6 +36,19 @@ Tests: `python3 tools/test_live_device_pipeline.py` checks NUL-safe filenames, e
 
 ## First live code pass
 
+The separately mounted `/rootfs/System/Developer` tree contains 117 regular files that are absent from the official FileSystem image's path inventory. A device-side `file -0 -0` pass identified 42 Mach-O files. Their exact live bytes were acquired privately, and each local copy matched a device-side SHA-256 result. All 42 files have arm64 and arm64e slices, giving 84 parsed Mach-O headers with architecture, file type, and UUID. The public catalog contains only derived metadata and reviewed system paths; it does not contain the binaries. Generate the catalog with:
+
+```sh
+python3 tools/catalog_live_developer_macho.py \
+  --manifest .local/live-device/manifest.json \
+  --file-types .local/live-device/developer-file-types.nul \
+  --hashes .local/live-device/developer-macho-sha256.nul \
+  --binary-root .local/live-device/developer-macho-files \
+  --output .local/live-device/developer-macho-candidate.json.gz
+```
+
+The private snapshot also shows 219,216 regular files under the base `/rootfs` mount, each with a same-path record in the official FileSystem image. All 2,091 OS and 1,099 App cryptex regular files likewise have same-path records in their respective official images. Same-path presence alone is not a byte match. Another 67 regular files in preboot lie outside the two mounted cryptex trees; these are firmware payloads, tickets, and mount metadata in device-specific paths and are not published as live Mach-O library records.
+
 The complete jailbreak-root scan found 6,449 regular files. A device-side GNU `file -0 -0` pass identified 464 Mach-O candidates. A separate `sha256sum -z` pass hashed those exact paths. A private tar transfer acquired those files; every local copy matched its device-side hash. The reproducible header catalog is generated with:
 
 ```sh

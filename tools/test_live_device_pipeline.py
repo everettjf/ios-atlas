@@ -141,6 +141,37 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_developer_macho_requires_reviewed_live_path(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            candidate = root / "developer.json.gz"
+            device = root / "device.json.gz"
+            path = "/rootfs/System/Developer/usr/libexec/testmanagerd"
+            record = {"path": path, "size": 4, "sha256": "a" * 64,
+                      "slices": [{"architecture": "arm64", "file_type": "executable",
+                                  "uuid": "B" * 36}]}
+            data = {"schema_version": 1, "kind": "live_developer_macho_inventory",
+                    "source": "verified_live_developer_mount_bytes",
+                    "mount_path": "/rootfs/System/Developer", "build": "23A355",
+                    "product_type": "iPhone12,1", "classification_file_count": 1,
+                    "macho_file_count": 1, "failed_count": 0, "failures": [],
+                    "records": [record]}
+            candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+            device.write_bytes(gzip.compress(json.dumps({"entries": [[path, "file", 4]]}).encode(), mtime=0))
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                info = build_site.publish_live_developer_macho(
+                    "23A355", "iPhone12,1", candidate, device)
+                self.assertEqual(info["developer_macho_count"], 1)
+                device.write_bytes(gzip.compress(json.dumps({"entries": []}).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_developer_macho(
+                        "23A355", "iPhone12,1", candidate, device)
+            finally:
+                build_site.DIST = old_dist
+
     def test_live_dependencies_reject_private_load_names(self) -> None:
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
             root = Path(temporary)

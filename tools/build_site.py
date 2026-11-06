@@ -185,6 +185,49 @@ def publish_live_macho(build: str, product: str, path: Path, device_path: Path) 
     return {"device_macho_url": url, "device_macho_count": len(records)}
 
 
+def publish_live_developer_macho(build: str, product: str, path: Path,
+                                 device_path: Path) -> dict:
+    """Publish only hash-verified Developer mount binaries with reviewed paths."""
+    data = load(path)
+    device = load(device_path)
+    files = {row[0]: row[2] for row in device["entries"] if row[1] == "file"}
+    records = data.get("records")
+    if (data.get("schema_version") != 1 or
+            data.get("kind") != "live_developer_macho_inventory" or
+            data.get("source") != "verified_live_developer_mount_bytes" or
+            data.get("mount_path") != "/rootfs/System/Developer" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(records, list) or not records or
+            data.get("macho_file_count") != len(records) or
+            not isinstance(data.get("classification_file_count"), int) or
+            data["classification_file_count"] < len(records) or
+            data.get("failed_count") != 0 or data.get("failures") != []):
+        raise ValueError("incomplete or mismatched Developer Mach-O catalog")
+    seen = set()
+    for record in records:
+        item_path = record.get("path")
+        if (not isinstance(item_path, str) or
+                not item_path.startswith("/rootfs/System/Developer/") or
+                item_path not in files or files[item_path] != record.get("size") or
+                item_path in seen or has_private_characters(item_path) or
+                any(part in ("", ".", "..") for part in item_path[1:].split("/")) or
+                re.search(r"/[0-9A-Fa-f]{16,}(?:/|$)", item_path) or
+                not re.fullmatch(r"[0-9a-f]{64}", record.get("sha256", "")) or
+                not isinstance(record.get("slices"), list) or not record["slices"] or
+                any(not isinstance(part.get("architecture"), str) or
+                    not isinstance(part.get("file_type"), str) or
+                    (part.get("uuid") is not None and
+                     not re.fullmatch(r"[0-9A-F-]{36}", part["uuid"]))
+                    for part in record["slices"])):
+            raise ValueError("unsafe or unreviewed Developer Mach-O record")
+        seen.add(item_path)
+    url = f"data/{build}-developer-macho.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"developer_macho_url": url,
+            "developer_macho_count": len(records),
+            "developer_scanned_file_count": data["classification_file_count"]}
+
+
 def publish_live_objc(build: str, product: str, path: Path, macho_path: Path) -> dict:
     """Validate per-file ObjC metadata against the exact acquired Mach-O index."""
     data = load(path)
@@ -1593,6 +1636,12 @@ def build() -> None:
                 raise ValueError("live Mach-O catalog requires the reviewed live path catalog")
             device_info.update(publish_live_macho(build, dyld["product_type"],
                                                   live_macho_path, live_device_path))
+        developer_macho_path = directory / "developer-macho.json.gz"
+        if developer_macho_path.exists():
+            if not live_device_path.exists():
+                raise ValueError("Developer Mach-O catalog requires reviewed live paths")
+            device_info.update(publish_live_developer_macho(
+                build, dyld["product_type"], developer_macho_path, live_device_path))
         live_objc_path = directory / "jailbreak-objc-methods.json.gz"
         if live_objc_path.exists():
             if not live_macho_path.exists():
