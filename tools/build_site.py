@@ -235,7 +235,6 @@ def publish_standalone_device_identity(build: str, product: str, path: Path,
             len(source_files) != len(standalone["records"])):
         raise ValueError("incomplete or mismatched standalone live identity")
     counts = Counter()
-    published = []
     seen = set()
     for row in records:
         key = (row.get("volume"), row.get("path"))
@@ -261,11 +260,6 @@ def publish_standalone_device_identity(build: str, product: str, path: Path,
                 counts["matched_public_path"] += 1
             elif observed is not None:
                 raise ValueError("private cryptex path entered public path catalog")
-            record = {"volume": volume, "path": firmware_path,
-                      "sha256": original["sha256"]}
-            if volume == "FileSystem":
-                record["public_device_path"] = mapped_path
-            published.append(record)
         elif status == "unobserved_at_mapped_path":
             if row.get("device_sha256") is not None or mapped_path in public_files:
                 raise ValueError("unobserved standalone path has a device record")
@@ -276,17 +270,7 @@ def publish_standalone_device_identity(build: str, product: str, path: Path,
             identity.get("counts") != {key: counts[key]
                                       for key in ("matched", "unobserved_at_mapped_path")}):
         raise ValueError("standalone identity counts disagree")
-    url = f"data/{build}-standalone-device-identity.json.gz"
-    dump(DIST / url, {"schema_version": 1,
-                      "kind": "public_standalone_device_identity",
-                      "build": build,
-                      "snapshot_observed_at_utc": device["observed_at_utc"],
-                      "hash_finished_at_utc": identity["hash_finished_at_utc"],
-                      "verified_file_count": counts["matched"],
-                      "public_path_count": counts["matched_public_path"],
-                      "records": published}, compressed=True)
-    return {"standalone_device_identity_url": url,
-            "standalone_device_matched_count": counts["matched"],
+    return {"standalone_device_matched_count": counts["matched"],
             "standalone_device_public_match_count": counts["matched_public_path"]}
 
 

@@ -60,7 +60,7 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = previous
 
-    def test_firmware_device_identity_links_only_reviewed_paths(self) -> None:
+    def test_firmware_device_identity_keeps_only_aggregate_counts(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
         original = build_site.load(catalog / "standalone-live-identity.json.gz")
         firmware = build_site.load(catalog / "standalone-macho.json.gz")
@@ -74,16 +74,9 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 build_site.DIST = root / "dist"
                 info = build_site.publish_standalone_device_identity(
                     "23A355", "iPhone12,1", candidate, firmware, device)
-                self.assertEqual(info["standalone_device_matched_count"], 3157)
-                self.assertEqual(info["standalone_device_public_match_count"], 3117)
-                published = build_site.load(build_site.DIST / info["standalone_device_identity_url"])
-                self.assertEqual(len(published["records"]), 3157)
-                linked = [row for row in published["records"] if "public_device_path" in row]
-                self.assertEqual(len(linked), 3117)
-                self.assertTrue(all(row["volume"] == "FileSystem" for row in linked))
-                self.assertTrue(all("public_device_path" not in row for row in published["records"]
-                                    if row["volume"] != "FileSystem"))
-                self.assertTrue(all("status" not in row for row in published["records"]))
+                self.assertEqual(info, {"standalone_device_matched_count": 3157,
+                                        "standalone_device_public_match_count": 3117})
+                self.assertFalse(build_site.DIST.exists())
                 original["records"][0]["device_sha256"] = "0" * 64
                 candidate.write_bytes(gzip.compress(json.dumps(original).encode(), mtime=0))
                 with self.assertRaisesRegex(ValueError, "hash differs"):
