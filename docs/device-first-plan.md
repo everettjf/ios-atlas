@@ -61,10 +61,6 @@ Start with a horizontal inventory: short, evidence-backed introductions for libr
 
 **Gate:** every library has at least an honest metadata overview and a visible research state; focused notes are reproducible and link back to the exact observed or byte-matched artifact.
 
-## Immediate next implementation slice
+## Handoff
 
-1. Inspect the two partial data-volume scans and document their inaccessible scope; keep their reachable paths and stderr private.
-2. Reconcile live standalone code against the exact-build firmware records by hash or UUID, then analyze jailbreak-only binaries separately.
-3. Expand library pages from metadata overview to source-backed purpose, observed device identity, dependencies, methods, and explicit open questions.
-
-The [research TODO](research-todo.md) tracks the remaining library-level work. The earlier [research and delivery plan](plan.md) documents the first firmware-centered implementation and its existing evidence; this document governs the next phase.
+The horizontal pass delivered the reviewed live file catalog, exact-build code indexes, and first-pass library pages. The two partial Data views and deeper implementation studies remain explicitly bounded. The [23A355 handoff](handoff-23A355.md) summarizes the delivered state and rebuild path; the [research TODO](research-todo.md) preserves optional follow-up work. The earlier [research and delivery plan](plan.md) documents the first firmware-centered implementation and its evidence.

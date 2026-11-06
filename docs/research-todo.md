@@ -1,8 +1,8 @@
 # iOS Atlas research TODO
 
-Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-first plan](device-first-plan.md) defines the next collection and publication gates. The checks below describe completed firmware work and remaining device and library research.
+Scope: the jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-first plan](device-first-plan.md) records collection and publication gates. The checks below describe completed firmware work and possible later device and library research.
 
-Current delivery focus: finish the one-device file and dynamic-library atlas, including honest coverage boundaries. Deeper function-body tracing, runtime behavior, and tweak hypotheses stay in the second section as follow-up research.
+The [23A355 handoff](handoff-23A355.md) closes the current horizontal delivery pass with explicit coverage boundaries. Unchecked items below are future research, not unfinished prerequisites for publishing the current atlas. Deeper function-body tracing, runtime behavior, and tweak hypotheses stay in the second section.
 
 ## Horizontal pass
 
