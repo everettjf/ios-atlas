@@ -1290,6 +1290,15 @@
       "verbatim": false
     },
     {
+      "install_name": "/System/Library/Frameworks/MobileCoreServices.framework/MobileCoreServices",
+      "summary": "Apple's archived iOS guide identifies MobileCoreServices as the framework for legacy Uniform Type Identifier constants and utility functions.",
+      "source_url": "https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/understanding_utis/understand_utis.tasks/understand_utis_tasks.html",
+      "source_label": "Apple Developer Archive: Adopting Uniform Type Identifiers",
+      "source_document_sha256": "4a2f65922f18ba8ac5565e864fa27ea294e17ccc7ea920cbe53d82a5c8039134",
+      "source_checked_at": "2026-11-05",
+      "verbatim": false
+    },
+    {
       "install_name": "/System/Library/Frameworks/ModelIO.framework/ModelIO",
       "summary": "Import, export, and manipulate 3D models using a common infrastructure that integrates MetalKit, GLKit, and SceneKit.",
       "source_url": "https://developer.apple.com/documentation/modelio",

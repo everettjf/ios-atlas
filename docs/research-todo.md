@@ -15,7 +15,7 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Run an exact-file Objective-C class and method pass over all 3,363 standalone Mach-O files; retain inspected zero results.
 - [x] Index named `__text` symbols in all 3,363 standalone Mach-O files, including explicit zero-name results.
 - [x] Add Swift dump coverage for all 3,363 standalone files; preserve explicit no-info and partial-parse states. ObjC methods, named symbols, and Swift dumps are still not a complete callable surface.
-- [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 218 of 227 exact top-level iOS framework images and one DriverKit image; nine top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
+- [ ] Add source-backed functional descriptions to library pages. Apple Developer sources now cover 219 of 227 exact top-level iOS framework images and one DriverKit image; eight top-level gaps and the other cache libraries still need suitable primary evidence. Every image already has a separate metadata overview.
 - [x] Verify all 3,157 firmware standalone Mach-O files observed at mapped device paths by device-side SHA-256; preserve the 206 unmatched staging-path records without claiming whole-device absence.
 - [x] Link the 3,117 hash-matched, reviewed base-system paths to exact firmware Mach-O analysis; show 40 cryptex hash matches without exposing their physical paths.
 - [x] Record all live mounts and RootHide namespaces; capture a private, resumable metadata snapshot with per-root completeness and error counts. Ten roots completed; two data-volume roots have protected-directory errors.
@@ -46,6 +46,8 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Trace Foundation as a cache image and document its ObjC method surface.
 - [x] Trace SpringBoard's launch declaration and startup entry point; document its ObjC method surface.
 - [x] Create a source-bound WidgetKit overview with documented purpose and API types, exact-image method and symbol examples, direct dependencies, and known gaps.
+- [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.
+- [ ] Trace BusinessChat action and network-provider call sites and identify its runtime process owner.
 - [ ] Map selected public Swift APIs to exact-image metadata or exports before describing their implementation in this build.
 - [ ] Follow WidgetKit's `_WidgetExtensionSession` timeline and control request methods into their immediate call sites, and distinguish its code from `ChronoServices`.
 - [ ] Inspect selected method bodies and call sites in the exact image; attach addresses, disassembly, and tool versions.
