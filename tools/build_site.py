@@ -1093,10 +1093,10 @@ def build() -> None:
     for name in ("index.html", "app.js", "styles.css", "tree.css", "reach.mjs", "tree.mjs"):
         shutil.copy2(SITE / name, DIST / name)
 
-    builds = []
-    for directory in sorted(CATALOG.iterdir()):
-        if not directory.is_dir():
-            continue
+    directories = [directory for directory in sorted(CATALOG.iterdir()) if directory.is_dir()]
+    if len(directories) != 1:
+        raise ValueError("site requires exactly one complete iOS build catalog")
+    for directory in directories:
         dyld = load(directory / "dyld.json")
         volumes = [load(directory / name) for name in
                    ("filesystem.json.gz", "systemos.json", "appos.json")]
@@ -2142,7 +2142,7 @@ def build() -> None:
                             "launchd_job_count": service["job_count"],
                             "mach_service_name_count": service["mach_service_name_count"],
                             "service_url": f"data/{build}-services.json", **import_info}
-        builds.append({"build": build, "version": "26.0.1",
+        build_info = {"build": build, "version": "26.0.1",
                        "product_type": dyld["product_type"],
                        "firmware_sha256": dyld["firmware_sha256"],
                        "cache_uuid": dyld["cache_uuid"],
@@ -2156,22 +2156,19 @@ def build() -> None:
                        **protocol_info, **swift_info,
                        **device_info,
                        **driverkit_info, **intro_info, **standalone_info, **archive_info, **restore_info, **kernel_info,
-                       **service_info})
+                       **service_info}
 
-    if len(builds) != 1:
-        raise ValueError("site requires exactly one complete iOS build catalog")
     research = json.loads((ROOT / "research" / "index.json").read_text(encoding="utf-8"))
-    known_builds = {item["build"] for item in builds}
     if len({note["id"] for note in research}) != len(research):
         raise ValueError("duplicate research note id")
     for note in research:
         source = (ROOT / note["note"]).resolve()
-        if (note["build"] not in known_builds or ROOT / "research" not in source.parents or
+        if (note["build"] != build_info["build"] or ROOT / "research" not in source.parents or
                 not source.is_file()):
             raise ValueError(f"invalid research note source: {note['note']}")
         note["rendered_html"] = render_note(source.read_text(encoding="utf-8"), note["note"])
     dump(DIST / "data" / "manifest.json",
-         {"schema_version": 1, "builds": builds, "research": research})
+         {"schema_version": 2, "build": build_info, "research": research})
     digest = hashlib.sha256()
     for path in sorted(DIST.rglob("*")):
         if path.is_file() and path.name != "index.html":
@@ -2183,7 +2180,7 @@ def build() -> None:
     index = index.replace('href="tree.css"', f'href="tree.css?v={version}"')
     index = index.replace('src="app.js"', f'src="app.js?v={version}"')
     (DIST / "index.html").write_text(index, encoding="utf-8")
-    print(f"built {DIST} with {len(builds)} build(s)")
+    print(f"built {DIST} for {build_info['build']}")
 
 
 if __name__ == "__main__":

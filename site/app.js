@@ -23,7 +23,7 @@ async function compressedJSON(url) {
   return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
 }
 
-function activeBuild() { return state.manifest.builds[0]; }
+function activeBuild() { return state.manifest.build; }
 
 async function dataset(kind) {
   const key = `${kind}:${state.build}`;
@@ -1222,8 +1222,8 @@ function showError(error) { $('#explorer').innerHTML = `<p class="empty-state">U
 
 async function start() {
   state.manifest = await json('data/manifest.json');
-  if (state.manifest.builds.length !== 1) throw new Error('This catalog requires one observed iOS build.');
-  const first = state.manifest.builds[0];
+  if (state.manifest.schema_version !== 2 || !state.manifest.build?.build) throw new Error('This catalog requires one observed iOS build.');
+  const first = state.manifest.build;
   state.build = first.build;
   $('#metric-files').textContent = first.device_count == null ? '—' : fmt(first.device_count);
   $('#metric-files-note').textContent = first.device_scope === 'reviewed_live' ? 'Privacy-reviewed live snapshot' : 'Seven selected /rootfs roots';
