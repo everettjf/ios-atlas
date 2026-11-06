@@ -17,7 +17,7 @@ Keep a full local metadata inventory for the owner's review. The public site con
 - The 463 public, device-hash-verified jailbreak Mach-O files now have a per-slice named `__text` index: 181,792 records across 493 slices, with 49 files lacking names. See [symbol coverage](../research/23A355/Live-Jailbreak-Symbols.md).
 - Swift dumps now cover all 493 slices of those same verified files, yielding 15,772 parsed declarations and 8,062 member or requirement lines; 456 slices have no Swift info and eight outputs are partial. See [Swift coverage](../research/23A355/Live-Jailbreak-Swift.md).
 - All 493 verified jailbreak slices have parsed embedded CodeDirectories; the public site shows identifiers, CDHashes, signing flags, and entitlement parse counts without claiming trust. See [code-signing coverage](../research/23A355/Live-Jailbreak-Code-Signing.md).
-- The site now opens with device files and no longer exposes a `Compare builds` tab. It marks the two data-volume roots as partial and lists the completed roots explicitly.
+- The site opens with device files for one build. It has no build switcher or stock-versus-device comparison panels. It marks the two data-volume roots as partial and lists the completed roots explicitly.
 - On 2026-11-05, CopyApp's saved device-specific SSH profile authenticated this exact phone as both `mobile` and `root`. A private mount discovery found 11 kernel mount targets plus the RootHide jailbreak namespace. The first `/rootfs/System/Developer` pilot recorded 177 entries without errors.
 
 ## Work order and acceptance gates
