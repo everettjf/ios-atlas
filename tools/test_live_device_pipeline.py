@@ -87,6 +87,7 @@ class LiveDevicePipelineTests(unittest.TestCase):
     def test_standalone_dependencies_cover_every_file_and_reject_private_load(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
         source = build_site.load(catalog / "standalone-macho.json.gz")
+        dyld = build_site.load(catalog / "dyld.json")
         data = build_site.load(catalog / "standalone-dependencies.json.gz")
         with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
             root = Path(temporary)
@@ -97,17 +98,41 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 (build_site.DIST / "data").mkdir(parents=True)
                 candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
                 info = build_site.publish_standalone_dependencies(
-                    "23A355", "iPhone12,1", candidate, source)
+                    "23A355", "iPhone12,1", candidate, source, dyld)
                 self.assertEqual(info["standalone_direct_load_count"], 73257)
+                self.assertEqual(info["standalone_load_target_counts"],
+                                 {"cache_only": 69578, "standalone_only": 90,
+                                  "both": 3358, "tokenized": 4, "unmatched": 227})
                 part = next(part for item in data["files"] for part in item["slices"]
                             if part["dependencies"])
                 part["dependencies"][0]["install_name"] = "/Users/builder/private.dylib"
                 candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
                 with self.assertRaises(ValueError):
                     build_site.publish_standalone_dependencies(
-                        "23A355", "iPhone12,1", candidate, source)
+                        "23A355", "iPhone12,1", candidate, source, dyld)
             finally:
                 build_site.DIST = previous
+
+    def test_every_public_macho_like_file_has_verified_identity_or_mixed_exception(self) -> None:
+        catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
+        links = {"kind": "public_standalone_device_links", "count": 3117,
+                 "records": [[row["device_path"], row["volume"], row["path"]]
+                             for row in build_site.load(catalog / "standalone-live-identity.json.gz")["records"]
+                             if row["status"] == "matched" and row["volume"] == "FileSystem"]}
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            candidate = Path(temporary) / "links.json.gz"
+            candidate.write_bytes(gzip.compress(json.dumps(links).encode(), mtime=0))
+            paths = (catalog / "live-file-formats.json.gz", candidate,
+                     catalog / "jailbreak-macho.json.gz", catalog / "developer-macho.json.gz")
+            info = build_site.reconcile_public_macho_files(*paths)
+            self.assertEqual(info, {"device_macho_classified_count": 3623,
+                                    "device_macho_verified_count": 3622,
+                                    "device_macho_mixed_count": 1})
+            links["records"].pop()
+            links["count"] -= 1
+            candidate.write_bytes(gzip.compress(json.dumps(links).encode(), mtime=0))
+            with self.assertRaises(ValueError):
+                build_site.reconcile_public_macho_files(*paths)
 
     def test_mount_coverage_rejects_private_labels_and_false_counts(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"

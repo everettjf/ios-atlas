@@ -74,6 +74,13 @@
     "note": "research/23A355/Standalone-Direct-Loads.md"
   },
   {
+    "id": "public-macho-file-reconciliation",
+    "build": "23A355",
+    "title": "Are all published Mach-O-like device files accounted for?",
+    "summary": "All 3,623 reviewed public Mach-O-like paths reconcile to 3,622 exact device-hash-verified ordinary binaries and one byte-matched mixed Metal container; protected descendants remain outside this set.",
+    "note": "research/23A355/Public-MachO-File-Reconciliation.md"
+  },
+  {
     "id": "preboot-metal-container",
     "build": "23A355",
     "title": "What does the live Preboot code scan add?",

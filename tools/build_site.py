@@ -192,6 +192,31 @@ def publish_live_file_formats(build: str, product: str, path: Path,
             "device_elf_count": counts["elf"]}
 
 
+def reconcile_public_macho_files(format_path: Path, link_path: Path,
+                                 jailbreak_path: Path, developer_path: Path) -> dict:
+    """Require every public Mach-O-like file to have a verified identity or exception."""
+    formats = load(format_path)
+    links = load(link_path)
+    jailbreak = load(jailbreak_path)
+    developer = load(developer_path)
+    candidates = {path for path, category in formats["records"] if category == "macho"}
+    matched = {row[0] for row in links["records"]}
+    jailbreak_files = {item["path"] for item in jailbreak["records"]}
+    developer_files = {item["path"] for item in developer["records"]}
+    mixed = "/rootfs/System/Library/Frameworks/QuartzCore.framework/default.metallib"
+    if (links.get("kind") != "public_standalone_device_links" or
+            links.get("count") != len(matched) or
+            len(jailbreak_files) != len(jailbreak["records"]) or
+            len(developer_files) != len(developer["records"]) or
+            any((matched & jailbreak_files, matched & developer_files,
+                 jailbreak_files & developer_files)) or
+            candidates != matched | jailbreak_files | developer_files | {mixed}):
+        raise ValueError("public Mach-O-like paths lack exact verified identity or mixed-container exception")
+    return {"device_macho_classified_count": len(candidates),
+            "device_macho_verified_count": len(matched | jailbreak_files | developer_files),
+            "device_macho_mixed_count": 1}
+
+
 def publish_live_coverage(build: str, product: str, path: Path,
                           device_path: Path) -> dict:
     """Admit only fixed public labels and numeric mount summaries."""
@@ -499,7 +524,7 @@ def publish_live_objc(build: str, product: str, path: Path, macho_path: Path,
 
 
 def publish_standalone_dependencies(build: str, product: str, path: Path,
-                                    standalone: dict) -> dict:
+                                    standalone: dict, dyld: dict) -> dict:
     """Validate complete IPSW file and slice identities before publication."""
     data = load(path)
     files = data.get("files")
@@ -562,11 +587,31 @@ def publish_standalone_dependencies(build: str, product: str, path: Path,
     if seen != set(originals) or any(data.get("totals", {}).get(key) != value
                                      for key, value in totals.items()):
         raise ValueError("standalone dependency totals disagree")
+    cache_names = {image["install_name"] for image in dyld["images"]}
+    standalone_names = {part["install_name"] for item in files
+                        for part in item["slices"] if part["install_name"]}
+    target_counts = Counter()
+    for item in files:
+        for part in item["slices"]:
+            for row in part["dependencies"]:
+                name = row["install_name"]
+                in_cache = name in cache_names
+                in_file = name in standalone_names
+                category = ("both" if in_cache and in_file else
+                            "cache_only" if in_cache else
+                            "standalone_only" if in_file else
+                            "tokenized" if name.startswith("@") else "unmatched")
+                target_counts[category] += 1
+    if sum(target_counts.values()) != totals["direct_loads"]:
+        raise ValueError("standalone load target counts disagree")
     url = f"data/{build}-standalone-dependencies.json.gz"
     shutil.copy2(path, DIST / url)
     return {"standalone_dependency_url": url,
             "standalone_direct_load_count": totals["direct_loads"],
-            "standalone_redacted_rpath_count": totals["redacted_rpaths"]}
+            "standalone_redacted_rpath_count": totals["redacted_rpaths"],
+            "standalone_load_target_counts": {key: target_counts[key] for key in
+                                              ("cache_only", "standalone_only", "both",
+                                               "tokenized", "unmatched")}}
 
 
 def publish_live_dependencies(build: str, product: str, path: Path,
@@ -1700,7 +1745,7 @@ def build() -> None:
             if standalone_dependency_path.exists():
                 standalone_info.update(publish_standalone_dependencies(
                     build, dyld["product_type"], standalone_dependency_path,
-                    standalone))
+                    standalone, dyld))
             live_identity_path = directory / "standalone-live-identity.json.gz"
             if live_identity_path.exists():
                 device_catalog_path = directory / "device-live.json.gz"
@@ -2086,6 +2131,13 @@ def build() -> None:
             device_info.update(publish_live_signatures(
                 build, dyld["product_type"], live_signatures_path,
                 live_macho_path))
+        if live_format_path.exists():
+            links_url = standalone_info.get("standalone_device_links_url")
+            if not links_url or not live_macho_path.exists() or not developer_macho_path.exists():
+                raise ValueError("public Mach-O coverage requires all verified file catalogs")
+            device_info.update(reconcile_public_macho_files(
+                live_format_path, DIST / links_url, live_macho_path,
+                developer_macho_path))
         archive_info = {}
         archive_path = directory / "firmware-archive.json"
         kernel_path = directory / "kernel.json"
