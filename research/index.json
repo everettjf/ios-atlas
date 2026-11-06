@@ -74,6 +74,20 @@
     "note": "research/23A355/Preboot-Metal-Container.md"
   },
   {
+    "id": "peripheral-mount-types",
+    "build": "23A355",
+    "title": "Which small live mounts received a file-type pass?",
+    "summary": "Hardware, Baseband, and xARTS mount scans had 85, 3, and 1 reachable regular files respectively. A complete device-side type pass found no ordinary Mach-O candidates in those exact path sets.",
+    "note": "research/23A355/Peripheral-Mount-Type-Coverage.md"
+  },
+  {
+    "id": "updatebrain-live-code",
+    "build": "23A355",
+    "title": "Which live update binaries are visible?",
+    "summary": "Two Software Update Mach-O files were byte-verified from the phone: UpdateBrainLibrary.dylib exposes 1,551 Objective-C methods and its service executable declares a load of that library. The mount's path set changed between passes, so full code coverage is unproven.",
+    "note": "research/23A355/UpdateBrain-Live-Code.md"
+  },
+  {
     "id": "live-jailbreak-macho",
     "build": "23A355",
     "title": "Which Mach-O files are installed in the live jailbreak tree?",

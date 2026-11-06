@@ -40,6 +40,9 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Publish privacy-reviewed per-mount scan counts, statuses, and access-error totals without private path names.
 - [x] Show byte-verified Mach-O counts by mount, distinguishing exhaustive live file-type passes from firmware-seeded hash matches and unclassified mounts.
 - [x] Classify all 3,257 reachable Preboot regular files by type; confirm 40 known standalone Mach-O files and byte-match one mixed QuartzCore Metal container to the exact SystemOS firmware without exposing its physical path.
+- [x] Classify all reachable regular files in the completed Hardware, Baseband, and xARTS mount scans; record zero ordinary Mach-O candidates with exact path-set checks.
+- [x] Byte-verify and parse two live-only Software Update Mach-O files, preserving their private physical paths and the mount's changing-file-set limitation.
+- [ ] Resnapshot the volatile Software Update mount at a stable point and reconcile all code candidates; do not infer an exhaustive total from two verified files.
 - [x] Expose static analysis status by mount for verified public code, including no-info and failed Objective-C results, partial Swift results, and mounts with no code-classification pass.
 - [ ] Expand live standalone Mach-O and library analysis coverage to every publishable code-bearing file on each mount, including unsupported formats and failed analyses.
 
