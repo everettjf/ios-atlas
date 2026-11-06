@@ -91,7 +91,7 @@
     "id": "updatebrain-live-code",
     "build": "23A355",
     "title": "Which live update binaries are visible?",
-    "summary": "A follow-up path snapshot and file-type pass agreed on all 2,080 reachable regular files. Exactly two ordinary Mach-O candidates were rechecked by device SHA-256; UpdateBrainLibrary.dylib exposes 1,551 Objective-C methods and its service declares a load of that library.",
+    "summary": "Two live, hash-verified UpdateBrain binaries cover this mount's ordinary Mach-O candidates. The service is a library-entry stub; a focused static pass maps the library's XPC listener, entitlement check, and seven command handlers.",
     "note": "research/23A355/UpdateBrain-Live-Code.md"
   },
   {

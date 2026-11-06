@@ -52,6 +52,8 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Trace Foundation as a cache image and document its ObjC method surface.
 - [x] Trace SpringBoard's launch declaration and startup entry point; document its ObjC method surface.
 - [x] Create a source-bound WidgetKit overview with documented purpose and API types, exact-image method and symbol examples, direct dependencies, and known gaps.
+- [x] Trace the live UpdateBrain service entry into its device-acquired library; record the XPC listener, entitlement gate, and seven static command dispatch targets with Ghidra addresses and private evidence bundles.
+- [ ] Follow selected UpdateBrain command handlers and identify their clients; verify runpath resolution and process ownership before describing runtime behavior.
 - [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.
 - [ ] Trace BusinessChat action and network-provider call sites and identify its runtime process owner.
 - [ ] Map selected public Swift APIs to exact-image metadata or exports before describing their implementation in this build.
