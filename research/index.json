@@ -266,6 +266,30 @@
     "note": "research/23A355/SpringBoard-Method-Surface.md"
   },
   {
+    "id": "springboard-post-launch",
+    "build": "23A355",
+    "title": "What does SpringBoard set up after its launch callback?",
+    "summary": "Selected exact-image instructions in applicationDidFinishLaunching: call common initialization, send system-status, backlight, and HUD setup messages, and expose later scene-related construction sites; runtime effects remain unknown.",
+    "install_name": "/System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard",
+    "note": "research/23A355/SpringBoard-Post-Launch.md"
+  },
+  {
+    "id": "uikitcore-application-main",
+    "build": "23A355",
+    "title": "How does UIKitCore enter the application event cycle?",
+    "summary": "The exact UIKitCore image sends UIApplicationMain through its preparations function and an application _run message; the note also bounds its scene, view, and input method inventory.",
+    "install_name": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore",
+    "note": "research/23A355/UIKitCore-ApplicationMain.md"
+  },
+  {
+    "id": "corefoundation-run-loop",
+    "build": "23A355",
+    "title": "What do CoreFoundation's run-loop entry points do?",
+    "summary": "The exact CFRunLoopRun and CFRunLoopRunInMode wrappers call CFRunLoopGetCurrent and a shared internal run function; UIKit-to-CoreFoundation dispatch is not traced.",
+    "install_name": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
+    "note": "research/23A355/CoreFoundation-RunLoop.md"
+  },
+  {
     "id": "foundation-dependency-reach",
     "build": "23A355",
     "title": "Why does Foundation reach more images with weak loads?",

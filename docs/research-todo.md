@@ -57,6 +57,9 @@ The [23A355 handoff](handoff-23A355.md) closes the current horizontal delivery p
 
 - [x] Trace Foundation as a cache image and document its ObjC method surface.
 - [x] Trace SpringBoard's launch declaration and startup entry point; document its ObjC method surface.
+- [x] Inspect selected calls inside SpringBoard's `applicationDidFinishLaunching:` and keep untraced receivers and runtime effects explicit.
+- [x] Trace UIKitCore's exact `UIApplicationMain` entry through preparations and `_run`, and document its bounded method surface.
+- [x] Trace CoreFoundation's two public run-loop entry wrappers to the shared internal function without claiming a UIKit runtime call path.
 - [x] Create a source-bound WidgetKit overview with documented purpose and API types, exact-image method and symbol examples, direct dependencies, and known gaps.
 - [x] Trace the live UpdateBrain service entry into its device-acquired library; record the XPC listener, entitlement gate, and seven static command dispatch targets with Ghidra addresses and private evidence bundles.
 - [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.
