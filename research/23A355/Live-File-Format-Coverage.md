@@ -8,6 +8,8 @@ The public categories include **3,623 Mach-O or mixed-container descriptions**, 
 
 An [exact path-set reconciliation](Public-MachO-File-Reconciliation.md) accounts for all 3,623 public Mach-O-like results: 3,622 byte-verified ordinary binaries plus one byte-matched mixed Metal container. The site build rejects a gap in this public set.
 
+The 99 script/makefile and six ELF paths also have [fixed format details](Live-Alternate-Code.md). These are signature-derived labels, not a claim about execution or source-level behavior.
+
 The separate private Data and Mobile data type passes found six and 1,503 script descriptions, plus one and 299 ELF descriptions respectively. Those are **aggregate observations only**: the Data path set was stable across its snapshot and type pass, while Mobile data had 34 additions and 34 removals. Their private paths, raw descriptions, contents, and hashes are not published. The 73 protected directories remain outside the observed type results.
 
 `file` detects recognizable signatures and shebangs. It does not enumerate scripts stored inside archives, code embedded in databases or assets, or dynamically generated code. The two mixed Metal containers contain Mach-O signatures but are not ordinary standalone executable pages. Exact Mach-O identities and logical dyld shared-cache images are indexed separately. Deeper code behavior remains on the [research TODO](../../docs/research-todo.md).

@@ -1,0 +1,7 @@
+# What else looks like code in published device files?
+
+The iPhone 11 iOS 26.0.1 (`23A355`) [public file-format pass](Live-File-Format-Coverage.md) labels **99** files as scripts or makefiles and **six** as ELF binaries. A second, fixed-vocabulary pass now gives each of these **105 / 105** public paths a coarse format detail. The site displays it in **On-device files** after `format:script` or `format:elf` search. No script source, raw `file` description, private path, or binary bytes are published.
+
+The script signatures comprise 62 POSIX shell, six Bash, ten Zsh, eleven ambiguous Awk-or-Perl, one Perl, four DTrace, two M4 macro, two Makefile, and one game-script (SCM) label. The six ELF signatures all report **32-bit little-endian executables for the Netronome Flow Processor**. Those machine labels are the `file-5.43` signature result; they do not imply that the iPhone's arm64e CPU executes the files.
+
+The [collector](../../tools/catalog_live_alternate_code.py) checks SHA-256 and row counts of the three original read-only type-pass outputs against the already-published format catalog, selects only the 105 reviewed public paths, and emits fixed subtype keys. The site builder rechecks the exact script/ELF path set and subtype whitelist. This is first-pass identification only. It does not inspect script logic, ELF headers independently, embedded code, actual process loading, or whether a file is executable in context. Those questions belong to focused follow-up analysis.

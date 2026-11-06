@@ -116,6 +116,13 @@
     "note": "research/23A355/Live-File-Format-Coverage.md"
   },
   {
+    "id": "live-alternate-code",
+    "build": "23A355",
+    "title": "What else looks like code in published device files?",
+    "summary": "All 99 script/makefile and six ELF labels on reviewed public paths now have fixed, privacy-reviewed subtypes. These signature labels do not establish execution or implementation.",
+    "note": "research/23A355/Live-Alternate-Code.md"
+  },
+  {
     "id": "data-volume-type-boundary",
     "build": "23A355",
     "title": "What did the partial data-volume type passes observe?",

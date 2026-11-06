@@ -14,6 +14,7 @@ from pathlib import Path
 
 import build_site
 from catalog_live_file_formats import classify
+from catalog_live_alternate_code import subtype
 from acquire_private_macho_candidates import archive_name
 from hash_private_macho_candidates import parse_hashes
 from collect_live_device import PRIVATE_ROOT, private_path, records_from_chunks, scan_command
@@ -60,6 +61,46 @@ class LiveDevicePipelineTests(unittest.TestCase):
         self.assertEqual(classify(b"Mach-O executable, flags:<HAS_TLV_DESCRIPTORS>"), "macho")
         self.assertEqual(classify(b"DOS EPS Binary File Postscript"), "other")
         self.assertEqual(classify(b"Apple binary property list"), "plist")
+
+    def test_alternate_code_subtypes_are_fixed_and_conservative(self) -> None:
+        self.assertEqual(subtype("script", b"POSIX shell script, ASCII text executable"), "sh")
+        self.assertEqual(subtype("script", b"GTA script (SCM), used in GTA III/VC/SA"),
+                         "game_script")
+        self.assertEqual(subtype("elf", b"ELF 32-bit LSB executable, Netronome Flow Processor, version 1"),
+                         "netronome_32_lsb_executable")
+        self.assertEqual(subtype("elf", b"ELF 64-bit LSB shared object, ARM aarch64"), "other")
+
+    def test_alternate_code_catalog_covers_all_public_scripts_and_elf(self) -> None:
+        catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
+        data = build_site.load(catalog / "live-alternate-code.json.gz")
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            candidate = root / "alternate.json.gz"
+            previous = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                (build_site.DIST / "data").mkdir(parents=True)
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                info = build_site.publish_live_alternate_code(
+                    "23A355", "iPhone12,1", candidate,
+                    catalog / "live-file-formats.json.gz")
+                self.assertEqual(info["device_alternate_code_count"], 105)
+                original_path = data["records"][0][0]
+                data["records"][0][0] = "/private/var/mobile/secret-script"
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_alternate_code(
+                        "23A355", "iPhone12,1", candidate,
+                        catalog / "live-file-formats.json.gz")
+                data["records"][0][0] = original_path
+                data["raw_description"] = "private contents"
+                candidate.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_alternate_code(
+                        "23A355", "iPhone12,1", candidate,
+                        catalog / "live-file-formats.json.gz")
+            finally:
+                build_site.DIST = previous
 
     def test_public_file_formats_cover_all_reviewed_files_and_reject_private_path(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"

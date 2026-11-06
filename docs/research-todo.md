@@ -54,7 +54,7 @@ Current delivery focus: finish the one-device file and dynamic-library atlas, in
 - [x] Classify the three private Objective-C failures: all three on-disk binaries declare `LC_ENCRYPTION_INFO_64` with `crypt_id=1`, and encrypted ranges overlap Objective-C sections. Preserve unknown method counts without attempting decryption in this atlas pass.
 - [x] Expose static analysis status by mount for verified public code, including no-info and failed Objective-C results, partial Swift results, and mounts with no code-classification pass.
 - [x] Reconcile all 3,623 published Mach-O-like regular-file paths to 3,622 exact device-hash-verified ordinary binaries and one byte-matched mixed Metal container. This completes the reviewed public Mach-O-like path set, not protected directories, private data paths, or embedded/generated code.
-- [ ] Review the 99 published script/makefile labels and six ELF labels for safe first-pass code metadata; recognizable formats alone do not identify how those files are used. Keep embedded code in archives and generated code outside the Mach-O completeness claim.
+- [x] Give all 99 published script/makefile labels and six ELF labels fixed, privacy-reviewed subtype details from the complete type passes. This is signature metadata, not script-body analysis, an independent ELF parse, or evidence of execution.
 
 ## Deeper studies, one component at a time
 

@@ -22,6 +22,7 @@ from catalog_live_load_targets import catalog as catalog_live_load_targets
 from export_live_coverage import ROOTS as LIVE_COVERAGE_ROOTS
 from verify_live_standalone import DEVICE_PREFIX as STANDALONE_DEVICE_PREFIX
 from catalog_live_file_formats import CATEGORIES as LIVE_FILE_FORMAT_CATEGORIES
+from catalog_live_alternate_code import SCRIPT_SUBTYPES, ELF_SUBTYPES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -190,6 +191,43 @@ def publish_live_file_formats(build: str, product: str, path: Path,
     return {"device_format_url": url, "device_format_count": len(regular),
             "device_script_count": counts["script"],
             "device_elf_count": counts["elf"]}
+
+
+def publish_live_alternate_code(build: str, product: str, path: Path,
+                                format_path: Path) -> dict:
+    """Publish only fixed subtypes for the complete public script and ELF set."""
+    data = load(path)
+    formats = load(format_path)
+    wanted = {row[0]: row[1] for row in formats["records"]
+              if row[1] in ("script", "elf")}
+    records = data.get("records")
+    expected_keys = {"schema_version", "kind", "source", "build", "product_type",
+                     "format_catalog_sha256", "file_count", "subtype_counts", "records"}
+    if (set(data) != expected_keys or data.get("schema_version") != 1 or
+            data.get("kind") != "live_device_public_alternate_code" or
+            data.get("source") != "private_file_type_pass_fixed_subtypes" or
+            data.get("build") != build or data.get("product_type") != product or
+            data.get("format_catalog_sha256") != hashlib.sha256(format_path.read_bytes()).hexdigest() or
+            not isinstance(records, list) or len(records) != len(wanted) or
+            data.get("file_count") != len(records)):
+        raise ValueError("alternate-code source or count differs")
+    counts = Counter()
+    seen = set()
+    for row in records:
+        if (not isinstance(row, list) or len(row) != 3 or
+                not isinstance(row[0], str) or row[0] not in wanted or
+                row[0] in seen or row[1] != wanted[row[0]] or
+                not isinstance(row[2], str) or
+                row[2] not in (SCRIPT_SUBTYPES if row[1] == "script" else ELF_SUBTYPES)):
+            raise ValueError("unsafe or mismatched alternate-code row")
+        seen.add(row[0])
+        counts[f"{row[1]}:{row[2]}"] += 1
+    if seen != set(wanted) or data.get("subtype_counts") != dict(counts):
+        raise ValueError("alternate-code path set or totals differ")
+    url = f"data/{build}-device-alternate-code.json.gz"
+    shutil.copy2(path, DIST / url)
+    return {"device_alternate_code_url": url,
+            "device_alternate_code_count": len(records)}
 
 
 def reconcile_public_macho_files(format_path: Path, link_path: Path,
@@ -2042,6 +2080,12 @@ def build() -> None:
                 raise ValueError("live file formats require reviewed device paths")
             device_info.update(publish_live_file_formats(
                 build, dyld["product_type"], live_format_path, live_device_path))
+        alternate_code_path = directory / "live-alternate-code.json.gz"
+        if alternate_code_path.exists():
+            if not live_format_path.exists():
+                raise ValueError("alternate-code details require public file formats")
+            device_info.update(publish_live_alternate_code(
+                build, dyld["product_type"], alternate_code_path, live_format_path))
         live_coverage_path = directory / "live-coverage.json"
         if live_coverage_path.exists():
             if not live_device_path.exists():
