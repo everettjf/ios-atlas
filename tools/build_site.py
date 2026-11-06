@@ -557,6 +557,127 @@ def publish_live_swift(build: str, product: str, path: Path,
             "device_macho_swift_partial_slice_count": totals["partially_parsed"]}
 
 
+def publish_live_signatures(build: str, product: str, path: Path,
+                            macho_path: Path) -> dict:
+    """Publish code-signing summaries without raw output or entitlement values."""
+    data = load(path)
+    macho = load(macho_path)
+    originals = {item["path"]: item for item in macho["records"]}
+    files = data.get("files")
+    if (set(data) != {"schema_version", "kind", "source", "tool",
+                      "product_type", "build", "macho_file_count",
+                      "totals", "files"} or
+            data.get("tool") != "codesign -dvvv and ipsw macho info --json --loads" or
+            data.get("schema_version") != 1 or
+            data.get("kind") != "live_jailbreak_code_signatures" or
+            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("build") != build or data.get("product_type") != product or
+            not isinstance(files, list) or len(files) != len(originals) or
+            data.get("macho_file_count") != len(files)):
+        raise ValueError("incomplete live code-signing catalog")
+    private_value = re.compile(
+        r"/(?:Users|var/mobile|private/var/mobile|private/var/containers)/|"
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+    )
+    totals = Counter()
+    seen = set()
+    public_files = []
+    for item in files:
+        original = originals.get(item.get("path"))
+        if (original is None or item["path"] in seen or
+                set(item) != {"checkpoint_schema_version", "path", "sha256",
+                              "slice_count", "slices"} or
+                item.get("checkpoint_schema_version") != 3 or
+                item.get("sha256") != original["sha256"] or
+                item.get("slice_count") != len(original["slices"]) or
+                not isinstance(item.get("slices"), list) or
+                len(item["slices"]) != len(original["slices"])):
+            raise ValueError("live signing file differs from verified Mach-O")
+        seen.add(item["path"])
+        totals["slices"] += len(item["slices"])
+        public_slices = []
+        for part, original_part in zip(item["slices"], original["slices"]):
+            status = part.get("status")
+            if (set(part) != {"architecture", "uuid", "macho_loads_sha256",
+                              "status", "signature_offset", "signature_size",
+                              "identifier", "team_identifier", "cdhash",
+                              "hash_type", "flags", "flags_label",
+                              "signature_state", "entitlement_status",
+                              "entitlement_key_count"} or
+                    part.get("architecture") != original_part["architecture"] or
+                    part.get("uuid") != original_part["uuid"] or
+                    status not in ("code_directory", "no_embedded_signature") or
+                    not isinstance(part.get("macho_loads_sha256"), str) or
+                    not re.fullmatch(r"[0-9a-f]{64}", part["macho_loads_sha256"])):
+                raise ValueError("invalid live signing slice")
+            if status == "no_embedded_signature":
+                if (any(part.get(field) is not None for field in
+                        ("signature_offset", "signature_size", "identifier",
+                         "team_identifier", "cdhash", "hash_type", "flags",
+                         "flags_label", "signature_state")) or
+                        part.get("entitlement_status") != "absent" or
+                        part.get("entitlement_key_count") != 0):
+                    raise ValueError("unsigned slice has code-signing metadata")
+            else:
+                offset, size = part.get("signature_offset"), part.get("signature_size")
+                if (not isinstance(offset, int) or not isinstance(size, int) or
+                        offset < 0 or size <= 0 or offset + size > original["size"] or
+                        not isinstance(part.get("cdhash"), str) or
+                        not re.fullmatch(r"[0-9a-f]{40}", part["cdhash"]) or
+                        part.get("hash_type") not in
+                        ("sha1", "sha256", "sha256-truncated", "sha384") or
+                        not isinstance(part.get("flags"), str) or
+                        not re.fullmatch(r"0x[0-9a-f]+", part["flags"]) or
+                        part.get("signature_state") not in
+                        ("adhoc", "no_cms_signature", "other_signature") or
+                        part.get("entitlement_status") not in
+                        ("parsed", "absent", "unparsed") or
+                        (part["entitlement_status"] == "unparsed" and
+                         part.get("entitlement_key_count") is not None) or
+                        (part["entitlement_status"] == "absent" and
+                         part.get("entitlement_key_count") != 0) or
+                        (part["entitlement_status"] == "parsed" and
+                         (not isinstance(part.get("entitlement_key_count"), int) or
+                          part["entitlement_key_count"] < 0))):
+                    raise ValueError("invalid code-signing summary")
+                for value in (part.get("identifier"), part.get("flags_label")):
+                    if (not isinstance(value, str) or not value or len(value) > 500 or
+                            has_private_characters(value) or "\ufffd" in value or
+                            private_value.search(value) or PRIVATE_REFERENCE.search(value)):
+                        raise ValueError("unsafe code-signing identity")
+                team = part.get("team_identifier")
+                if (team is not None and
+                    (not isinstance(team, str) or not team or len(team) > 500 or
+                     has_private_characters(team) or "\ufffd" in team or
+                     private_value.search(team) or PRIVATE_REFERENCE.search(team))):
+                    raise ValueError("unsafe code-signing team identifier")
+                totals[part["signature_state"]] += 1
+                totals[f"entitlements_{part['entitlement_status']}"] += 1
+                if part["entitlement_key_count"] is not None:
+                    totals["entitlement_keys"] += part["entitlement_key_count"]
+            totals[status] += 1
+            public_slices.append({key: part[key] for key in
+                                  ("architecture", "uuid", "status",
+                                   "signature_offset", "signature_size",
+                                   "identifier", "team_identifier", "cdhash",
+                                   "hash_type", "flags", "flags_label",
+                                   "signature_state", "entitlement_status",
+                                   "entitlement_key_count")})
+        public_files.append({"path": item["path"], "sha256": item["sha256"],
+                             "slices": public_slices})
+    if seen != set(originals) or data.get("totals") != dict(totals):
+        raise ValueError("live code-signing totals disagree")
+    url = f"data/{build}-jailbreak-signatures.json.gz"
+    dump(DIST / url,
+         {"schema_version": 1, "build": build, "files": public_files,
+          "totals": dict(totals)}, compressed=True)
+    return {"device_macho_signature_url": url,
+            "device_macho_code_directory_count": totals["code_directory"],
+            "device_macho_adhoc_count": totals["adhoc"],
+            "device_macho_no_cms_count": totals["no_cms_signature"],
+            "device_macho_entitlements_unparsed_count": totals["entitlements_unparsed"]}
+
+
 def publish_live_standalone_identity(build: str, product: str, path: Path,
                                      stock_path: Path, device_path: Path) -> dict:
     """Attach firmware analysis only to exact byte-matched device files."""
@@ -1562,6 +1683,13 @@ def build() -> None:
                 raise ValueError("live Swift metadata requires verified Mach-O files")
             device_info.update(publish_live_swift(
                 build, dyld["product_type"], live_swift_path,
+                live_macho_path))
+        live_signatures_path = directory / "jailbreak-signatures.json.gz"
+        if live_signatures_path.exists():
+            if not live_macho_path.exists():
+                raise ValueError("live signatures require verified Mach-O files")
+            device_info.update(publish_live_signatures(
+                build, dyld["product_type"], live_signatures_path,
                 live_macho_path))
         live_standalone_path = directory / "standalone-live-identity.json.gz"
         if live_standalone_path.exists():

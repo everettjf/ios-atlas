@@ -96,3 +96,15 @@ python3 tools/catalog_live_jailbreak_swift.py \
 ```
 
 The builder checks parsed declaration and member counts, explicit no-info and partial statuses, and private path patterns before exposing per-file results. See [Swift coverage](../research/23A355/Live-Jailbreak-Swift.md).
+
+The code-signing pass reads `LC_CODE_SIGNATURE` and `codesign -dvvv` from each exact file slice, checking UUIDs and CDHashes across the parsers:
+
+```sh
+python3 tools/catalog_live_jailbreak_signatures.py \
+  --macho-catalog catalog/ios/23A355/jailbreak-macho.json.gz \
+  --binary-root .local/live-device-23A355/macho-files \
+  --workdir .local/live-device-23A355/signature-work \
+  --output .local/live-device-23A355/jailbreak-signatures-candidate.json.gz
+```
+
+The public builder strips provenance-only fields and excludes raw signing output, certificates, and entitlement values. It retains explicit entitlement parse failures. See [code-signing coverage](../research/23A355/Live-Jailbreak-Code-Signing.md).

@@ -24,8 +24,9 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Record direct dylib load commands and runpaths for all 493 slices of those verified files; withhold three embedded build-machine user paths.
 - [x] Index named `__text` symbol records across all 493 slices of the 463 published, device-hash-verified jailbreak Mach-O files; retain explicit zero-name results.
 - [x] Check Swift metadata across those same 493 slices; retain no-info and partial-parse states and link parsed lines to verified file bytes.
+- [x] Read embedded CodeDirectory metadata across all 493 verified slices; distinguish ad hoc and no-CMS reports and keep entitlement parse failures explicit without publishing raw values.
 - [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
-- [ ] Run a code-signing pass over the verified live Mach-O files; keep absent and unsupported results explicit. Resolve direct library loads only where exact device evidence permits.
+- [ ] Resolve direct library loads only where exact device evidence permits; record unresolved or unsupported targets explicitly.
 - [ ] Discover any additional base-system standalone executables, dylibs, frameworks, and extensions absent from the firmware inventory; establish identity before reusing firmware analysis.
 - [x] Make live device files the primary website view, show scan-root coverage, and remove cross-version comparison navigation.
 - [ ] Add live standalone Mach-O and library analysis coverage by mount, including unsupported and failed states.

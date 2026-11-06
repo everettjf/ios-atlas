@@ -323,6 +323,53 @@ class LiveDevicePipelineTests(unittest.TestCase):
             finally:
                 build_site.DIST = old_dist
 
+    def test_live_signing_requires_verified_slice_and_safe_identity(self) -> None:
+        with tempfile.TemporaryDirectory(dir=PRIVATE_ROOT) as temporary:
+            root = Path(temporary)
+            macho_path = root / "macho.json.gz"
+            signing_path = root / "signing.json.gz"
+            original = {"path": "/usr/lib/tool.dylib", "sha256": "a" * 64,
+                        "size": 1024,
+                        "slices": [{"architecture": "arm64e", "uuid": "UUID"}]}
+            macho_path.write_bytes(gzip.compress(json.dumps({"records": [original]}).encode(), mtime=0))
+            part = {"architecture": "arm64e", "uuid": "UUID",
+                    "macho_loads_sha256": "b" * 64, "status": "code_directory",
+                    "signature_offset": 800, "signature_size": 200,
+                    "identifier": "tool", "team_identifier": None,
+                    "cdhash": "c" * 40, "hash_type": "sha256",
+                    "flags": "0x2", "flags_label": "adhoc",
+                    "signature_state": "adhoc", "entitlement_status": "absent",
+                    "entitlement_key_count": 0}
+            data = {"schema_version": 1, "kind": "live_jailbreak_code_signatures",
+                    "source": "verified_live_device_macho_bytes", "build": "23A355",
+                    "tool": "codesign -dvvv and ipsw macho info --json --loads",
+                    "product_type": "iPhone12,1", "macho_file_count": 1,
+                    "totals": {"slices": 1, "code_directory": 1, "adhoc": 1,
+                               "entitlements_absent": 1, "entitlement_keys": 0},
+                    "files": [{"checkpoint_schema_version": 3,
+                               "path": original["path"], "sha256": original["sha256"],
+                               "slice_count": 1, "slices": [part]}]}
+            old_dist = build_site.DIST
+            try:
+                build_site.DIST = root / "dist"
+                signing_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                result = build_site.publish_live_signatures(
+                    "23A355", "iPhone12,1", signing_path, macho_path)
+                self.assertEqual(result["device_macho_code_directory_count"], 1)
+                part["identifier"] = "/Users/person/private"
+                signing_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_signatures(
+                        "23A355", "iPhone12,1", signing_path, macho_path)
+                part["identifier"] = "tool"
+                part["signature_offset"] = 900
+                signing_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_signatures(
+                        "23A355", "iPhone12,1", signing_path, macho_path)
+            finally:
+                build_site.DIST = old_dist
+
 
 if __name__ == "__main__":
     unittest.main()

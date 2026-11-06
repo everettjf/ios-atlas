@@ -87,6 +87,13 @@
     "note": "research/23A355/Live-Jailbreak-Swift.md"
   },
   {
+    "id": "live-jailbreak-code-signing",
+    "build": "23A355",
+    "title": "What signing metadata is embedded in the jailbreak files?",
+    "summary": "All 493 verified Mach-O slices contain a parseable CodeDirectory. codesign reports 486 ad hoc states and seven without a CMS signature; this describes metadata, not trust or runtime acceptance.",
+    "note": "research/23A355/Live-Jailbreak-Code-Signing.md"
+  },
+  {
     "id": "standalone-objc-method-coverage",
     "build": "23A355",
     "title": "What Objective-C methods are visible in standalone Mach-O files?",
