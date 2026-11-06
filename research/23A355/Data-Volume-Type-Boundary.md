@@ -9,8 +9,14 @@ The `file-5.43` passes returned nonzero solely because `find` could not traverse
 
 These are **type candidates**, not byte-verified Mach-O catalog entries. The 5 dSYM companion files are counted as Mach-O signatures but are not ordinary executable or library pages. No per-file hash, UUID, Objective-C method list, or code-signing identity from these private app and mobile paths is published. The protected descendants may contain additional files of any type. Mutable files can appear or disappear even when a mount table remains unchanged.
 
+## Read-only device hash follow-up
+
+With the same pinned root SSH route, a later read-only `sha256sum -z` pass hashed all **303 Data** and **3 Mobile data** candidate paths. It returned 306 unique SHA-256 records, no missing candidate and no stderr, and exited zero. This proves each candidate path had readable contents at the hash observation time; it does **not** prove that its contents or size were unchanged since the earlier type pass. The private result JSON has SHA-256 `961399dcd5fa4a4f2cb07a7c47c75c1ad2a42511202bdd2f35666cc30a4e1f52` and is tied to the private snapshot manifest SHA-256 above. The paths and individual hashes remain under ignored `.local`.
+
+No candidate bytes were acquired locally in this follow-up, so no Mach-O header, UUID, method surface, or signature was checked against those hashes. The public site's verified-code count for both data-volume views remains unknown. The 73 protected directories and Mobile data's 34-path churn still limit coverage.
+
 ## Reproduce and next work
 
 With the saved, pinned root SSH route to this exact phone, make a private metadata snapshot of each mount and run `find <MOUNT> -xdev -type f -exec file -0 -0 -- {} +` without crossing mount boundaries. Preserve NUL-delimited results and stderr privately. Compare each emitted path set with its snapshot, count descriptions containing `Mach-O` or `universal binary`, and treat every inaccessible directory and changed path as an explicit limit. The [collection procedure](../../docs/live-device-collection.md) explains the private snapshot format; the [public mount catalog](../../catalog/ios/23A355/live-coverage.json) retains the earlier observation's counts.
 
-Further work can establish private byte identity and static metadata for these candidate binaries without publishing personal paths. A cause for the 73 access denials requires separate evidence. Script and embedded-code formats remain outside this Mach-O type pass.
+The new [private hash procedure](../../docs/live-device-collection.md) validates the saved snapshot and NUL-delimited type results, checks the exact device build, and records per-candidate hash or unavailable status without printing private paths. Further work can acquire selected bytes and establish private Mach-O identity and static metadata without publishing personal paths. A cause for the 73 access denials requires separate evidence. Script and embedded-code formats remain outside this Mach-O type pass.

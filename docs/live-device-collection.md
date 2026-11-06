@@ -64,6 +64,18 @@ The site's **Verified code by mount** table separates path scanning from byte-ve
 
 A later read-only follow-up of the two partial data-volume views found the same 73 protected directories as the first snapshot. Even `stat` on those directory paths returned `Operation not permitted`; their cause and descendant counts remain unknown. A file-type pass matched all 23,490 reachable Data regular-file paths in its later snapshot and found 303 private Mach-O signatures. The Mobile data type pass observed three candidates among 29,500 paths, but 34 paths appeared and 34 disappeared relative to its snapshot. None of these private candidates is presented as a verified public binary. See the [data-volume boundary note](../research/23A355/Data-Volume-Type-Boundary.md).
 
+A subsequent read-only `sha256sum -z` pass hashed all 306 private candidates on the exact phone, with no missing result or stderr. It did not acquire their bytes or parse their Mach-O headers, and protected descendants remain unknown. The private hash tool checks the snapshot digest, NUL-delimited type paths, and device product/build before hashing; it records path and hash values only under ignored `.local`:
+
+```sh
+python3 tools/hash_private_macho_candidates.py \
+  --manifest .local/live-device-data-followup-20261106/manifest.json \
+  --data-types .local/live-device-data-followup-20261106/data-file-types.nul \
+  --mobile-types .local/live-device-data-followup-20261106/mobile-data-file-types.nul \
+  --port 22326 --identity <DEVICE_KEY> --known-hosts <PINNED_HOST_KEYS> \
+  --product iPhone12,1 --build 23A355 \
+  --output .local/live-device-data-followup-20261106/private-macho-hashes.json
+```
+
 The first static analysis pass over all 84 Developer Mach-O slices reads `LC_LOAD_*` and `LC_RPATH` declarations from the acquired, hash-verified bytes. It found 1,778 direct library loads and 158 public runpath declarations. The catalog preserves weak loads and architecture-specific duplication; it does not resolve `@rpath` against a running process or prove that any file was loaded. Generate the private aggregate before review and publication with:
 
 ```sh

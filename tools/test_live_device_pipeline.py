@@ -13,6 +13,7 @@ import unittest
 from pathlib import Path
 
 import build_site
+from hash_private_macho_candidates import parse_hashes
 from collect_live_device import PRIVATE_ROOT, private_path, records_from_chunks, scan_command
 from export_live_device import export
 
@@ -31,6 +32,16 @@ class LiveDevicePipelineTests(unittest.TestCase):
         self.assertEqual(rows, [["/rootfs/System/link", "symlink", 11, 0o777,
                                  0, 0, 42, 9, 1790739622, "line\nbreak"]])
         self.assertIn("-printf", scan_command(root))
+
+    def test_private_hash_protocol_preserves_newline_names_and_rejects_extra_rows(self) -> None:
+        path = b"/rootfs/private/var/example\nname"
+        digest = b"a" * 64
+        self.assertEqual(parse_hashes(digest + b"  " + path + b"\0", {path}),
+                         {path: digest.decode()})
+        with self.assertRaises(ValueError):
+            parse_hashes(digest + b"  " + path, {path})
+        with self.assertRaises(ValueError):
+            parse_hashes(digest + b"  " + path + b"\0", set())
 
     def test_mount_coverage_rejects_private_labels_and_false_counts(self) -> None:
         catalog = build_site.ROOT / "catalog" / "ios" / "23A355"
