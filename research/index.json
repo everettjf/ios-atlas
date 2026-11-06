@@ -74,6 +74,13 @@
     "note": "research/23A355/Preboot-Metal-Container.md"
   },
   {
+    "id": "base-root-code-coverage",
+    "build": "23A355",
+    "title": "What did the complete live base-root type pass find?",
+    "summary": "All 219,216 reachable base-root regular files were classified by type. The 3,117 ordinary Mach-O files were already byte-matched; one mixed QuartzCore Metal container also matches the exact FileSystem image.",
+    "note": "research/23A355/Base-Root-Code-Coverage.md"
+  },
+  {
     "id": "peripheral-mount-types",
     "build": "23A355",
     "title": "Which small live mounts received a file-type pass?",
