@@ -59,13 +59,6 @@
     "note": "research/23A355/Standalone-MachO-Coverage.md"
   },
   {
-    "id": "live-standalone-identity",
-    "build": "23A355",
-    "title": "Which official Mach-O files match this iPhone byte for byte?",
-    "summary": "A read-only device SHA-256 pass matched 3,157 official standalone files exactly. Another 206 firmware staging paths were not observed at their mapped paths; their installed locations remain to be checked.",
-    "note": "research/23A355/Live-Standalone-Identity.md"
-  },
-  {
     "id": "live-jailbreak-macho",
     "build": "23A355",
     "title": "Which Mach-O files are installed in the live jailbreak tree?",
