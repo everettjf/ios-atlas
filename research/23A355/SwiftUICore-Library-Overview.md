@@ -1,0 +1,7 @@
+# What does the SwiftUICore cache image expose?
+
+Target: iPhone 11, iOS 26.0.1 (`23A355`), `/System/Library/Frameworks/SwiftUICore.framework/SwiftUICore`, image UUID `D5E3CC17-0F44-3016-9E1D-C2F487E27A2E`. The [exact-image method catalog](../../catalog/ios/23A355/objc-image-methods-D5E3CC17-0F44-3016-9E1D-C2F487E27A2E.json.gz), SHA-256 `0099dd3f6180dbbdfb7c9111ae5d382dd560f9ad9bdabcfa364b4f2023cda9cf`, records **242 Objective-C methods** in **221 classes and five categories**. The separate [named-symbol index](../../catalog/ios/23A355/ios-cache-symbols.json.gz) counts **73,325** named `__text` records; the direct-load catalog records **51** static library declarations.
+
+The Objective-C records include `CoreColor` color conversion methods, `CoreTextGraphicsContextProvider` graphics-context methods, and `DateProvider` and `TimeIntervalProvider` names. They show **static components** for color, text graphics, and time-related presentation. The much larger named-symbol count indicates a substantial symbol-table surface outside the Objective-C selector view, but it is not a complete or deduplicated callable-function count.
+
+This note does not equate the image with every documented SwiftUI API or establish which code loaded it on this phone. The [acquisition record](../../docs/acquisition-23A355.md) identifies the exact cache bytes. API-to-implementation mapping and runtime behavior remain later research.

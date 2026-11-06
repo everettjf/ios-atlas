@@ -53,6 +53,46 @@
     "note": "research/23A355/Twitter-Library-Overview.md"
   },
   {
+    "id": "coreservices-library-overview",
+    "build": "23A355",
+    "title": "What does the CoreServices cache image expose?",
+    "summary": "The exact cache has application, bundle, and type-record method names; static metadata supports a first-pass infrastructure role, not observed runtime behavior.",
+    "install_name": "/System/Library/Frameworks/CoreServices.framework/CoreServices",
+    "note": "research/23A355/CoreServices-Library-Overview.md"
+  },
+  {
+    "id": "realityfoundation-library-overview",
+    "build": "23A355",
+    "title": "What does the RealityFoundation cache image expose?",
+    "summary": "The exact cache has scene-interaction and accessibility class names, with a narrow Objective-C method view and no observed runtime owner.",
+    "install_name": "/System/Library/Frameworks/RealityFoundation.framework/RealityFoundation",
+    "note": "research/23A355/RealityFoundation-Library-Overview.md"
+  },
+  {
+    "id": "stickerfoundation-library-overview",
+    "build": "23A355",
+    "title": "What is visible in the StickerFoundation cache image?",
+    "summary": "The image is present, but the exact metadata passes found no Objective-C methods or named code symbols; its specific role remains unknown.",
+    "install_name": "/System/Library/Frameworks/StickerFoundation.framework/StickerFoundation",
+    "note": "research/23A355/StickerFoundation-Library-Overview.md"
+  },
+  {
+    "id": "stickerkit-library-overview",
+    "build": "23A355",
+    "title": "What does the StickerKit cache image expose?",
+    "summary": "Exact-image method names support sticker presentation, effects, and drag-interaction hypotheses; runtime loading is unverified.",
+    "install_name": "/System/Library/Frameworks/StickerKit.framework/StickerKit",
+    "note": "research/23A355/StickerKit-Library-Overview.md"
+  },
+  {
+    "id": "swiftuicore-library-overview",
+    "build": "23A355",
+    "title": "What does the SwiftUICore cache image expose?",
+    "summary": "Exact-image metadata names color, text graphics, and time-provider components; implementation and runtime use remain open.",
+    "install_name": "/System/Library/Frameworks/SwiftUICore.framework/SwiftUICore",
+    "note": "research/23A355/SwiftUICore-Library-Overview.md"
+  },
+  {
     "id": "widgetkit-library-overview",
     "build": "23A355",
     "title": "What can we establish about WidgetKit in this build?",

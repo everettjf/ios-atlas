@@ -1,0 +1,7 @@
+# What does the RealityFoundation cache image expose?
+
+Target: iPhone 11, iOS 26.0.1 (`23A355`), `/System/Library/Frameworks/RealityFoundation.framework/RealityFoundation`, image UUID `CFEFE715-201F-3508-BB1F-58BC5F1C241A`. The [exact-image method catalog](../../catalog/ios/23A355/objc-image-methods-CFEFE715-201F-3508-BB1F-58BC5F1C241A.json.gz), SHA-256 `3588ca13b678404cf98f8a1b74a19e2fc0c453b48e2f0e61bc85a4ef841dd372`, records **47 Objective-C methods** in **274 class records** and no categories. The separate [named-symbol index](../../catalog/ios/23A355/ios-cache-symbols.json.gz) counts **32,118** named `__text` records; the direct-load catalog records **51** static library declarations.
+
+The method catalog contains `RKEntityInteractionAccessibilityWrapper` with `accessibilityDescription` and `didFire`, and an interactions controller naming custom trigger and action registration for entities and scenes. Several records have RealityKit-prefixed action and trigger names. This supports a **limited inference** of scene-interaction and accessibility support. The large gap between class records and Objective-C method entries also warns that Objective-C selectors are a narrow view here; symbol names overlap other metadata and are not a count of callable APIs.
+
+The exact image's runtime owner, feature availability on this iPhone, and behavior of the named actions remain unknown. See the [acquisition record](../../docs/acquisition-23A355.md) for the cache byte match. Function-body and caller tracing belong to the later deep-study pass.

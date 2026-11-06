@@ -1,0 +1,7 @@
+# What does the StickerKit cache image expose?
+
+Target: iPhone 11, iOS 26.0.1 (`23A355`), `/System/Library/Frameworks/StickerKit.framework/StickerKit`, image UUID `C5D053B6-794A-3D7A-A045-2316A9D675E3`. The [exact-image method catalog](../../catalog/ios/23A355/objc-image-methods-C5D053B6-794A-3D7A-A045-2316A9D675E3.json.gz), SHA-256 `5169c8d74c58e97f423fb753d065705a47924f2dafd5f8eea5c2d7fe356edce3`, records **1,300 Objective-C methods** in **181 classes and four categories**. The separate [named-symbol index](../../catalog/ios/23A355/ios-cache-symbols.json.gz) counts **644** named `__text` records; the direct-load catalog records **94** static library declarations.
+
+Observed groups include `STKStickerView`, `STKStickerEffect`, `STKDragPreviewContainerView`, and Memoji and Animoji glyph data sources. Selectors include `configureWithAnimatedImage:imageGlyph:effect:`, `applyTo:completionHandler:`, and drag-preview lift and drop methods. These names support a **static inference** of sticker presentation, effects, and drag interactions. They do not establish the complete UI flow, which apps load this image, or whether a specific effect ran on the phone.
+
+The method and symbol counts are overlapping metadata views, not independent function totals. See the [acquisition record](../../docs/acquisition-23A355.md) for exact cache identity; behavior and hook points require later call-site and runtime work.

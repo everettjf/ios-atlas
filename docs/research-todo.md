@@ -66,6 +66,7 @@ Current delivery focus: finish the one-device file and dynamic-library atlas, in
 - [ ] Follow selected UpdateBrain command handlers and identify their clients; verify runpath resolution and process ownership before describing runtime behavior.
 - [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.
 - [x] Record a first-pass Twitter role from the exact cache image's 23 Objective-C method entries, keeping runtime loading and service availability unknown.
+- [x] Record first-pass exact-cache evidence for CoreServices, RealityFoundation, StickerFoundation, StickerKit, and SwiftUICore. Keep StickerFoundation's specific role unknown; method and symbol names in the others support bounded static inferences only.
 - [ ] Trace BusinessChat action and network-provider call sites and identify its runtime process owner.
 - [ ] Trace selected Twitter request and composer methods, then identify any current callers or process owner before claiming runtime use.
 - [ ] Map selected public Swift APIs to exact-image metadata or exports before describing their implementation in this build.
