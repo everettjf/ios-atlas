@@ -2,7 +2,7 @@
 
 Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`), SystemOS arm64e dyld cache UUID `C0A7E671-35E1-3E6C-842D-FCE4E0A08C7E`. The inspected logical image is `/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation`, Mach-O UUID `973E47E5-88F0-3367-B9D4-46D5CB999B75`. Its local `ipsw dyld extract` derivative has SHA-256 `354c2d9719cf667a034173b167fa8f009760747165c4cbc1733320bd785d8e73`; the binary is not published.
 
-[Apple's CFRunLoop documentation](https://developer.apple.com/documentation/corefoundation/cfrunloop) describes a thread's run loop, its sources, timers, observers, and modes. This note checks the entry wrappers in the exact cached image. It does not claim that UIKit's `_run` calls these exact functions on this phone; that call path has not been traced.
+[Apple's CFRunLoop documentation](https://developer.apple.com/documentation/corefoundation/cfrunloop) describes a thread's run loop, its sources, timers, observers, and modes. This note checks the entry wrappers in the exact cached image. A subsequent [UIKitCore-to-GraphicsServices trace](GraphicsServices-Event-Run.md) establishes a static call path into `CFRunLoopRunInMode`; it does not establish execution on the connected phone.
 
 ## Exact-image observations
 
@@ -11,7 +11,7 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`), SystemOS arm64e dyld ca
 - The [named-symbol catalog](../../catalog/ios/23A355/ios-cache-symbols.json.gz) records 7,977 unique named `__text` rows, including these entry points and the internal `__CFRunLoopRunSpecificWithOptions`. The [Objective-C catalog](../../catalog/ios/23A355/objc-image-methods-CoreFoundation.json.gz) separately records 2,395 methods across 141 classes and three categories. These counts overlap where names refer to the same code and do not enumerate all C functions.
 - The [dependency catalog](../../catalog/ios/23A355/dyld-dependencies.json) records five direct loads for CoreFoundation, including an upward Foundation load and a `libobjc.A.dylib` re-export. Foundation declares a CoreFoundation re-export. These are static load commands, not observed runtime bindings.
 
-The wrappers make CoreFoundation a useful next stop for studying event and timer scheduling, but this pass does not decompile `__CFRunLoopRunSpecificWithOptions`, identify the active mode on the phone, trace UIKit into it, or establish a hook point.
+The wrappers make CoreFoundation a useful next stop for studying event and timer scheduling, but this pass does not decompile `__CFRunLoopRunSpecificWithOptions`, identify the active mode on the phone, prove that the static UIKit path executed, or establish a hook point.
 
 ## Reproduce
 

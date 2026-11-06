@@ -274,6 +274,14 @@
     "note": "research/23A355/SpringBoard-Post-Launch.md"
   },
   {
+    "id": "springboard-scene-connection",
+    "build": "23A355",
+    "title": "How does a SpringBoard window scene reach startup completion code?",
+    "summary": "Exact-image instructions link the embedded scene delegate's connection callback to superclass setup, a retained configuration block, and a candidate SpringBoard startup-completion send. Block invocation timing and runtime dispatch remain unknown.",
+    "install_name": "/System/Library/PrivateFrameworks/SpringBoard.framework/SpringBoard",
+    "note": "research/23A355/SpringBoard-Scene-Connection.md"
+  },
+  {
     "id": "uikitcore-application-main",
     "build": "23A355",
     "title": "How does UIKitCore enter the application event cycle?",
@@ -282,10 +290,26 @@
     "note": "research/23A355/UIKitCore-ApplicationMain.md"
   },
   {
+    "id": "uikitcore-run-loop",
+    "build": "23A355",
+    "title": "What does UIApplication _run install before entering the event loop?",
+    "summary": "The exact UIKitCore implementation obtains the main run loop, installs event-dispatch sources, and calls GraphicsServices' GSEventRun after conditional scene setup. The device's runtime branch remains unverified.",
+    "install_name": "/System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore",
+    "note": "research/23A355/UIKitCore-RunLoop.md"
+  },
+  {
+    "id": "graphicsservices-event-run",
+    "build": "23A355",
+    "title": "Does GraphicsServices enter CoreFoundation's run loop?",
+    "summary": "The exact GraphicsServices GSEventRun wrapper reaches GSEventRunModal, which calls CFRunLoopRunInMode in a conditional loop. Mode selection and live execution are not established.",
+    "install_name": "/System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices",
+    "note": "research/23A355/GraphicsServices-Event-Run.md"
+  },
+  {
     "id": "corefoundation-run-loop",
     "build": "23A355",
     "title": "What do CoreFoundation's run-loop entry points do?",
-    "summary": "The exact CFRunLoopRun and CFRunLoopRunInMode wrappers call CFRunLoopGetCurrent and a shared internal run function; UIKit-to-CoreFoundation dispatch is not traced.",
+    "summary": "The exact CFRunLoopRun and CFRunLoopRunInMode wrappers call CFRunLoopGetCurrent and a shared internal run function; a follow-up statically traces UIKitCore through GraphicsServices to CFRunLoopRunInMode.",
     "install_name": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
     "note": "research/23A355/CoreFoundation-RunLoop.md"
   },

@@ -7,12 +7,12 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`), SystemOS arm64e dyld ca
 ## Exact-image observations
 
 - `_UIApplicationMain` begins at `0x1889c19bc` in UIKitCore's extracted image. At `0x1889c1ae4–0x1889c1af4`, it restores saved `argc` and `argv` to `x0` and `x1`, passes two values returned by earlier helper calls in `x2` and `x3`, and directly calls `__UIApplicationMainPreparations` at `0x1889c2368`. The meaning of those helper results is not resolved here.
-- At `0x1889c1b04–0x1889c1b08`, it reads an object pointer from image data and sends `_run`. This is a static message-send site; the receiver class and later event-dispatch path are not established by these instructions alone.
+- At `0x1889c1b04–0x1889c1b08`, it reads an object pointer from image data and sends `_run`. This is a static message-send site; these instructions alone do not establish the receiver class. A [follow-up `_run` analysis](UIKitCore-RunLoop.md) follows its candidate implementation into run-loop source setup and GraphicsServices.
 - The path after that send references a literal saying that returning from `UIApplicationMain()` violates the application contract (`0x1889c1b10`). This matches Apple's documented expectation that the function does not normally return; it does not prove what happened on the connected phone.
 - The [per-image method catalog](../../catalog/ios/23A355/objc-image-methods-UIKitCore.json.gz) records 119,797 Objective-C method entries across 5,533 classes and 101 categories. Selected class groups include `UIApplication` (862 methods), `UIScene` (204), `UIWindowScene` (206), `UIView` (1,546), `UIViewController` (950), and `UIGestureRecognizer` (150). These are metadata counts, not an execution trace or a complete callable surface.
 - The [named-symbol catalog](../../catalog/ios/23A355/ios-cache-symbols.json.gz) records 140,315 unique named `__text` rows in this image. These overlap the Objective-C catalog and must not be added to its method count. Its 102 direct Mach-O loads include FrontBoardServices, BackBoardServices, Foundation, CoreFoundation, QuartzCore, and GraphicsServices; 16 are weak loads.
 
-This supports a concrete entry sequence from `UIApplicationMain` into preparations and `_run`, while the broad class inventory shows where scene, view, and input work can be investigated next. It does not resolve delegate creation, `_run` internals, event routing, runtime ownership of every class, or a tweak hook.
+This supports a concrete entry sequence from `UIApplicationMain` into preparations and an `_run` message, while the broad class inventory shows where scene, view, and input work can be investigated next. The follow-up note traces a matching `_run` implementation statically. Delegate creation, actual runtime dispatch, event routing, and a tweak hook remain unresolved.
 
 ## Reproduce
 
