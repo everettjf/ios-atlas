@@ -73,7 +73,7 @@ python3 tools/build_site.py
 python3 -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000/`. GitHub Pages uses the same build script.
+Open `http://localhost:8000/`. GitHub Pages uses the same build script. The `Build iOS Atlas Pages` workflow checks the site, syncs `dist/` to the `gh-pages` branch, and requests a branch-based Pages build. The published site is at <https://xnu.app/ios-atlas/>.
 
 ## Repository areas
 

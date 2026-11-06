@@ -1,4 +1,4 @@
-name: Deploy iOS Atlas
+name: Build iOS Atlas Pages
 
 on:
   push:
@@ -6,23 +6,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
       - name: Check dependency path logic
         run: node tools/test_reach.mjs
       - name: Check directory browse logic
@@ -33,8 +28,22 @@ jobs:
         run: python3 tools/test_live_load_targets.py
       - name: Build static site
         run: python3 tools/build_site.py
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/checkout@v4
         with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          ref: gh-pages
+          path: pages
+      - name: Publish branch and request Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rsync -a --delete --exclude=.git dist/ pages/
+          touch pages/.nojekyll
+          git -C pages config user.name 'github-actions[bot]'
+          git -C pages config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C pages add -A
+          if ! git -C pages diff --cached --quiet; then
+            git -C pages commit -m "Publish site from ${GITHUB_SHA}"
+            git -C pages push origin HEAD:gh-pages
+          fi
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds"
