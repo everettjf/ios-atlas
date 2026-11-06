@@ -2,7 +2,7 @@
 
 Scope: the jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-first plan](device-first-plan.md) records collection and publication gates. The checks below describe completed firmware work and possible later device and library research.
 
-The [23A355 handoff](handoff-23A355.md) closes the current horizontal delivery pass with explicit coverage boundaries. Unchecked items below are future research, not unfinished prerequisites for publishing the current atlas. Deeper function-body tracing, runtime behavior, and tweak hypotheses stay in the second section.
+The [23A355 handoff](handoff-23A355.md) closes the current horizontal delivery pass with explicit coverage boundaries. Further function-body tracing, runtime behavior, and tweak hypotheses are selected on demand. Cache-image pages mark components without a focused note as **Awaiting analysis**.
 
 ## Horizontal pass
 
@@ -53,23 +53,13 @@ The [23A355 handoff](handoff-23A355.md) closes the current horizontal delivery p
 - [x] Reconcile all 3,623 published Mach-O-like regular-file paths to 3,622 exact device-hash-verified ordinary binaries and one byte-matched mixed Metal container. This completes the reviewed public Mach-O-like path set, not protected directories, private data paths, or embedded/generated code.
 - [x] Give all 99 published script/makefile labels and six ELF labels fixed, privacy-reviewed subtype details from the complete type passes. This is signature metadata, not script-body analysis, an independent ELF parse, or evidence of execution.
 
-## Deeper studies, one component at a time
+## Completed first-pass component studies
 
-- [ ] If a future study needs these three private app binaries, inspect their Objective-C metadata through a separately reviewed, read-only runtime method; keep decrypted bytes and app-specific names private.
 - [x] Trace Foundation as a cache image and document its ObjC method surface.
 - [x] Trace SpringBoard's launch declaration and startup entry point; document its ObjC method surface.
 - [x] Create a source-bound WidgetKit overview with documented purpose and API types, exact-image method and symbol examples, direct dependencies, and known gaps.
 - [x] Trace the live UpdateBrain service entry into its device-acquired library; record the XPC listener, entitlement gate, and seven static command dispatch targets with Ghidra addresses and private evidence bundles.
-- [ ] Follow selected UpdateBrain command handlers and identify their clients; verify runpath resolution and process ownership before describing runtime behavior.
 - [x] Record a first-pass BusinessChat role from exact-image methods and focused pseudocode, distinguishing chat UI and authentication hypotheses from runtime behavior.
 - [x] Record a first-pass Twitter role from the exact cache image's 23 Objective-C method entries, keeping runtime loading and service availability unknown.
 - [x] Record first-pass exact-cache evidence for CoreServices, RealityFoundation, StickerFoundation, StickerKit, and SwiftUICore. Keep StickerFoundation's specific role unknown; method and symbol names in the others support bounded static inferences only.
-- [ ] Trace BusinessChat action and network-provider call sites and identify its runtime process owner.
-- [ ] Trace selected Twitter request and composer methods, then identify any current callers or process owner before claiming runtime use.
-- [ ] Map selected public Swift APIs to exact-image metadata or exports before describing their implementation in this build.
-- [ ] Follow WidgetKit's `_WidgetExtensionSession` timeline and control request methods into their immediate call sites, and distinguish its code from `ChronoServices`.
-- [ ] Inspect selected method bodies and call sites in the exact image; attach addresses, disassembly, and tool versions.
-- [ ] Confirm process ownership and load behavior with bounded, read-only device observation where possible.
-- [ ] Record tweak ideas as hypotheses with the function, expected hook point, version constraints, and a device validation plan.
-
-A checklist item is complete only at its stated scope. Static metadata does not prove runtime execution or a safe hook point. Use [the acquisition record](acquisition-23A355.md) and [method coverage note](../research/23A355/Method-Catalog-Coverage.md) for provenance.
+New component studies begin when a specific library, method, or question is selected. Each study records its exact-image evidence and remaining unknowns. Static metadata does not prove runtime execution or a safe hook point. Use [the acquisition record](acquisition-23A355.md) and [method coverage note](../research/23A355/Method-Catalog-Coverage.md) for provenance.
