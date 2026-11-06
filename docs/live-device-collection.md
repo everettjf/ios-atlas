@@ -79,6 +79,26 @@ python3 tools/catalog_live_developer_symbols.py \
   --output .local/live-device/developer-symbols-candidate.json.gz
 ```
 
+Swift dumps from the same 84 verified slices yielded 17,230 declarations and 2,568 member or requirement lines. Twelve slices reported no Swift info, and ten have partial parses with 126 malformed lines withheld. Nine files have no parsed declarations. The builder keeps those statuses and checks public names and counts before publishing searchable per-file results:
+
+```sh
+python3 tools/catalog_live_developer_swift.py \
+  --macho-catalog catalog/ios/23A355/developer-macho.json.gz \
+  --binary-root .local/live-device/developer-macho-files \
+  --workdir .local/live-device/developer-swift-work \
+  --output .local/live-device/developer-swift-candidate.json.gz
+```
+
+All 84 Developer slices contain a CodeDirectory and report an ad hoc signing state in `codesign`; 32 slices have parsed entitlement plists and 52 have none. The published summary retains counts and identifiers but removes raw command output and entitlement values. These are embedded metadata observations, not proof of trust or runtime acceptance:
+
+```sh
+python3 tools/catalog_live_developer_signatures.py \
+  --macho-catalog catalog/ios/23A355/developer-macho.json.gz \
+  --binary-root .local/live-device/developer-macho-files \
+  --workdir .local/live-device/developer-signature-work \
+  --output .local/live-device/developer-signatures-candidate.json.gz
+```
+
 The complete jailbreak-root scan found 6,449 regular files. A device-side GNU `file -0 -0` pass identified 464 Mach-O candidates. A separate `sha256sum -z` pass hashed those exact paths. A private tar transfer acquired those files; every local copy matched its device-side hash. The reproducible header catalog is generated with:
 
 ```sh

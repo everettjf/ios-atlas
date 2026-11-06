@@ -374,6 +374,18 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     build_site.publish_live_swift(
                         "23A355", "iPhone12,1", swift_path, macho_path)
+                part["uuid"] = "UUID"
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_swift(
+                        "23A355", "iPhone12,1", swift_path, macho_path,
+                        "developer")
+                data["kind"] = "live_developer_swift_declarations"
+                data["source"] = "verified_live_developer_mount_bytes"
+                swift_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                developer = build_site.publish_live_swift(
+                    "23A355", "iPhone12,1", swift_path, macho_path,
+                    "developer")
+                self.assertEqual(developer["developer_macho_swift_declaration_count"], 1)
             finally:
                 build_site.DIST = old_dist
 
@@ -421,6 +433,18 @@ class LiveDevicePipelineTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     build_site.publish_live_signatures(
                         "23A355", "iPhone12,1", signing_path, macho_path)
+                part["signature_offset"] = 800
+                with self.assertRaises(ValueError):
+                    build_site.publish_live_signatures(
+                        "23A355", "iPhone12,1", signing_path, macho_path,
+                        "developer")
+                data["kind"] = "live_developer_code_signatures"
+                data["source"] = "verified_live_developer_mount_bytes"
+                signing_path.write_bytes(gzip.compress(json.dumps(data).encode(), mtime=0))
+                developer = build_site.publish_live_signatures(
+                    "23A355", "iPhone12,1", signing_path, macho_path,
+                    "developer")
+                self.assertEqual(developer["developer_macho_code_directory_count"], 1)
             finally:
                 build_site.DIST = old_dist
 

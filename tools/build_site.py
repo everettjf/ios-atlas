@@ -513,15 +513,23 @@ def publish_live_symbols(build: str, product: str, path: Path,
 
 
 def publish_live_swift(build: str, product: str, path: Path,
-                       macho_path: Path) -> dict:
+                       macho_path: Path, family: str = "jailbreak") -> dict:
     """Validate Swift dump lines against every exact device Mach-O slice."""
+    families = {
+        "jailbreak": ("live_jailbreak_swift_declarations",
+                      "verified_live_device_macho_bytes", "jailbreak", "device_macho"),
+        "developer": ("live_developer_swift_declarations",
+                      "verified_live_developer_mount_bytes", "developer", "developer_macho"),
+    }
+    if family not in families:
+        raise ValueError("unsupported live Swift family")
+    kind, source, filename, key_prefix = families[family]
     data = load(path)
     macho = load(macho_path)
     originals = {item["path"]: item for item in macho["records"]}
     files = data.get("files")
     if (data.get("schema_version") != 1 or
-            data.get("kind") != "live_jailbreak_swift_declarations" or
-            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("kind") != kind or data.get("source") != source or
             data.get("build") != build or data.get("product_type") != product or
             not isinstance(files, list) or len(files) != len(originals) or
             data.get("macho_file_count") != len(files)):
@@ -625,7 +633,7 @@ def publish_live_swift(build: str, product: str, path: Path,
             file_statuses.append(status)
         totals["files_without_declarations"] += not declarations
         bucket_id = hashlib.sha256(item["path"].encode()).digest()[0] % 64
-        bucket_url = (f"data/{build}-jailbreak-swift/{bucket_id:02x}.json.gz"
+        bucket_url = (f"data/{build}-{filename}-swift/{bucket_id:02x}.json.gz"
                       if declarations else None)
         summaries.append({"path": item["path"], "sha256": item["sha256"],
                           "slice_count": item["slice_count"],
@@ -641,21 +649,30 @@ def publish_live_swift(build: str, product: str, path: Path,
             any(data.get("totals", {}).get(key) != value for key, value in totals.items())):
         raise ValueError("live Swift totals disagree")
     for bucket_id, entries in buckets.items():
-        dump(DIST / f"data/{build}-jailbreak-swift/{bucket_id:02x}.json.gz",
+        dump(DIST / f"data/{build}-{filename}-swift/{bucket_id:02x}.json.gz",
              {"schema_version": 1, "build": build, "files": entries}, compressed=True)
-    index_url = f"data/{build}-jailbreak-swift-index.json.gz"
+    index_url = f"data/{build}-{filename}-swift-index.json.gz"
     dump(DIST / index_url,
          {"schema_version": 1, "build": build, "files": summaries,
           "totals": dict(totals)}, compressed=True)
-    return {"device_macho_swift_index_url": index_url,
-            "device_macho_swift_declaration_count": totals["declarations"],
-            "device_macho_swift_no_info_slice_count": totals["no_swift_info"],
-            "device_macho_swift_partial_slice_count": totals["partially_parsed"]}
+    return {f"{key_prefix}_swift_index_url": index_url,
+            f"{key_prefix}_swift_declaration_count": totals["declarations"],
+            f"{key_prefix}_swift_no_info_slice_count": totals["no_swift_info"],
+            f"{key_prefix}_swift_partial_slice_count": totals["partially_parsed"]}
 
 
 def publish_live_signatures(build: str, product: str, path: Path,
-                            macho_path: Path) -> dict:
+                            macho_path: Path, family: str = "jailbreak") -> dict:
     """Publish code-signing summaries without raw output or entitlement values."""
+    families = {
+        "jailbreak": ("live_jailbreak_code_signatures",
+                      "verified_live_device_macho_bytes", "jailbreak", "device_macho"),
+        "developer": ("live_developer_code_signatures",
+                      "verified_live_developer_mount_bytes", "developer", "developer_macho"),
+    }
+    if family not in families:
+        raise ValueError("unsupported live signing family")
+    kind, source, filename, key_prefix = families[family]
     data = load(path)
     macho = load(macho_path)
     originals = {item["path"]: item for item in macho["records"]}
@@ -665,8 +682,7 @@ def publish_live_signatures(build: str, product: str, path: Path,
                       "totals", "files"} or
             data.get("tool") != "codesign -dvvv and ipsw macho info --json --loads" or
             data.get("schema_version") != 1 or
-            data.get("kind") != "live_jailbreak_code_signatures" or
-            data.get("source") != "verified_live_device_macho_bytes" or
+            data.get("kind") != kind or data.get("source") != source or
             data.get("build") != build or data.get("product_type") != product or
             not isinstance(files, list) or len(files) != len(originals) or
             data.get("macho_file_count") != len(files)):
@@ -763,15 +779,15 @@ def publish_live_signatures(build: str, product: str, path: Path,
                              "slices": public_slices})
     if seen != set(originals) or data.get("totals") != dict(totals):
         raise ValueError("live code-signing totals disagree")
-    url = f"data/{build}-jailbreak-signatures.json.gz"
+    url = f"data/{build}-{filename}-signatures.json.gz"
     dump(DIST / url,
          {"schema_version": 1, "build": build, "files": public_files,
           "totals": dict(totals)}, compressed=True)
-    return {"device_macho_signature_url": url,
-            "device_macho_code_directory_count": totals["code_directory"],
-            "device_macho_adhoc_count": totals["adhoc"],
-            "device_macho_no_cms_count": totals["no_cms_signature"],
-            "device_macho_entitlements_unparsed_count": totals["entitlements_unparsed"]}
+    return {f"{key_prefix}_signature_url": url,
+            f"{key_prefix}_code_directory_count": totals["code_directory"],
+            f"{key_prefix}_adhoc_count": totals["adhoc"],
+            f"{key_prefix}_no_cms_count": totals["no_cms_signature"],
+            f"{key_prefix}_entitlements_unparsed_count": totals["entitlements_unparsed"]}
 
 
 def publish_dependencies(path: Path, cache: dict, build: str, label: str) -> dict:
@@ -1715,6 +1731,20 @@ def build() -> None:
                 raise ValueError("Developer symbols require verified Mach-O files")
             device_info.update(publish_live_symbols(
                 build, dyld["product_type"], developer_symbols_path,
+                developer_macho_path, "developer"))
+        developer_swift_path = directory / "developer-swift.json.gz"
+        if developer_swift_path.exists():
+            if not developer_macho_path.exists():
+                raise ValueError("Developer Swift metadata requires verified Mach-O files")
+            device_info.update(publish_live_swift(
+                build, dyld["product_type"], developer_swift_path,
+                developer_macho_path, "developer"))
+        developer_signatures_path = directory / "developer-signatures.json.gz"
+        if developer_signatures_path.exists():
+            if not developer_macho_path.exists():
+                raise ValueError("Developer signatures require verified Mach-O files")
+            device_info.update(publish_live_signatures(
+                build, dyld["product_type"], developer_signatures_path,
                 developer_macho_path, "developer"))
         live_objc_path = directory / "jailbreak-objc-methods.json.gz"
         if live_objc_path.exists():

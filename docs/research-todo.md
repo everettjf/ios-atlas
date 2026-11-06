@@ -29,6 +29,8 @@ Scope: the currently jailbroken iPhone 11, iOS 26.0.1 (`23A355`). The [device-fi
 - [x] Index direct dylib loads and runpaths across all 84 verified Developer slices; retain weak-load and architecture distinctions without claiming runtime resolution.
 - [x] Index arm64e Objective-C methods for all 42 verified Developer binaries, preserving 40 parsed, one no-info, and one failed class-dump outcome. The failed file's method count remains unknown.
 - [x] Index named `__text` symbols across all 84 verified Developer Mach-O slices, including three files with no names; keep symbol records distinct from Objective-C methods.
+- [x] Check Swift dump metadata across all 84 Developer slices; preserve 12 no-info and 10 partial-parse slice results.
+- [x] Read embedded CodeDirectory metadata across all 84 Developer slices; keep entitlement values and raw signing output private and distinguish metadata from trust.
 - [ ] Investigate the 73 protected-directory errors in the two data-volume views and record any remaining inaccessible scope without exposing private names.
 - [ ] Resolve direct library loads only where exact device evidence permits; record unresolved or unsupported targets explicitly.
 - [ ] Discover any additional base-system standalone executables, dylibs, frameworks, and extensions absent from the firmware inventory; establish identity before reusing firmware analysis. The base `/rootfs` and both cryptex file paths all appear in the corresponding official image catalogs; the separate Developer mount adds 42 verified Mach-O files. Remaining data-volume and preboot coverage is explicit in the collection note.
