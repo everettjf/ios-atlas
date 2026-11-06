@@ -23,12 +23,12 @@ async function compressedJSON(url) {
   return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
 }
 
-function activeBuild() { return state.manifest.builds.find((item) => item.build === state.build); }
+function activeBuild() { return state.manifest.builds[0]; }
 
-async function dataset(kind, build = state.build) {
-  const key = `${kind}:${build}`;
+async function dataset(kind) {
+  const key = `${kind}:${state.build}`;
   if (state.datasets.has(key)) return state.datasets.get(key);
-  const info = state.manifest.builds.find((item) => item.build === build);
+  const info = activeBuild();
   const result = kind === 'developer_macho_swift' ? await compressedJSON(info.developer_macho_swift_index_url) : kind === 'developer_macho_signatures' ? await compressedJSON(info.developer_macho_signature_url) : kind === 'developer_macho_symbols' ? await compressedJSON(info.developer_macho_symbol_index_url) : kind === 'files' ? await compressedJSON(info.files_url) : kind === 'restore' ? await compressedJSON(info.restore_url) : kind === 'device' ? await compressedJSON(info.device_url) : kind === 'device_macho' ? await compressedJSON(info.device_macho_url) : kind === 'developer_macho' ? await compressedJSON(info.developer_macho_url) : kind === 'developer_macho_dependencies' ? await compressedJSON(info.developer_macho_dependency_url) : kind === 'developer_macho_objc' ? await compressedJSON(info.developer_macho_objc_url) : kind === 'device_macho_objc' ? await compressedJSON(info.device_macho_objc_url) : kind === 'device_macho_dependencies' ? await compressedJSON(info.device_macho_dependency_url) : kind === 'device_macho_symbols' ? await compressedJSON(info.device_macho_symbol_index_url) : kind === 'device_macho_swift' ? await compressedJSON(info.device_macho_swift_index_url) : kind === 'device_macho_signatures' ? await compressedJSON(info.device_macho_signature_url) : kind === 'objc' ? await compressedJSON(info.objc_url) : kind === 'methods_index' ? await compressedJSON(info.objc_method_index_url) : kind === 'ios_symbol_index' ? await compressedJSON(info.ios_symbol_index_url) : kind === 'driverkit_functions' ? await compressedJSON(info.driverkit_function_url) : kind === 'macho' ? await compressedJSON(info.standalone_macho_url) : kind === 'macho_methods_index' ? await compressedJSON(info.standalone_objc_index_url) : kind === 'macho_symbol_index' ? await compressedJSON(info.standalone_symbol_index_url) : kind === 'macho_swift_index' ? await compressedJSON(info.standalone_swift_index_url) : kind === 'protocols' ? await compressedJSON(info.objc_protocol_url) : kind === 'dependencies' ? await compressedJSON(info.dyld_dependency_url) : kind === 'driverkit_dependencies' ? await compressedJSON(info.driverkit_dependency_url) : await json(kind === 'swift' ? info.swift_url : kind === 'driverkit' ? info.driverkit_url : kind === 'archive' ? info.archive_url : kind === 'kernel' ? info.kernel_url : kind === 'services' ? info.service_url : info.dyld_url);
   if (kind === 'device_macho' || kind === 'developer_macho') result.byPath = new Map(result.records.map((item) => [item.path, item]));
   if (kind === 'device_macho_objc' || kind === 'developer_macho_objc' || kind === 'device_macho_dependencies' || kind === 'developer_macho_dependencies') result.byPath = new Map(result.files.map((item) => [item.path, item]));
@@ -40,7 +40,7 @@ async function dataset(kind, build = state.build) {
   if (kind === 'macho_symbol_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
   if (kind === 'macho_swift_index') result.byKey = new Map(result.files.map((item) => [`${item.volume}\0${item.path}`, item]));
   if (kind === 'ios_symbol_index') {
-    if (result.build !== build || result.cache_uuid !== info.cache_uuid) throw new Error('iOS symbol index identity differs');
+    if (result.build !== state.build || result.cache_uuid !== info.cache_uuid) throw new Error('iOS symbol index identity differs');
     result.byName = new Map(result.images.map((item) => [item.install_name, item]));
   }
   if (kind === 'dependencies' || kind === 'driverkit_dependencies') {
