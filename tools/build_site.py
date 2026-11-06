@@ -1366,8 +1366,8 @@ def build() -> None:
                 raise ValueError("method catalogs require one identified main cache file")
             main_cache_hash = main_cache_files[0]["sha256"]
             method_images = []
+            method_buckets = defaultdict(list)
             seen_images = set()
-            method_uuid_counts = Counter(image["uuid"] for image in segment_catalog["images"])
             totals = Counter()
             for path in method_paths:
                 source = load(path)
@@ -1448,22 +1448,19 @@ def build() -> None:
                 totals["method"] += len(rows)
                 totals["unknown_selector"] += source["unknown_selector_count"]
                 totals["unlisted_swift_class"] += source["unlisted_swift_class_count"]
-                classes = [{**group, "install_name": install_name, "image_uuid": image["uuid"],
-                            "extracted_image_sha256": source["extracted_image_sha256"],
-                            "cache_main_sha256": source.get("cache_main_sha256"),
-                            "class_dump_sha256": source["class_dump_sha256"]}
-                           for group in groups]
-                method_rows = [[groups[row[0]]["display_name"], install_name,
-                                row[1], row[2], row[3]] for row in rows]
-                method_rows.sort(key=lambda row: (row[0].casefold(), (row[3] or "").casefold(), row[2], row[4]))
-                suffix = ("-" + hashlib.sha256(install_name.encode()).hexdigest()[:12]
-                          if method_uuid_counts[image["uuid"]] > 1 else "")
-                url = f"data/{build}-objc-methods/{image['uuid']}{suffix}.json.gz"
-                target = DIST / url
-                dump(target, {"schema_version": 1, "build": build,
-                              "install_name": install_name, "classes": classes,
-                              "records": method_rows}, compressed=True)
-                blob = target.read_bytes()
+                bucket_id = hashlib.sha256(install_name.encode()).digest()[0] % 128
+                bucket_url = f"data/{build}-objc-methods/{bucket_id:02x}.json.gz"
+                ordered_rows = sorted(rows, key=lambda row: (
+                    groups[row[0]]["display_name"].casefold(),
+                    (row[2] or "").casefold(), row[1], row[3]))
+                method_buckets[bucket_id].append({
+                    "install_name": install_name, "uuid": image["uuid"],
+                    "extracted_image_sha256": source["extracted_image_sha256"],
+                    "cache_main_sha256": source.get("cache_main_sha256"),
+                    "class_dump_sha256": source["class_dump_sha256"],
+                    "categories": [index for index, group in enumerate(groups)
+                                   if group["category_name"] is not None],
+                    "records": ordered_rows})
                 method_images.append({"install_name": install_name, "uuid": image["uuid"],
                                       "class_count": len(class_groups),
                                       "category_count": len(category_groups),
@@ -1472,11 +1469,18 @@ def build() -> None:
                                       "unlisted_swift_class_count": source["unlisted_swift_class_count"],
                                       "groups": [[group["display_name"], group["method_count"]]
                                                  for group in groups],
-                                      "url": url, "size": len(blob),
-                                      "sha256": hashlib.sha256(blob).hexdigest()})
+                                      "bucket_url": bucket_url})
+            for bucket_id, entries in method_buckets.items():
+                dump(DIST / f"data/{build}-objc-methods/{bucket_id:02x}.json.gz",
+                     {"schema_version": 2, "build": build,
+                      "cache_uuid": dyld["cache_uuid"],
+                      "images": sorted(entries, key=lambda item: item["install_name"])},
+                     compressed=True)
             method_images.sort(key=lambda item: item["install_name"])
             dump(DIST / "data" / f"{build}-objc-method-index.json.gz",
-                 {"schema_version": 1, "build": build, "images": method_images},
+                 {"schema_version": 2, "build": build,
+                  "cache_uuid": dyld["cache_uuid"],
+                  "bucket_count": len(method_buckets), "images": method_images},
                  compressed=True)
             method_info = {"objc_method_count": totals["method"],
                            "objc_method_class_count": totals["class"],
@@ -1531,9 +1535,9 @@ def build() -> None:
         dump(DIST / "data" / f"{build}-files.json.gz",
              {"schema_version": 1, "build": build, "volumes": volume_metadata,
               "entries": compact_entries}, compressed=True)
-        dump(DIST / "data" / f"{build}-dyld.json",
+        dump(DIST / "data" / f"{build}-dyld.json.gz",
              {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
-              "files": dyld["files"], "images": images})
+              "files": dyld["files"], "images": images}, compressed=True)
         ios_symbol_info = {}
         ios_symbol_path = directory / "ios-cache-symbols.json.gz"
         if ios_symbol_path.exists():
@@ -1666,9 +1670,9 @@ def build() -> None:
                                   "functional_intro" in image for image in images),
                               "driverkit_functional_intro_count": sum(
                                   "functional_intro" in image for image in driverkit_images)}
-                dump(DIST / "data" / f"{build}-dyld.json",
+                dump(DIST / "data" / f"{build}-dyld.json.gz",
                      {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
-                      "files": dyld["files"], "images": images})
+                      "files": dyld["files"], "images": images}, compressed=True)
             dump(DIST / "data" / f"{build}-driverkit.json",
                  {"schema_version": 1, "build": build, "cache_uuid": driverkit["cache_uuid"],
                   "files": driverkit["files"], "images": driverkit_images})
@@ -2330,9 +2334,9 @@ def build() -> None:
                             consumers.setdefault((match["platform"], imp["install_name"]), set()).add(key)
                 for image in images:
                     image["service_consumer_count"] = len(consumers.get(("iOS", image["install_name"]), ()))
-                dump(DIST / "data" / f"{build}-dyld.json",
+                dump(DIST / "data" / f"{build}-dyld.json.gz",
                      {"schema_version": 1, "build": build, "cache_uuid": dyld["cache_uuid"],
-                      "files": dyld["files"], "images": images})
+                      "files": dyld["files"], "images": images}, compressed=True)
                 if driverkit_path.exists():
                     for image in driverkit_images:
                         image["service_consumer_count"] = len(consumers.get(("DriverKit", image["install_name"]), ()))
@@ -2342,12 +2346,12 @@ def build() -> None:
                 import_info = {"service_executable_count": len(binaries),
                                "service_direct_import_count": len(imports),
                                "service_cache_matched_import_count": macho["cache_matched_import_count"]}
-            dump(DIST / "data" / f"{build}-services.json", {"schema_version": 1,
-                 "build": build, "records": records, "binaries": binaries})
+            dump(DIST / "data" / f"{build}-services.json.gz", {"schema_version": 1,
+                 "build": build, "records": records, "binaries": binaries}, compressed=True)
             service_info = {"launchd_plist_count": len(records),
                             "launchd_job_count": service["job_count"],
                             "mach_service_name_count": service["mach_service_name_count"],
-                            "service_url": f"data/{build}-services.json", **import_info}
+                            "service_url": f"data/{build}-services.json.gz", **import_info}
         build_info = {"build": build, "version": "26.0.1",
                        "product_type": dyld["product_type"],
                        "firmware_sha256": dyld["firmware_sha256"],
@@ -2357,7 +2361,7 @@ def build() -> None:
                        "file_count": len(compact_entries),
                        "volumes": volume_metadata,
                        "files_url": f"data/{build}-files.json.gz",
-                       "dyld_url": f"data/{build}-dyld.json", **dependency_info, **ios_symbol_info, **objc_info,
+                       "dyld_url": f"data/{build}-dyld.json.gz", **dependency_info, **ios_symbol_info, **objc_info,
                        **method_info,
                        **protocol_info, **swift_info,
                        **device_info,
