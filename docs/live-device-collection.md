@@ -88,6 +88,21 @@ python3 tools/acquire_private_macho_candidates.py \
 
 The Data and Mobile data mounts remain partial because 73 directories denied traversal. Their changed or unreadable descendants and non-Mach-O code formats are outside this verified candidate set. The five dSYM companions are Mach-O files but are not launchable code.
 
+A private static pass rechecked every acquired file hash and built hard links under ignored `.local` so the existing live Mach-O analyzers could read the exact bytes without making another 504 MB copy. It inspected all 306 files and 312 slices for direct loads, named `__text` symbols, Swift dumps, and embedded signing structures. Objective-C class dumps applied to 301 nondSYM files: 283 parsed, 15 reported no ObjC information, and three failed. The failures remain unknown method counts. The [boundary note](../research/23A355/Data-Volume-Type-Boundary.md) publishes only mount-level totals; per-file paths and metadata remain private. Prepare and validate the private pass with:
+
+```sh
+python3 tools/prepare_private_data_macho_analysis.py \
+  --acquisition .local/live-device-data-followup-20261106/acquired-macho/acquisition.json \
+  --output-dir .local/live-device-data-followup-20261106/analysis-full
+
+python3 tools/summarize_private_data_macho_analysis.py \
+  --acquisition .local/live-device-data-followup-20261106/acquired-macho/acquisition.json \
+  --hash-manifest .local/live-device-data-followup-20261106/private-macho-hashes.json \
+  --analysis-dir .local/live-device-data-followup-20261106/analysis-full
+```
+
+Between these commands, run `catalog_live_jailbreak_dependencies.py`, `catalog_live_jailbreak_symbols.py`, `catalog_live_jailbreak_swift.py`, and `catalog_live_jailbreak_signatures.py` with the private `input-catalog.json.gz`, `binary-root`, distinct private work directories, and private outputs named `<analysis>.json.gz`. Run `catalog_live_jailbreak_objc.py` with `objc-input-catalog.json.gz` and a private `objc-work` directory; its three failed files cause a nonzero exit while valid per-file checkpoints remain available to the summary validator. Redirect command logs to `.local` because tool errors can contain private app paths. The validator checks every completed file and slice identity against the acquisition manifest and saves only private output; published figures are reviewed aggregate counts.
+
 The first static analysis pass over all 84 Developer Mach-O slices reads `LC_LOAD_*` and `LC_RPATH` declarations from the acquired, hash-verified bytes. It found 1,778 direct library loads and 158 public runpath declarations. The catalog preserves weak loads and architecture-specific duplication; it does not resolve `@rpath` against a running process or prove that any file was loaded. Generate the private aggregate before review and publication with:
 
 ```sh

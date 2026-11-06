@@ -98,7 +98,7 @@
     "id": "data-volume-type-boundary",
     "build": "23A355",
     "title": "What did the partial data-volume type passes observe?",
-    "summary": "Partial Data and Mobile data type passes found 303 and 3 private Mach-O candidates. All 306 were acquired, byte-matched to device hashes, and parsed into 312 Mach-O slices; 73 protected directories still limit coverage.",
+    "summary": "Partial Data and Mobile data passes found 306 private, byte-matched Mach-O files. A private static pass counted methods, symbols, Swift metadata, dependencies, and CodeDirectories across 312 slices; only mount-level totals are public. Seventy-three directories remain protected.",
     "note": "research/23A355/Data-Volume-Type-Boundary.md"
   },
   {

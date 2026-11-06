@@ -997,15 +997,15 @@ async function renderCoverageExplorer() {
     ];
     if (root.label === 'Data volume') return [
       '303 private Mach-O files byte-matched; 307 architecture slices',
-      'Not inspected',
-      'Headers and UUIDs parsed; type descriptions: 179 executables, 112 dylibs, 7 bundles, 5 dSYM companions',
-      '16 protected directories; private app paths withheld; methods, symbols, and dependencies pending'
+      '281 parsed · 14 no info · 3 failed · 5 dSYM not applicable; 226,114 methods counted',
+      '10,243 direct loads · 146,366 named __text symbols · 107,258 Swift declarations · 302 CodeDirectories',
+      '16 protected directories; three ObjC method counts unknown; individual app metadata withheld'
     ];
     if (root.label === 'Mobile data volume') return [
       '3 private Mach-O files byte-matched; 5 architecture slices',
-      'Not inspected',
-      'Headers and UUIDs parsed; type descriptions: 2 executables, 1 dylib; 34 paths appeared and 34 disappeared',
-      '57 protected directories and changing paths; private mobile paths withheld'
+      '2 parsed · 1 no info; 13 methods counted',
+      '18 direct loads · 8 named __text symbols · 0 Swift declarations · 5 CodeDirectories',
+      '57 protected directories and 34 appeared / 34 disappeared paths; individual metadata withheld'
     ];
     if (['Hardware data volume', 'Baseband data volume', 'xARTS volume'].includes(root.label)) return [
       `${fmt(root.regular_files)} / ${fmt(root.regular_files)} reachable regular files type-classified`,
