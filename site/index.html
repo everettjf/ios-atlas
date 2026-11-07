@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f5f0">
+  <meta name="theme-color" content="#090909">
   <meta name="description" content="An evidence-backed map of one jailbroken iPhone's observed system files, libraries, and iOS internals.">
-  <title>iOS Atlas — A map of the system</title>
+  <title>iOS Atlas — The system, laid bare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="tree.css">
   <script type="module" src="app.js"></script>
@@ -13,22 +16,28 @@
 <body>
   <div class="backdrop" aria-hidden="true"></div>
   <header class="site-header">
-    <a class="brand" href="#overview" aria-label="iOS Atlas home"><span class="brand-mark">◎</span><span>iOS <strong>ATLAS</strong></span></a>
-    <div class="header-right"><span class="independent">Independent research project</span><a class="github-link" href="https://github.com/everettjf/ios-atlas/blob/main/docs/research-todo.md" target="_blank" rel="noopener">Research TODO ↗</a><a class="github-link" href="https://github.com/everettjf/ios-atlas" target="_blank" rel="noopener">GitHub ↗</a></div>
+    <a class="brand" href="#overview" aria-label="iOS Atlas home"><span class="brand-mark"><span></span></span><span>iOS<span class="brand-slash">/</span><strong>ATLAS</strong></span></a>
+    <div class="header-right"><span class="independent"><span class="live-dot"></span>INDEPENDENT SYSTEM RESEARCH</span><a class="github-link" href="https://github.com/everettjf/ios-atlas/blob/main/docs/research-todo.md" target="_blank" rel="noopener">Research TODO <span>↗</span></a><a class="github-link github-primary" href="https://github.com/everettjf/ios-atlas" target="_blank" rel="noopener">View source <span>↗</span></a></div>
   </header>
 
   <main>
     <section class="hero" id="overview">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="live-dot"></span> ONE IPHONE / ONE IOS BUILD</div>
-        <h1>Explore iOS<br><em>beneath the surface.</em></h1>
-        <p>Explore files observed on a jailbroken iPhone, then follow verified libraries and exact-build firmware evidence. Each view states its current coverage.</p>
-        <div class="hero-actions"><button class="primary-button" data-tab="device">Browse device files <span>↗</span></button><button class="text-button" data-tab="images">Explore libraries <span>→</span></button></div>
+        <div class="eyebrow"><span class="eyebrow-rule"></span> FIELD NOTES / BUILD 23A355 <span class="eyebrow-tail">— 001</span></div>
+        <h1>The system,<br><em>laid bare.</em></h1>
+        <p>A navigable map of one jailbroken iPhone. Follow observed files, dyld cache libraries, methods and exact-build evidence into the machinery of iOS.</p>
+        <div class="hero-actions"><button class="primary-button" data-tab="device">Enter the atlas <span aria-hidden="true">↗</span></button><button class="text-button" data-tab="images">Explore libraries <span aria-hidden="true">→</span></button></div>
+        <div class="hero-footnote"><span class="crosshair">✳</span><span>ONE DEVICE <b>/</b> ONE BUILD <b>/</b> EVIDENCE AT EVERY LAYER</span></div>
       </div>
       <div class="hero-visual" aria-hidden="true">
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
-        <div class="visual-center"><span class="center-icon">◈</span><span>23A355</span><small>iOS 26.0.1</small></div>
-        <span class="visual-label label-one">SYSTEMOS</span><span class="visual-label label-two">DYLD CACHE</span><span class="visual-label label-three">APPOS</span>
+        <div class="visual-topline"><span>iOS / SYSTEM ANATOMY</span><span>FIG. 01 — 26.0.1</span></div>
+        <div class="visual-grid"></div>
+        <div class="scope-ring scope-ring-one"></div><div class="scope-ring scope-ring-two"></div><div class="scope-axis scope-axis-x"></div><div class="scope-axis scope-axis-y"></div>
+        <div class="visual-core"><span class="core-glyph">⌘</span><span class="core-caption">SYSTEM CORE</span><strong>23A355</strong><small>arm64e / iPhone 11</small></div>
+        <div class="visual-node node-one"><span>01</span><strong>DEVICE FILES</strong><small>observed filesystem</small></div>
+        <div class="visual-node node-two"><span>02</span><strong>DYLD CACHE</strong><small>mapped libraries</small></div>
+        <div class="visual-node node-three"><span>03</span><strong>OBJC + SWIFT</strong><small>static metadata</small></div>
+        <div class="visual-bottomline"><span>◉&nbsp; INDEX ONLINE</span><span>SCROLL TO EXPLORE ↓</span></div>
       </div>
     </section>
 
@@ -40,9 +49,9 @@
     </section>
 
     <section class="workspace" aria-labelledby="workspace-title">
-      <div class="section-heading"><div><div class="eyebrow">THE CATALOG</div><h2 id="workspace-title">A system you can inspect.</h2></div></div>
+      <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-rule"></span> 01 / THE CATALOG</div><h2 id="workspace-title">Follow the evidence.</h2></div><p>Pick a layer. Search its records. Trace each item back to its source.</p></div>
       <div class="source-strip"><span class="source-icon">◉</span><div><strong id="source-title">Source: observed iPhone paths</strong><span id="source-description">The current public device scan has a defined scope; exact-build firmware records are labeled separately.</span></div><a id="source-method" href="https://github.com/everettjf/ios-atlas/blob/main/docs/device-first-plan.md" target="_blank" rel="noopener">Method ↗</a></div>
-      <div class="tabs" role="tablist" aria-label="Catalog views">
+      <div class="tabs-shell"><div class="tabs-label">VIEWS <span id="tabs-count">19</span></div><div class="tabs" role="tablist" aria-label="Catalog views">
         <button role="tab" data-tab="device" aria-selected="true">On-device files</button>
         <button role="tab" data-tab="coverage" aria-selected="false">Coverage</button>
         <button role="tab" data-tab="device_macho" aria-selected="false">Jailbreak Mach-O</button>
@@ -62,14 +71,14 @@
         <button role="tab" data-tab="kernel" aria-selected="false">Kernel &amp; kexts</button>
         <button role="tab" data-tab="services" aria-selected="false">System services</button>
         <button role="tab" data-tab="research" aria-selected="false">Research</button>
-      </div>
+      </div><div class="tabs-arrows"><button type="button" data-scroll-tabs="-1" aria-label="Scroll views left">←</button><button type="button" data-scroll-tabs="1" aria-label="Scroll views right">→</button></div></div>
       <div id="explorer" class="explorer" aria-live="polite"><p class="loading">Loading catalog…</p></div>
     </section>
 
     <section class="method-grid" aria-label="How to read the atlas">
-      <div class="method-card"><span class="method-number">01 / DEVICE</span><h3>Files as observed</h3><p>Published live paths have a stated scan scope. Private user and app paths remain local.</p></div>
-      <div class="method-card"><span class="method-number">02 / CACHE</span><h3>Libraries inside dyld</h3><p>Logical install names extracted from the intact cache family. Missing standalone executables are explained instead of called absent.</p></div>
-      <div class="method-card"><span class="method-number">03 / EVIDENCE</span><h3>Claims with a trail</h3><p>Research notes link back to exact firmware, cache UUIDs, and reproducible inspection commands. Unknowns remain explicit.</p></div>
+      <div class="method-card"><span class="method-number">01 / DEVICE</span><span class="card-symbol" aria-hidden="true">⌁</span><h3>Files as observed</h3><p>Published live paths have a stated scan scope. Private user and app paths remain local.</p></div>
+      <div class="method-card"><span class="method-number">02 / CACHE</span><span class="card-symbol" aria-hidden="true">◎</span><h3>Libraries inside dyld</h3><p>Logical install names extracted from the intact cache family. Missing standalone executables are explained instead of called absent.</p></div>
+      <div class="method-card"><span class="method-number">03 / EVIDENCE</span><span class="card-symbol" aria-hidden="true">✳</span><h3>Claims with a trail</h3><p>Research notes link back to exact firmware, cache UUIDs, and reproducible inspection commands. Unknowns remain explicit.</p></div>
     </section>
   </main>
   <footer><span>iOS ATLAS <span class="footer-separator">/</span> An independent map of iOS internals.</span><span>One observed device and build; each view states its source and coverage.</span></footer>
