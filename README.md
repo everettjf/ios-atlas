@@ -35,7 +35,7 @@ The explorer also includes [firmware files](https://xnu.app/ios-atlas/#files), [
 ## How the atlas is built
 
 ```mermaid
-flowchart TB
+flowchart LR
     A["Jailbroken iPhone<br/>read-only observation"]
     B["Official 23A355 IPSW<br/>files + dyld caches"]
     C["Identity + privacy gates<br/>hashes · UUIDs · review"]
