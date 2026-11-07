@@ -111,9 +111,18 @@ function setTab(tab, query = '') {
   state.liveSwiftMemberLimit = 80;
   state.liveSwiftData = null;
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === tab);
+  revealSelectedTab();
   history.replaceState(null, '', (tab === 'research' || tab === 'methods') && query ? `#${tab}/${encodeURIComponent(query)}` : state.reachSource ? `#reach/${encodeURIComponent(state.reachSource)}` : `#${tab}`);
   render().catch(showError);
   document.querySelector('.workspace').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function revealSelectedTab() {
+  const tabs = document.querySelector('.tabs');
+  const selected = tabs?.querySelector('[role="tab"][aria-selected="true"]');
+  if (!selected) return;
+  const left = tabs.scrollLeft + selected.getBoundingClientRect().left - tabs.getBoundingClientRect().left - (tabs.clientWidth - selected.clientWidth) / 2;
+  tabs.scrollTo({left, behavior:'smooth'});
 }
 
 function updateSource() {
@@ -1299,7 +1308,12 @@ async function start() {
   $('#metric-images').textContent = fmt(first.image_count);
   $('#metric-caches').textContent = fmt(first.cache_file_count);
   $('#metric-build').textContent = first.build;
+  $('#tabs-count').textContent = document.querySelectorAll('[role="tab"][data-tab]').length;
   for (const button of document.querySelectorAll('[data-tab]')) button.addEventListener('click', () => setTab(button.dataset.tab));
+  for (const button of document.querySelectorAll('[data-scroll-tabs]')) button.addEventListener('click', () => {
+    const tabs = document.querySelector('.tabs');
+    tabs.scrollBy({left:Number(button.dataset.scrollTabs) * Math.max(280, tabs.clientWidth * .7), behavior:'smooth'});
+  });
   const [initial, noteId] = location.hash.slice(1).split('/', 2);
   const availableTabs = new Set([...document.querySelectorAll('[role="tab"][data-tab]')].map((button) => button.dataset.tab));
   if (availableTabs.has(initial)) state.tab = initial;
@@ -1309,6 +1323,7 @@ async function start() {
   if (initial === 'reach' && noteId) state.reachSource = decodeURIComponent(noteId);
   if (['files','restore','device'].includes(initial) && noteId) state.browsePath = decodeURIComponent(noteId);
   for (const button of document.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', button.dataset.tab === state.tab);
+  revealSelectedTab();
   await render();
 }
 

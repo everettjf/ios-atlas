@@ -26,7 +26,7 @@
   gap: 6px;
   flex-direction: column;
   padding: 14px 20px;
-  background: #faf7f2;
+  background: var(--panel2);
 }
 .folder-cache-heading strong { font: 600 12px var(--mono); color: var(--accent); }
 .folder-cache-heading span { font-size: 12px; color: var(--muted); }
@@ -39,11 +39,11 @@
   text-align: left;
   border: 0;
   border-top: 1px solid var(--line);
-  background: #fff;
+  background: var(--panel);
   padding: 11px 20px;
   font: 12px var(--mono);
   color: var(--ink);
 }
-.folder-cache-row:hover { background: #fff4e8; }
+.folder-cache-row:hover { background: var(--accent-soft); }
 .folder-cache-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-cache-row small { white-space: nowrap; color: var(--accent); font-size: 10px; }
