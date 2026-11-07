@@ -1,85 +1,89 @@
 # iOS Atlas
 
-An independent, build-specific map of iOS system files, dyld shared-cache images, and their relationships.
+![iOS Atlas — the system, laid bare](assets/readme/atlas-hero.svg)
 
-The first dataset covers **iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`)**. The [static explorer](https://xnu.app/ios-atlas/) starts with **439,365 privacy-reviewed paths observed on this jailbroken phone**, including the system and jailbreak installation trees. A private scan visited 12 filesystem views; 10 completed, while two data-volume views returned protected-directory errors. User and app data paths and one device-specific randomized filename are withheld from the public site. The explorer also offers 452,096 filesystem entries from three official IPSW images, 4,170 iOS shared-cache images, 51 separate DriverKit cache images, 3,363 standalone Mach-O files, and 83 physical cache files. A read-only device hash pass verified **3,157 of those standalone files byte for byte**. [The identity note](research/23A355/Live-Standalone-Identity.md) explains the scope.
+**A searchable, evidence-backed map of iOS internals from one jailbroken iPhone.** Start with files observed on the device, follow libraries into the dyld shared cache, and inspect build-specific static metadata and research notes.
 
-**Current handoff:** the [23A355 delivery summary](docs/handoff-23A355.md) records what is complete, how to rebuild, and the remaining 73-directory access boundary. The public, reachable file and library atlas is delivered; whole-device coverage is not claimed.
+[**Explore the live atlas ↗**](https://xnu.app/ios-atlas/) · [Browse research notes](https://xnu.app/ios-atlas/#research) · [See coverage](https://xnu.app/ios-atlas/#coverage) · [Read the delivery summary](docs/handoff-23A355.md)
 
-The explorer links 3,117 reviewed system file paths to their exact-byte firmware Mach-O pages, including Objective-C methods, named symbols, and Swift metadata. Another 40 verified cryptex binaries appear on firmware pages without a live-path link. The site follows one observed phone and build.
+> [!NOTE]
+> The first release describes **iPhone 11 (`iPhone12,1`) on iOS 26.0.1 (`23A355`)**. It maps one observed device and its matching official firmware. Each view states its source and coverage; the public site does not claim unrestricted access to every device file or observed runtime behavior.
 
-The **On-device files**, **Filesystem**, and **Restore RAM disks** views browse paths folder by folder. A folder link can be shared directly, such as [Foundation.framework in the stock filesystem](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework). Device and stock folder views list matching logical dyld images in a separate section; these are not counted as files. Typing in the search field searches the full selected catalog.
+## At a glance
 
-The [**Coverage** view](https://xnu.app/ios-atlas/#coverage) shows all 12 live mount scans with reviewed labels, reachable path and file counts, and the two partial data-volume results. It shows byte-verified Mach-O counts and static analysis status by mount, distinguishing parsed, no-info, failed, and not-inspected results. A complete type pass over the 219,216 reachable [base-root regular files](research/23A355/Base-Root-Code-Coverage.md) found no additional ordinary Mach-O beyond the 3,117 already verified; one mixed QuartzCore Metal container matches the exact FileSystem image. A separate pass over 3,257 reachable [Preboot regular files](research/23A355/Preboot-Metal-Container.md) found 40 verified Mach-O files and the matching mixed container. Three [smaller mounts](research/23A355/Peripheral-Mount-Type-Coverage.md) had no ordinary Mach-O candidates. A later path-set-matched pass over 2,080 reachable Software Update files found exactly two device-hash-verified [UpdateBrain Mach-O files](research/23A355/UpdateBrain-Live-Code.md). The site exposes no user or app path names. A separate section links the cache, jailbreak, Developer, and firmware code-analysis layers; the counts represent different kinds of evidence and are not additive.
+| Observed device | Exact-build firmware | Static code surface |
+| :--- | :--- | :--- |
+| **439,365** privacy-reviewed paths | **4,170** iOS dyld cache images | **3,065,801** indexed Objective-C method entries |
+| **3,622** verified public Mach-O file paths | **3,363** standalone Mach-O files | **6,585,655** named iOS cache `__text` symbols |
+| **10 / 12** filesystem views complete | **51** separate DriverKit cache images | **621** stock launchd service plists |
 
-All **3,623 published Mach-O-like file paths** now have a checked identity or explicit exception: 3,622 device-hash-verified ordinary binaries and one byte-matched mixed Metal container. The [reconciliation note](research/23A355/Public-MachO-File-Reconciliation.md) defines this public, reachable path-set result and its limits.
+These numbers describe different layers and should not be added together. See the [detailed catalog coverage](docs/catalog-coverage-23A355.md) for definitions, exclusions, and source notes.
 
-The remaining **99 script/makefile** and **six ELF** labels on public paths now have [fixed format details](research/23A355/Live-Alternate-Code.md). These describe file signatures; script bodies and runtime use remain unstudied.
+## Explore a layer
 
-The **On-device files** view now gives all **225,778 published regular files** a fixed content-format label from complete read-only type passes. Search `format:macho`, `format:script`, or another category; individual file pages show the label and its source boundary. The [format coverage note](research/23A355/Live-File-Format-Coverage.md) records the exact source hashes and explains why private App paths retain aggregate-only format counts.
+| Start here | What you can inspect |
+| :--- | :--- |
+| [**On-device files**](https://xnu.app/ios-atlas/#device) | Browse the published live paths folder by folder; search paths and reviewed content-format labels. |
+| [**Shared-cache images**](https://xnu.app/ios-atlas/#images) | Find logical library install names, brief introductions, direct loads, symbols, and method counts. |
+| [**Objective-C methods**](https://xnu.app/ios-atlas/#methods) | Search classes, categories, selectors, and implementation addresses within an exact cached image. |
+| [**Dependency reach**](https://xnu.app/ios-atlas/#reach) | Trace shortest static library-declaration chains, with weak loads included or excluded. |
+| [**System services**](https://xnu.app/ios-atlas/#services) | Follow launchd declarations to executables and their direct library loads. |
+| [**Research**](https://xnu.app/ios-atlas/#research) | Read focused notes linked back to exact files, cache images, UUIDs, and inspection commands. |
 
-The two partial [data-volume type passes](research/23A355/Data-Volume-Type-Boundary.md) found 303 private Mach-O candidates in the Data view and three in the changing Mobile data view. All 306 were later acquired privately, matched to device-side hashes, and parsed into 312 architecture slices. A private static pass counted 226,127 Objective-C methods in successfully parsed files, 146,374 named `__text` symbols, 107,258 Swift declarations, 10,261 direct library loads, and 307 CodeDirectories. Three Objective-C inspections failed and five dSYM companions were not applicable; their method counts are not treated as zero. The site shows mount-level totals only: no app path, per-file hash, binary, method name, or signature identity is published. All 73 protected directories remained inaccessible even to read-only metadata inspection; their descendants are unknown.
+The explorer also includes [firmware files](https://xnu.app/ios-atlas/#files), [Jailbreak Mach-O](https://xnu.app/ios-atlas/#device_macho), [Developer Mach-O](https://xnu.app/ios-atlas/#developer_macho), [Swift conformances](https://xnu.app/ios-atlas/#swift), [kernel metadata](https://xnu.app/ios-atlas/#kernel), and [coverage](https://xnu.app/ios-atlas/#coverage).
 
-The **Jailbreak Mach-O** view now includes **181,792 named `__text` symbol records** across all 493 slices of its 463 verified files, alongside Objective-C methods and direct library loads. Per-file symbol lists load on demand; [the coverage note](research/23A355/Live-Jailbreak-Symbols.md) explains what these names do and do not establish.
+## How the atlas is built
 
-That same view also offers **15,772 Swift dump declarations** and **8,062 member or requirement lines**, with explicit no-info and partial states across all 493 slices. [The Swift note](research/23A355/Live-Jailbreak-Swift.md) describes this static coverage.
+```mermaid
+flowchart TB
+    A["Jailbroken iPhone 11<br/>read-only filesystem and binary observation"]
+    B["Official iOS 26.0.1 IPSW<br/>filesystem images and dyld caches"]
+    C["Identity checks + privacy review<br/>hashes, UUIDs, source boundaries"]
+    D["Versioned public catalogs<br/>derived metadata and provenance"]
+    E["Static explorer<br/>searchable GitHub Pages site"]
+    F["Research notes<br/>observed bytes → interpretation → unknowns"]
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    D --> F
+    classDef input fill:#171412,stroke:#a9654e,color:#f5f1eb,stroke-width:1px;
+    classDef gate fill:#302019,stroke:#ff6645,color:#f5f1eb,stroke-width:2px;
+    classDef output fill:#171412,stroke:#ff6645,color:#f5f1eb,stroke-width:1px;
+    class A,B input;
+    class C gate;
+    class D,E,F output;
+```
 
-Code-signing metadata now covers all 493 verified jailbreak Mach-O slices. File pages show CodeDirectory identifiers, CDHashes, flags, and entitlement parse counts; [the signing note](research/23A355/Live-Jailbreak-Code-Signing.md) explains why these fields do not establish trust or runtime loading.
+The [Foundation example](research/23A355/Foundation.md) shows why both sources matter: its framework **directory** appears in the stock filesystem, while the executable **image** lives in the dyld shared cache. The Atlas links the two without inventing a separate on-disk executable. Library loads, method names, and symbols are static evidence; they do not by themselves show what ran in a process.
 
-The [**Jailbreak Mach-O** view](https://xnu.app/ios-atlas/#device_macho) publishes 463 of 464 files acquired from this phone's jailbreak installation tree; one path with a device-specific random suffix is excluded from the current catalog. All 464 acquired files matched device-side SHA-256 hashes. The 493 published slices comprise 323 executables, 141 dylibs, and 29 bundles. Each record shows the live path, full-file hash, architecture, file type, and Mach-O UUID where present. An exact-file class dump indexes **4,781 Objective-C methods** in 61 files; 402 files explicitly report no ObjC information. A second exact-file pass records **3,070 direct library load declarations** across all 493 slices; three embedded build-machine runpaths are withheld. [The coverage note](research/23A355/Live-Jailbreak-MachO.md) states the source and remaining gaps.
+## Research starting points
 
-The [**Developer Mach-O** view](https://xnu.app/ios-atlas/#developer_macho) covers all 42 hash-verified Mach-O files from the live Developer mount, including 84 architecture slices. It shows 1,778 direct library loads, 7,735 arm64e Objective-C method entries, **78,771 named `__text` symbol records**, 17,230 Swift dump declarations, and 84 CodeDirectories. Three files have no named symbols; one Objective-C class dump failed and remains an unknown result. Swift no-info and partial outputs are labeled, and signing metadata does not establish trust. [The collection record](docs/live-device-collection.md) states the method and limits.
+- **SpringBoard startup:** [launch declaration and entry point](research/23A355/SpringBoard.md) → [startup function](research/23A355/SpringBoard-Startup.md) → [UIKit application entry](research/23A355/UIKitCore-ApplicationMain.md).
+- **Event loop:** [UIKitCore `_run`](research/23A355/UIKitCore-RunLoop.md) → [GraphicsServices event runner](research/23A355/GraphicsServices-Event-Run.md) → [CoreFoundation run-loop wrappers](research/23A355/CoreFoundation-RunLoop.md).
+- **Method coverage:** [Foundation](research/23A355/Foundation-Method-Surface.md), [SpringBoard](research/23A355/SpringBoard-Method-Surface.md), and the [all-image catalog](research/23A355/Method-Catalog-Coverage.md).
 
-Across the Jailbreak and Developer views, all 4,848 direct library loads now have a static name-match status: 3,476 match an iOS cache install name, 110 match an absolute install name in a verified live Developer file, 1,252 use unresolved path tokens, and ten have no exact catalog match. Detail pages link only the exact matches. The status does not prove which library dyld loaded in a running process.
+Focused implementation and runtime studies continue [on demand](docs/research-todo.md). An image marked **Awaiting analysis** still has its indexed static metadata.
 
-The same build also indexes every member of the restore IPSW (127 archive entries), both restore RAM disks (4,132 entries), and two kernelcache variants with 256 kext metadata records each. Restore environments and kernelcache metadata have their own views; they are not counted as files on the normally running system.
+## Scope and reproducibility
 
-The **System services** view adds 621 stock launchd plists, their declared executable paths, 2,186 Mach service name declarations, and cryptex-aware path mapping. The [SpringBoard case study](research/23A355/SpringBoard.md) follows one declaration through its disk entry point to an in-cache framework image.
+The public live-path catalog covers 10 complete filesystem views and two partial data-volume views. **73 protected directories** remained inaccessible to read-only metadata inspection, so their descendants are unknown. User and app path names, private binaries, and a device-specific randomized filename remain outside the public catalog. See the [collection procedure](docs/live-device-collection.md), [acquisition record](docs/acquisition-23A355.md), and [coverage detail](docs/catalog-coverage-23A355.md).
 
-The service dependency index now connects 600 distinct launchd executables to 14,843 direct Mach-O dylib load declarations. The website links each declaration to matching shared-cache images or separate files and shows direct service-consumer counts on cache images.
+Raw IPSW files, dyld caches, extracted Apple binaries, and private device data stay outside Git. This repository contains derived indexes, provenance, tools, and original research. The official IPSW is a distribution source for this exact build; the project does not present a clean-system versus jailbreak comparison.
 
-The **Shared-cache images** view also indexes all 4,170 iOS cache images and their 90,837 direct Mach-O library loads. The separate **DriverKit images** view covers 51 images and 209 direct loads. Each image shows its outgoing loads and incoming cached-image loads, with weak, upward, and re-export commands identified. These are static declarations, not observed runtime calls.
+| Directory | Purpose |
+| :--- | :--- |
+| [`catalog/`](catalog/) | Versioned machine-readable indexes and coverage reports. |
+| [`research/`](research/) | Source-bound component and behavior notes. |
+| [`tools/`](tools/) | Read-only collection, validation, and site-generation scripts. |
+| [`site/`](site/) | The static explorer's HTML, CSS, and JavaScript. |
+| [`docs/`](docs/) | Acquisition, coverage, delivery, and research plans. |
 
-Each iOS cache image now also shows its named `__text` symbols alongside its Objective-C method count. An exact-cache pass found **6,585,655 unique named records** in 3,798 images; 372 yielded no matching names. The lists load only when opened and can be searched per image. The [symbol coverage note](research/23A355/iOS-Cache-Named-Symbol-Coverage.md) explains why this symbol-table view overlaps the method catalog and does not enumerate every function.
-
-The **Dependency reach** view follows those exact in-cache load declarations from a selected iOS image. It lists reachable images and the shortest declaration chain to each one, with separate views that exclude or include weak loads. For Foundation, the build-specific graph reaches 123 images without weak loads and 1,353 when weak loads are included. These are static graph paths, not proof that a process loaded the images.
-
-The **Objective-C classes** view searches 216,890 class entries from the iOS cache optimization table. It links each entry to an exact in-cache image and lets visitors browse the classes associated with an image. Classes in images with duplicate basenames are resolved using their metadata addresses and Mach-O segment ranges.
-
-The **ObjC protocols** view searches 67,351 protocol table entries. A unique image basename maps to one cached image for 49,497 entries; 17,854 entries retain their ambiguous image labels and show the candidate paths. An image-label association is not proof that the image defines or loads that protocol.
-
-The **Swift conformances** view browses 590,036 static type-to-protocol records across 1,553 cached images. Type, protocol, and conformance descriptor addresses are checked against exact Mach-O image segments, including images with duplicate basenames. The site loads one of 64 compressed buckets when a visitor opens an image; raw symbols appear where the inspection tool provided names. This metadata does not establish runtime use.
-
-The **Research** view renders the source-bound component notes on the site, with links to the exact catalog records and source Markdown. Notes can be opened directly by fragment, such as [the SpringBoard launch chain](https://xnu.app/ios-atlas/#research/springboard-launch-chain), [its startup function](https://xnu.app/ios-atlas/#research/springboard-startup), and a [WidgetKit library overview](https://xnu.app/ios-atlas/#research/widgetkit-library-overview) that separates documented APIs from exact-cache method and dependency evidence.
-
-A first common-library pass now follows [SpringBoard's launch callback](research/23A355/SpringBoard-Post-Launch.md) and [scene connection](research/23A355/SpringBoard-Scene-Connection.md), [UIKitCore's `UIApplicationMain`](research/23A355/UIKitCore-ApplicationMain.md) and [`_run`](research/23A355/UIKitCore-RunLoop.md), [GraphicsServices' event runner](research/23A355/GraphicsServices-Event-Run.md) and [mode stack](research/23A355/GraphicsServices-RunLoop-Modes.md), and [CoreFoundation's run-loop wrappers](research/23A355/CoreFoundation-RunLoop.md) in this exact build. Existing [Foundation method evidence](research/23A355/Foundation-Method-Surface.md) rounds out the starting set. These notes distinguish direct instructions from unresolved runtime behavior.
-
-Cache-image pages now mark focused research as **First-pass research available** or **Awaiting analysis**. This status is based on notes linked to the exact install name; it does not change the static metadata coverage. Further implementation and runtime studies are selected on demand.
-
-Library pages now show linked Apple Developer introductions for **221 of 227** exact top-level iOS framework images in this cache, plus the base framework in the separate DriverKit cache. The [coverage note](research/23A355/Framework-Introduction-Coverage.md) names the remaining top-level gaps. All other images retain source-derived metadata overviews; [research status](docs/research-todo.md) describes completed first-pass studies and the on-demand approach. Documentation describes an API family or type, not the complete behavior of this exact binary.
-
-The [**DriverKit images** view](https://xnu.app/ios-atlas/#driverkit) now lists 65,668 unique named `__text` function-symbol records across all 51 images in the separate DriverKit cache, with per-image search. None of those images yielded ObjC class or method declarations in the exact-cache class dump. The [DriverKit coverage note](research/23A355/DriverKit-Function-Surface.md) explains why symbol-table names are a partial view of functions.
-
-The [**Standalone Mach-O** view](https://xnu.app/ios-atlas/#macho) indexes 3,363 physical binaries in FileSystem, SystemOS, and AppOS. Each record has its IPSW volume, path, complete-file SHA-256, Mach-O file type, architecture, and UUID. All 3,363 files also have direct-load metadata: 73,257 static library declarations and 1,802 runpaths. Exact install-name matching distinguishes 69,578 cache-only, 90 standalone-only, 3,358 ambiguous dual matches, and 231 unresolved declarations without claiming runtime resolution. An exact-file class-dump pass adds 847,771 searchable Objective-C method entries; 334 files explicitly reported no ObjC information. A separate symbol-table pass adds 323,061 unique named `__text` records in 1,200 files. A Swift dump pass adds 282,145 declaration lines and 294,746 method or requirement lines, with 133 partial outputs called out. Lists load only when a visitor opens a file. Two mixed Metal containers with Mach-O and non-Mach-O slices are recorded as exclusions. The [file](research/23A355/Standalone-MachO-Coverage.md), [direct-load](research/23A355/Standalone-Direct-Loads.md), [method](research/23A355/Standalone-ObjC-Method-Coverage.md), [symbol](research/23A355/Standalone-Named-Symbol-Coverage.md), and [Swift](research/23A355/Standalone-Swift-Dump-Coverage.md) notes explain the distinct sources and limits.
-
-The [**Objective-C methods** view](https://xnu.app/ios-atlas/#methods) indexes 3,065,801 static method entries across all 4,170 exact iOS cache images. Each image page provides a brief source-derived overview and loads its method records on demand from compact shared buckets. An empty method list means the class dump yielded no method entries, not that the library has no code. Ten entries have no decoded selector and remain explicitly unknown. The [coverage note](research/23A355/Method-Catalog-Coverage.md) explains the checks and limits; [research status](docs/research-todo.md) describes the on-demand approach to deeper studies.
-
-The [device-first plan](docs/device-first-plan.md) records the completed approach and acceptance gates; [research status](docs/research-todo.md) describes completed studies and on-demand follow-up. The earlier [research and delivery plan](docs/plan.md) explains why a filesystem walk alone misses many system libraries. The [acquisition record](docs/acquisition-23A355.md) identifies exact firmware inputs and coverage, including a read-only device check: all 83 cache files matched the live device by SHA-256 at that observation time. The [Foundation example](research/23A355/Foundation.md) shows why its framework directory and executable image must be distinct records; the [kernelcache note](research/23A355/Kernelcache.md) distinguishes archive variants, fileset entries, and kext metadata.
-
-## Build locally
+### Build locally
 
 ```sh
 python3 tools/build_site.py
 python3 -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000/`. GitHub Pages uses the same build script. The `Build iOS Atlas Pages` workflow checks the site, syncs `dist/` to the `gh-pages` branch, and requests a branch-based Pages build. The published site is at <https://xnu.app/ios-atlas/>.
-
-## Repository areas
-
-- `catalog/`: versioned, machine-readable indexes and coverage reports, including restore artifacts, kernel metadata, and a separate filtered device observation.
-- `research/`: evidence-backed component and behavior notes.
-- `tools/`: reproducible, read-only collection and validation tools, including the [private live-device snapshot procedure](docs/live-device-collection.md).
-- `site/`: a searchable static website built from the public catalog.
-
-Raw firmware, dyld caches, extracted Apple binaries, and private device data stay outside Git. Published results contain derived metadata, provenance, and original analysis. The official IPSW is a stock **distribution** baseline, while the live jailbroken device is a separate observation; this project does not imply a clean before/after jailbreak comparison.
+Open <http://localhost:8000/>. The [Pages workflow](.github/workflows/pages.yml) runs the same build, checks the public exports, and publishes the site at <https://xnu.app/ios-atlas/>.
