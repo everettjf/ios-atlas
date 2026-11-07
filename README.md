@@ -36,12 +36,12 @@ The explorer also includes [firmware files](https://xnu.app/ios-atlas/#files), [
 
 ```mermaid
 flowchart TB
-    A["Jailbroken iPhone 11<br/>read-only filesystem and binary observation"]
-    B["Official iOS 26.0.1 IPSW<br/>filesystem images and dyld caches"]
-    C["Identity checks + privacy review<br/>hashes, UUIDs, source boundaries"]
-    D["Versioned public catalogs<br/>derived metadata and provenance"]
-    E["Static explorer<br/>searchable GitHub Pages site"]
-    F["Research notes<br/>observed bytes → interpretation → unknowns"]
+    A["Jailbroken iPhone<br/>read-only observation"]
+    B["Official 23A355 IPSW<br/>files + dyld caches"]
+    C["Identity + privacy gates<br/>hashes · UUIDs · review"]
+    D["Public catalogs<br/>derived metadata"]
+    E["Static explorer"]
+    F["Research notes"]
     A --> C
     B --> C
     C --> D
