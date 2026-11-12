@@ -2,7 +2,7 @@
 
 Status: delivery handoff, 2026-11-06.
 
-This document closes the current delivery pass for the **jailbroken iPhone 11 (`iPhone12,1`) on iOS 26.0.1 (`23A355`)**. The [public explorer](https://xnu.app/ios-atlas/) is the delivered artifact. Its snapshot and static indexes are time-bounded observations, not a claim to have read every file on the phone or traced every implementation.
+This document closes the current delivery pass for the **jailbroken iPhone 11 (`iPhone12,1`) on iOS 26.0.1 (`23A355`)**. The [public explorer](https://atomsprout.com/ios-atlas/) is the delivered artifact. Its snapshot and static indexes are time-bounded observations, not a claim to have read every file on the phone or traced every implementation.
 
 ## Delivered scope
 
@@ -10,7 +10,7 @@ This document closes the current delivery pass for the **jailbroken iPhone 11 (`
 - The code atlas indexes **4,170 iOS dyld shared-cache images**, **51 DriverKit cache images**, and **3,363 standalone Mach-O files from the exact-build IPSW**. It distinguishes logical cache images from physical files and labels firmware-derived and device-observed evidence separately.
 - All **3,623 published Mach-O-like live file paths** reconcile to **3,622 device-hash-verified ordinary binaries** and **one byte-matched mixed Metal container**. Objective-C, named-symbol, Swift, direct-load, and signing metadata are available where inspected; empty, partial, and failed outcomes remain explicit.
 - The website has **37 research notes**. Every iOS cache image has a static metadata overview and method entry point. Apple Developer sources support functional introductions for **221 of 227 top-level iOS framework images** and one DriverKit image. The other six top-level frameworks have first-pass exact-image notes but no direct Apple functional introduction.
-- The site presents one device and build, with no version comparison workflow. The [Coverage view](https://xnu.app/ios-atlas/#coverage) shows scan status and errors without disclosing private paths.
+- The site presents one device and build, with no version comparison workflow. The [Coverage view](https://atomsprout.com/ios-atlas/#coverage) shows scan status and errors without disclosing private paths.
 
 ## Boundary at handoff
 
