@@ -8,7 +8,7 @@ The symbol and [Objective-C method](Standalone-ObjC-Method-Coverage.md) passes r
 
 Every mounted file was checked against the standalone inventory by size and complete SHA-256. The collector matched each Mach-O UUID, read executable segment load commands, and required every published address to fall within a `__text` section of the named segment. This includes kext code in `__TEXT_EXEC`, not just ordinary `__TEXT`. Raw symbol output and resumable per-file checkpoints remain outside Git. The public catalog contains derived names, addresses, section names, visibility labels, source hashes, and explicit excluded-row counts.
 
-The [Standalone Mach-O explorer](https://xnu.app/ios-atlas/#macho) shows a per-file symbol count. Selecting **Browse named `__text` symbols** loads one of 64 compressed buckets and lets readers search names and addresses. For example, the physical `/usr/lib/dyld` file has 3,287 unique named records in this build; a small stripped app may have no named records even when its ObjC method list is nonempty.
+The [Standalone Mach-O explorer](https://atomsprout.com/ios-atlas/#macho) shows a per-file symbol count. Selecting **Browse named `__text` symbols** loads one of 64 compressed buckets and lets readers search names and addresses. For example, the physical `/usr/lib/dyld` file has 3,287 unique named records in this build; a small stripped app may have no named records even when its ObjC method list is nonempty.
 
 The aggregate source catalog is [`standalone-symbols.json.gz`](../../catalog/ios/23A355/standalone-symbols.json.gz). To regenerate it with the exact mounted images:
 

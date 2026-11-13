@@ -11,7 +11,7 @@ Target: iPhone 11 (`iPhone12,1`), iOS 26.0.1 (`23A355`). Source: official restor
 
 ## How to use it
 
-The [Objective-C methods view](https://xnu.app/ios-atlas/#methods) lists the indexed images. Choose Foundation to search class names, category labels, selectors, and implementation addresses. The site loads its compressed method bucket only after selection. The [Foundation filesystem view](https://xnu.app/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework) separately shows the framework's on-disk resources and its logical in-cache executable.
+The [Objective-C methods view](https://atomsprout.com/ios-atlas/#methods) lists the indexed images. Choose Foundation to search class names, category labels, selectors, and implementation addresses. The site loads its compressed method bucket only after selection. The [Foundation filesystem view](https://atomsprout.com/ios-atlas/#files/%2FSystem%2FLibrary%2FFrameworks%2FFoundation.framework) separately shows the framework's on-disk resources and its logical in-cache executable.
 
 This count covers one cache image in one build. It does not cover every image in the iOS cache, methods dynamically added at runtime, generated subclasses, or method bodies. A selector and address do not prove that a process called the method; selecting a tweak hook requires function-body and runtime evidence.
 
