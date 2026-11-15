@@ -4,7 +4,7 @@
 
 **A searchable, evidence-backed map of iOS internals from one jailbroken iPhone.** Start with files observed on the device, follow libraries into the dyld shared cache, and inspect build-specific static metadata and research notes.
 
-[**Explore the live atlas ↗**](https://atomsprout.com/ios-atlas/) · [Browse research notes](https://atomsprout.com/ios-atlas/#research) · [See coverage](https://atomsprout.com/ios-atlas/#coverage) · [Read the delivery summary](docs/handoff-23A355.md)
+[**Explore the live atlas ↗**](https://asp.run/ios-atlas/) · [Browse research notes](https://asp.run/ios-atlas/#research) · [See coverage](https://asp.run/ios-atlas/#coverage) · [Read the delivery summary](docs/handoff-23A355.md)
 
 > [!NOTE]
 > The first release describes **iPhone 11 (`iPhone12,1`) on iOS 26.0.1 (`23A355`)**. It maps one observed device and its matching official firmware. Each view states its source and coverage; the public site does not claim unrestricted access to every device file or observed runtime behavior.
@@ -23,14 +23,14 @@ These numbers describe different layers and should not be added together. See th
 
 | Start here | What you can inspect |
 | :--- | :--- |
-| [**On-device files**](https://atomsprout.com/ios-atlas/#device) | Browse the published live paths folder by folder; search paths and reviewed content-format labels. |
-| [**Shared-cache images**](https://atomsprout.com/ios-atlas/#images) | Find logical library install names, brief introductions, direct loads, symbols, and method counts. |
-| [**Objective-C methods**](https://atomsprout.com/ios-atlas/#methods) | Search classes, categories, selectors, and implementation addresses within an exact cached image. |
-| [**Dependency reach**](https://atomsprout.com/ios-atlas/#reach) | Trace shortest static library-declaration chains, with weak loads included or excluded. |
-| [**System services**](https://atomsprout.com/ios-atlas/#services) | Follow launchd declarations to executables and their direct library loads. |
-| [**Research**](https://atomsprout.com/ios-atlas/#research) | Read focused notes linked back to exact files, cache images, UUIDs, and inspection commands. |
+| [**On-device files**](https://asp.run/ios-atlas/#device) | Browse the published live paths folder by folder; search paths and reviewed content-format labels. |
+| [**Shared-cache images**](https://asp.run/ios-atlas/#images) | Find logical library install names, brief introductions, direct loads, symbols, and method counts. |
+| [**Objective-C methods**](https://asp.run/ios-atlas/#methods) | Search classes, categories, selectors, and implementation addresses within an exact cached image. |
+| [**Dependency reach**](https://asp.run/ios-atlas/#reach) | Trace shortest static library-declaration chains, with weak loads included or excluded. |
+| [**System services**](https://asp.run/ios-atlas/#services) | Follow launchd declarations to executables and their direct library loads. |
+| [**Research**](https://asp.run/ios-atlas/#research) | Read focused notes linked back to exact files, cache images, UUIDs, and inspection commands. |
 
-The explorer also includes [firmware files](https://atomsprout.com/ios-atlas/#files), [Jailbreak Mach-O](https://atomsprout.com/ios-atlas/#device_macho), [Developer Mach-O](https://atomsprout.com/ios-atlas/#developer_macho), [Swift conformances](https://atomsprout.com/ios-atlas/#swift), [kernel metadata](https://atomsprout.com/ios-atlas/#kernel), and [coverage](https://atomsprout.com/ios-atlas/#coverage).
+The explorer also includes [firmware files](https://asp.run/ios-atlas/#files), [Jailbreak Mach-O](https://asp.run/ios-atlas/#device_macho), [Developer Mach-O](https://asp.run/ios-atlas/#developer_macho), [Swift conformances](https://asp.run/ios-atlas/#swift), [kernel metadata](https://asp.run/ios-atlas/#kernel), and [coverage](https://asp.run/ios-atlas/#coverage).
 
 ## How the atlas is built
 
@@ -86,4 +86,4 @@ python3 tools/build_site.py
 python3 -m http.server 8000 --directory dist
 ```
 
-Open <http://localhost:8000/>. The [Pages workflow](.github/workflows/pages.yml) runs the same build, checks the public exports, and publishes the site at <https://atomsprout.com/ios-atlas/>.
+Open <http://localhost:8000/>. The [Pages workflow](.github/workflows/pages.yml) runs the same build, checks the public exports, and publishes the site at <https://asp.run/ios-atlas/>.

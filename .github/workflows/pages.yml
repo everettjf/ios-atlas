@@ -28,8 +28,10 @@ jobs:
         run: python3 tools/test_live_load_targets.py
       - name: Build static site
         run: python3 tools/build_site.py
-      - name: Redirect legacy website to AtomSprout
-        run: python3 scripts/redirect-legacy-site.py dist ios-atlas
+      - name: Include personal project support page
+        run: |
+          mkdir -p dist/support
+          cp site/support/index.html dist/support/index.html
       - uses: actions/checkout@v4
         with:
           ref: gh-pages
